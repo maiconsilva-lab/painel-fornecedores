@@ -1,14 +1,9 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --navy:#0A2E5C;--navy-l:#13447A;--navy-bg:#F0F2F7;
-  --amber:#E8842C;--amber-h:#D4741F;
-  --green:#0F9D58;--green-bg:#E8F5E9;
-  --red:#D93025;--red-bg:#FEE2E2;
-  --yellow:#F9A825;--yellow-bg:#FFF8E1;
-  --blue-bg:#E3F2FD;
-  --text:#1B2A3D;--muted:#6B7A8D;--border:#D4DAE3;
-  --card:#FFFFFF;--bg:#F0F2F7;
-  --radius:10px;
+  --premix-green:#00A650;--premix-dark:#1A1A1A;--premix-gold:#C8A951;
+  --text:#1A1A1A;--muted:#6B7265;--border:#D8DDD2;
+  --card:#FFFFFF;--bg:#F5F6F0;
 }
 html{font-size:15px}
-body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.55}
+body{font-family:'Open Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.55}
+::selection{background:var(--premix-green);color:#fff}
