@@ -4,6 +4,10 @@
   --text:#1A1A1A;--muted:#6B7265;--border:#D8DDD2;
   --card:#FFFFFF;--bg:#F5F6F0;
 }
-html{font-size:15px}
+html{font-size:15px;scroll-behavior:smooth}
 body{font-family:'Open Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.55}
 ::selection{background:var(--premix-green);color:#fff}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--muted)}
