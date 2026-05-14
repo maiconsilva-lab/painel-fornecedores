@@ -157,9 +157,9 @@ export default function Home() {
   };
 
   /* ── Concluir cadastro + enviar e-mail via EmailJS ── */
-  const EMAILJS_SERVICE  = 'SEU_SERVICE_ID';   // ← Substituir pelo seu Service ID do EmailJS
-  const EMAILJS_TEMPLATE = 'SEU_TEMPLATE_ID';  // ← Substituir pelo seu Template ID do EmailJS
-  const EMAILJS_PUBLIC   = 'SUA_PUBLIC_KEY';    // ← Substituir pela sua Public Key do EmailJS
+  const EMAILJS_SERVICE  = 'service_w7xzoya';
+  const EMAILJS_TEMPLATE = 'template_9r33gy7';
+  const EMAILJS_PUBLIC   = 'A5igXA6RKwkf84zyR';
 
   const concluirCadastro = async () => {
     if (!concluirData.codigo.trim()) { showToast('Informe o código do fornecedor'); return; }
