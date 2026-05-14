@@ -1,13 +1,73 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --premix-green:#00A650;--premix-dark:#1A1A1A;--premix-gold:#C8A951;
-  --text:#1A1A1A;--muted:#6B7265;--border:#D8DDD2;
-  --card:#FFFFFF;--bg:#F5F6F0;
+
+:root {
+  --green: #059669;
+  --green-light: #ECFDF5;
+  --dark: #0f172a;
+  --dark-2: #1e293b;
+  --gold: #C8A951;
+  --bg: #f8fafc;
+  --card: #FFFFFF;
+  --text: #0f172a;
+  --text-secondary: #64748b;
+  --muted: #94a3b8;
+  --border: #e2e8f0;
+  --border-light: #f1f5f9;
+  --blue: #2563EB;
+  --amber: #D97706;
+  --red: #DC2626;
+  --radius: 10px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.04);
+  --shadow-md: 0 4px 16px rgba(0,0,0,.06);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,.1);
 }
-html{font-size:15px;scroll-behavior:smooth}
-body{font-family:'Open Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.55}
-::selection{background:var(--premix-green);color:#fff}
-::-webkit-scrollbar{width:6px}
-::-webkit-scrollbar-track{background:var(--bg)}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
-::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+
+html {
+  font-size: 15px;
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.55;
+}
+
+::selection { background: var(--green); color: #fff; }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* Focus visible */
+:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Smooth transitions */
+button, a, input, select, textarea {
+  transition: border-color .15s, box-shadow .15s, background .15s;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--green) !important;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, .1) !important;
+  background: #fff !important;
+}
+
+/* Table hover */
+tbody tr:hover {
+  background: var(--border-light);
+}
+
+/* Button hover states */
+button:hover:not(:disabled) {
+  filter: brightness(.97);
+}
