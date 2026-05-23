@@ -47,10 +47,13 @@ export default function Home() {
 
   /* ── Data State ──────────────────────────────── */
   const [forn, setForn] = useState([]);
+  const [produtos, setProdutos] = useState([]);
+  const [desbloqueios, setDesbloqueios] = useState([]);
   const [usuarios, setUsu] = useState([]);
   const [kanban, setKanban] = useState([]);
   const [loading, setLoad] = useState(true);
   const [page, setPage] = useState('cadastros');
+  const [subTab, setSubTab] = useState('fornecedores'); // 'fornecedores' | 'produtos' | 'desbloqueios'
   const [tab, setTab] = useState('pendentes');
   const [sel, setSel] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -61,6 +64,7 @@ export default function Home() {
   const [saving, setSav] = useState(false);
   const [showDev, setShowDev] = useState(false);
   const [devMsg, setDevMsg] = useState('');
+  const [devCampos, setDevCampos] = useState([]); // campos selecionados para correção
   const [showAssign, setShowAssign] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
   const [toast, setToast] = useState('');
@@ -125,23 +129,60 @@ export default function Home() {
 
   const fetchAll = useCallback(async () => {
     if (!user) return;
-    const [{ data: f }, { data: u }, { data: k }] = await Promise.all([
+    const [
+      { data: f }, { data: u }, { data: k },
+      { data: p }, { data: d }
+    ] = await Promise.all([
       supabase.from('fornecedores').select('*').order('created_at', { ascending: false }),
       supabase.from('usuarios_painel').select('*').order('nome'),
       supabase.from('kanban_tarefas').select('*').order('ordem', { ascending: true }),
+      supabase.from('produtos').select('*').order('created_at', { ascending: false }),
+      supabase.from('desbloqueios').select('*').order('created_at', { ascending: false }),
     ]);
-    if (f) setForn(f); if (u) setUsu(u); if (k) setKanban(k);
+    if (f) setForn(f);
+    if (u) setUsu(u);
+    if (k) setKanban(k);
+    if (p) setProdutos(p);
+    if (d) setDesbloqueios(d);
     setLoad(false);
   }, [user]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
+  /* ──────────────────────────────────────────────────────────────
+     REALTIME — escuta mudanças e atualiza estado SEM disparar
+     fetchAll inteiro (evita o bug de "tela volta ao estado anterior").
+     Usa atualização otimista: aplica a mudança no estado local
+     direto, em vez de refazer toda a query.
+     ────────────────────────────────────────────────────────────── */
+  const applyRealtimeChange = useCallback((table, payload) => {
+    const { eventType, new: newRow, old: oldRow } = payload;
+    const setters = {
+      fornecedores: setForn,
+      produtos: setProdutos,
+      desbloqueios: setDesbloqueios,
+      kanban_tarefas: setKanban,
+      usuarios_painel: setUsu,
+    };
+    const setter = setters[table];
+    if (!setter) return;
+    if (eventType === 'INSERT') {
+      setter(prev => prev.find(r => r.id === newRow.id) ? prev : [newRow, ...prev]);
+    } else if (eventType === 'UPDATE') {
+      setter(prev => prev.map(r => r.id === newRow.id ? { ...r, ...newRow } : r));
+    } else if (eventType === 'DELETE') {
+      setter(prev => prev.filter(r => r.id !== oldRow.id));
+    }
+  }, []);
+
   useEffect(() => {
     if (!user) return;
     const ch = supabase.channel('rt-all')
-      .on('postgres_changes', { event:'*', schema:'public', table:'fornecedores' }, () => fetchAll())
-      .on('postgres_changes', { event:'*', schema:'public', table:'kanban_tarefas' }, () => fetchAll())
-      .on('postgres_changes', { event:'*', schema:'public', table:'usuarios_painel' }, () => fetchAll())
+      .on('postgres_changes', { event:'*', schema:'public', table:'fornecedores' }, p => applyRealtimeChange('fornecedores', p))
+      .on('postgres_changes', { event:'*', schema:'public', table:'produtos' },     p => applyRealtimeChange('produtos', p))
+      .on('postgres_changes', { event:'*', schema:'public', table:'desbloqueios' }, p => applyRealtimeChange('desbloqueios', p))
+      .on('postgres_changes', { event:'*', schema:'public', table:'kanban_tarefas' }, p => applyRealtimeChange('kanban_tarefas', p))
+      .on('postgres_changes', { event:'*', schema:'public', table:'usuarios_painel' }, p => applyRealtimeChange('usuarios_painel', p))
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [user, fetchAll]);
@@ -415,7 +456,7 @@ export default function Home() {
 
       {/* ══ HEADER ══ */}
       <header style={{background:'#0f172a',position:'sticky',top:0,zIndex:100,borderBottom:'1px solid rgba(255,255,255,.06)'}}>
-        <div style={{height:2,background:'linear-gradient(90deg,#059669,#C8A951,#059669)'}} />
+        <div style={{height:3,background:'linear-gradient(90deg,#00A650 0%,#00A650 35%,#C8A951 50%,#E63946 65%,#E63946 100%)'}} />
         <div style={{padding:'0 28px',display:'flex',alignItems:'center',justifyContent:'space-between',maxWidth:1440,margin:'0 auto',height:60}}>
           <div style={{display:'flex',alignItems:'center',gap:14}}>
             <img src="https://premix.com.br/wp-content/uploads/2023/06/Logotipo_Premix_Positivo_Com-Bandeira.png" alt="Premix" style={{height:26}} />
@@ -464,6 +505,109 @@ export default function Home() {
       {/* ══ PAGE: CADASTROS ══ */}
       {page === 'cadastros' && (
         <div style={{maxWidth:1440,margin:'0 auto',padding:'24px 28px'}}>
+
+          {/* Sub-abas: Fornecedores | Produtos | Desbloqueios */}
+          <div style={{display:'flex',gap:6,marginBottom:20,padding:6,background:'#f1f5f9',borderRadius:14,width:'fit-content'}}>
+            {[
+              { k:'fornecedores', l:'Fornecedores', n: forn.length, icon:'🏢' },
+              { k:'produtos',     l:'Produtos',     n: produtos.length, icon:'📦' },
+              { k:'desbloqueios', l:'Desbloqueios', n: desbloqueios.length, icon:'🔓' },
+            ].map(s => (
+              <button key={s.k} onClick={()=>{ setSubTab(s.k); setSel(null); setShowModal(false); setTab('pendentes'); }} style={{
+                padding:'10px 20px',borderRadius:10,border:'none',
+                background: subTab===s.k ? '#fff' : 'transparent',
+                color: subTab===s.k ? '#059669' : '#64748b',
+                fontFamily:'inherit',fontSize:'.82rem',fontWeight: subTab===s.k ? 700 : 500,
+                cursor:'pointer',transition:'.2s',
+                boxShadow: subTab===s.k ? '0 1px 3px rgba(0,0,0,.08)' : 'none',
+                display:'flex',alignItems:'center',gap:8
+              }}>
+                <span>{s.icon}</span>
+                <span>{s.l}</span>
+                <span style={{
+                  background: subTab===s.k ? '#ECFDF5' : '#e2e8f0',
+                  color: subTab===s.k ? '#059669' : '#94a3b8',
+                  padding:'2px 8px',borderRadius:20,fontSize:'.65rem',fontWeight:700,minWidth:20,textAlign:'center'
+                }}>{s.n}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* ── Sub-aba: PRODUTOS (placeholder por enquanto) ── */}
+          {subTab === 'produtos' && (
+            <div style={{background:'#fff',padding:40,borderRadius:16,border:'1px solid #e2e8f0',textAlign:'center',color:'#64748b'}}>
+              <div style={{fontSize:'3rem',marginBottom:16}}>📦</div>
+              <div style={{fontSize:'1.1rem',fontWeight:700,color:'#0f172a',marginBottom:8}}>Cadastros de Produtos</div>
+              <div style={{fontSize:'.85rem',marginBottom:20}}>
+                {produtos.length === 0
+                  ? 'Nenhum produto cadastrado ainda. Em breve o formulário interno estará disponível.'
+                  : `${produtos.length} cadastro(s) de produto recebido(s).`}
+              </div>
+              {produtos.length > 0 && (
+                <div style={{maxWidth:800,margin:'0 auto',display:'grid',gap:8}}>
+                  {produtos.slice(0, 20).map(p => {
+                    const st = ST[p.status] || ST.pendente;
+                    return (
+                      <div key={p.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'12px 16px',background:'#f8fafc',borderRadius:10,border:'1px solid #e2e8f0'}}>
+                        <div style={{textAlign:'left'}}>
+                          <div style={{fontWeight:600,color:'#0f172a',fontSize:'.88rem'}}>{(p.descricao || '').slice(0, 60)}{p.descricao && p.descricao.length > 60 ? '...' : ''}</div>
+                          <div style={{fontSize:'.72rem',color:'#94a3b8',marginTop:2}}>
+                            {p.email_solicitante} · {new Date(p.created_at).toLocaleDateString('pt-BR')}
+                          </div>
+                        </div>
+                        <div style={{background:st.bg,color:st.c,padding:'4px 12px',borderRadius:20,fontSize:'.7rem',fontWeight:700}}>{st.l}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <div style={{marginTop:24,fontSize:'.75rem',color:'#94a3b8',fontStyle:'italic'}}>
+                🚧 Tela completa de gerenciamento de produtos será entregue na próxima atualização.
+              </div>
+            </div>
+          )}
+
+          {/* ── Sub-aba: DESBLOQUEIOS (placeholder por enquanto) ── */}
+          {subTab === 'desbloqueios' && (
+            <div style={{background:'#fff',padding:40,borderRadius:16,border:'1px solid #e2e8f0',textAlign:'center',color:'#64748b'}}>
+              <div style={{fontSize:'3rem',marginBottom:16}}>🔓</div>
+              <div style={{fontSize:'1.1rem',fontWeight:700,color:'#0f172a',marginBottom:8}}>Pedidos de Desbloqueio</div>
+              <div style={{fontSize:'.85rem',marginBottom:20}}>
+                {desbloqueios.length === 0
+                  ? 'Nenhum pedido de desbloqueio ainda. Em breve o formulário estará disponível.'
+                  : `${desbloqueios.length} pedido(s) de desbloqueio recebido(s).`}
+              </div>
+              {desbloqueios.length > 0 && (
+                <div style={{maxWidth:800,margin:'0 auto',display:'grid',gap:8}}>
+                  {desbloqueios.slice(0, 20).map(d => {
+                    const st = ST[d.status === 'desbloqueado' ? 'aprovado' : d.status] || ST.pendente;
+                    return (
+                      <div key={d.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'12px 16px',background:'#f8fafc',borderRadius:10,border:'1px solid #e2e8f0'}}>
+                        <div style={{textAlign:'left'}}>
+                          <div style={{fontWeight:600,color:'#0f172a',fontSize:'.88rem'}}>
+                            <span style={{fontFamily:'monospace',background:'#fef3c7',color:'#92400e',padding:'1px 6px',borderRadius:4,fontSize:'.78rem',marginRight:6}}>{d.codigo_produto}</span>
+                            {d.nome_produto}
+                          </div>
+                          <div style={{fontSize:'.72rem',color:'#94a3b8',marginTop:2}}>
+                            {d.email_solicitante} · {new Date(d.created_at).toLocaleDateString('pt-BR')}
+                          </div>
+                        </div>
+                        <div style={{background:st.bg,color:st.c,padding:'4px 12px',borderRadius:20,fontSize:'.7rem',fontWeight:700}}>
+                          {d.status === 'desbloqueado' ? 'Desbloqueado' : st.l}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <div style={{marginTop:24,fontSize:'.75rem',color:'#94a3b8',fontStyle:'italic'}}>
+                🚧 Tela completa de gerenciamento de desbloqueios será entregue na próxima atualização.
+              </div>
+            </div>
+          )}
+
+          {/* ── Sub-aba: FORNECEDORES (conteúdo existente) ── */}
+          {subTab === 'fornecedores' && (<>
           {/* Stats */}
           <div style={{display:'grid',gridTemplateColumns:'repeat(5, 1fr)',gap:14,marginBottom:24}}>
             {[
@@ -719,6 +863,7 @@ export default function Home() {
               </div>
             </div>
           </div>
+          </>)}{/* fim sub-aba fornecedores */}
         </div>
       )}
 
