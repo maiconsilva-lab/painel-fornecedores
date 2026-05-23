@@ -703,6 +703,7 @@ export default function Home() {
               </div>
             )}
           </div>
+          </>)}{/* fim sub-aba fornecedores */}
         </div>
       )}
 
@@ -863,7 +864,6 @@ export default function Home() {
               </div>
             </div>
           </div>
-          </>)}{/* fim sub-aba fornecedores */}
         </div>
       )}
 
