@@ -167,14 +167,32 @@ export default function Home() {
 
     setSendingEmail(true);
 
-    // 1. Atualiza o status no Supabase
+    // 1. Atualiza o status no Supabase (com checagem de erro)
     const upd = {
       status: 'aprovado',
       finalizado_por: user.nome,
       data_finalizacao: new Date().toISOString(),
       codigo_fornecedor: concluirData.codigo.trim(),
     };
-    await supabase.from('fornecedores').update(upd).eq('id', sel.id);
+
+    const { data: updRes, error: updErr } = await supabase
+      .from('fornecedores')
+      .update(upd)
+      .eq('id', sel.id)
+      .select();
+
+    if (updErr) {
+      console.error('[concluirCadastro] Erro no UPDATE Supabase:', updErr);
+      showToast(`Erro ao concluir: ${updErr.message}`);
+      setSendingEmail(false);
+      return;
+    }
+    if (!updRes || updRes.length === 0) {
+      console.error('[concluirCadastro] UPDATE retornou 0 linhas — provável RLS', { id: sel.id, upd });
+      showToast('Cadastro não foi alterado (verifique permissões RLS).');
+      setSendingEmail(false);
+      return;
+    }
 
     // 2. Envia e-mail via EmailJS
     const templateParams = {
@@ -198,10 +216,13 @@ export default function Home() {
       if (res.ok) {
         showToast('Cadastro concluído e e-mail enviado!');
       } else {
-        showToast('Cadastro concluído, mas erro ao enviar e-mail. Verifique o EmailJS.');
+        const body = await res.text();
+        console.error('[concluirCadastro] EmailJS falhou:', res.status, body);
+        showToast(`Cadastro concluído, mas e-mail falhou: ${res.status} — ${body.slice(0,80)}`);
       }
-    } catch {
-      showToast('Cadastro concluído, mas erro ao enviar e-mail.');
+    } catch (err) {
+      console.error('[concluirCadastro] Exceção no envio EmailJS:', err);
+      showToast(`Cadastro concluído, mas erro ao enviar e-mail: ${err.message || 'desconhecido'}`);
     }
 
     if (sel) setSel({ ...sel, ...upd });
