@@ -65,7 +65,7 @@ export default function Home() {
   const [showLogout, setShowLogout] = useState(false);
   const [toast, setToast] = useState('');
   const [showConcluir, setShowConcluir] = useState(false);
-  const [concluirData, setConcluirData] = useState({ codigo:'', emailSolicitante:'', nomeSolicitante:'' });
+  const [concluirData, setConcluirData] = useState({ codigo:'' });
   const [sendingEmail, setSendingEmail] = useState(false);
 
   /* ── Kanban State ────────────────────────────── */
@@ -163,7 +163,15 @@ export default function Home() {
 
   const concluirCadastro = async () => {
     if (!concluirData.codigo.trim()) { showToast('Informe o código do fornecedor'); return; }
-    if (!concluirData.emailSolicitante.trim()) { showToast('Informe o e-mail do solicitante'); return; }
+
+    // Lê dados do solicitante diretamente do cadastro (vindos do formulário)
+    const emailSolic = (sel?.email_solicitante || '').trim();
+    const nomeSolic  = (sel?.nome_solicitante || '').trim();
+
+    if (!emailSolic) {
+      showToast('Este cadastro não tem e-mail do solicitante. Cadastro antigo, antes da atualização do formulário.');
+      return;
+    }
 
     setSendingEmail(true);
 
@@ -196,8 +204,8 @@ export default function Home() {
 
     // 2. Envia e-mail via EmailJS
     const templateParams = {
-      to_name: concluirData.nomeSolicitante.trim() || 'Solicitante',
-      to_email: concluirData.emailSolicitante.trim(),
+      to_name: nomeSolic || 'Solicitante',
+      to_email: emailSolic,
       codigo_fornecedor: concluirData.codigo.trim(),
       fornecedor_nome: sel.razao_social || sel.nome_completo || 'N/A',
     };
@@ -227,7 +235,7 @@ export default function Home() {
 
     if (sel) setSel({ ...sel, ...upd });
     setShowConcluir(false);
-    setConcluirData({ codigo:'', emailSolicitante:'', nomeSolicitante:'' });
+    setConcluirData({ codigo:'' });
     setSendingEmail(false);
     await fetchAll();
   };
@@ -621,36 +629,41 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Painel Concluir — código + e-mail solicitante */}
+              {/* Painel Concluir — só código (e-mail vem do cadastro) */}
               {showConcluir && (
                 <div style={{padding:20,background:'#ECFDF5',borderRadius:14,marginBottom:16,border:'1px solid #A7F3D0'}}>
                   <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
                     <div style={{width:32,height:32,borderRadius:8,background:'#059669',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'.9rem'}}>✓</div>
                     <div style={{fontSize:'.88rem',fontWeight:700,color:'#059669'}}>Concluir Cadastro</div>
                   </div>
-                  <div style={{fontSize:'.74rem',color:'#64748b',marginBottom:16}}>Informe o código gerado pelo sistema e o e-mail de quem solicitou este cadastro.</div>
+                  <div style={{fontSize:'.74rem',color:'#64748b',marginBottom:16}}>Informe apenas o código gerado pelo sistema. O e-mail será enviado para o solicitante automaticamente.</div>
 
                   <div style={{display:'grid',gap:12}}>
                     <div>
                       <label style={{fontSize:'.72rem',fontWeight:700,color:'#059669',textTransform:'uppercase',letterSpacing:'.3px',marginBottom:4,display:'block'}}>Código do Fornecedor *</label>
                       <input value={concluirData.codigo} onChange={e=>setConcluirData({...concluirData,codigo:e.target.value})} placeholder="Ex: FORN-00451" style={{width:'100%',padding:'12px 14px',borderRadius:10,border:'1px solid #A7F3D0',fontSize:'.9rem',fontWeight:600,outline:'none',fontFamily:'inherit',background:'#fff',letterSpacing:'.5px'}} autoFocus />
                     </div>
-                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-                      <div>
-                        <label style={{fontSize:'.72rem',fontWeight:700,color:'#059669',textTransform:'uppercase',letterSpacing:'.3px',marginBottom:4,display:'block'}}>Nome do Solicitante</label>
-                        <input value={concluirData.nomeSolicitante} onChange={e=>setConcluirData({...concluirData,nomeSolicitante:e.target.value})} placeholder="Quem solicitou o cadastro" style={{width:'100%',padding:'10px 14px',borderRadius:8,border:'1px solid #A7F3D0',fontSize:'.84rem',outline:'none',fontFamily:'inherit',background:'#fff'}} />
-                      </div>
-                      <div>
-                        <label style={{fontSize:'.72rem',fontWeight:700,color:'#059669',textTransform:'uppercase',letterSpacing:'.3px',marginBottom:4,display:'block'}}>E-mail do Solicitante *</label>
-                        <input type="email" value={concluirData.emailSolicitante} onChange={e=>setConcluirData({...concluirData,emailSolicitante:e.target.value})} placeholder="email@empresa.com" style={{width:'100%',padding:'10px 14px',borderRadius:8,border:'1px solid #A7F3D0',fontSize:'.84rem',outline:'none',fontFamily:'inherit',background:'#fff'}} />
-                      </div>
+
+                    {/* Dados do solicitante (vindos do cadastro) */}
+                    <div style={{background:'#fff',borderRadius:10,border:'1px solid #D1FAE5',padding:14}}>
+                      <div style={{fontSize:'.68rem',color:'#94a3b8',fontWeight:600,textTransform:'uppercase',letterSpacing:'.3px',marginBottom:8}}>Será enviado para</div>
+                      {(sel?.email_solicitante) ? (
+                        <div style={{fontSize:'.85rem',color:'#0f172a'}}>
+                          <div style={{fontWeight:600}}>{sel.nome_solicitante || 'Solicitante'}</div>
+                          <div style={{color:'#64748b',fontSize:'.8rem',marginTop:2}}>{sel.email_solicitante}</div>
+                        </div>
+                      ) : (
+                        <div style={{fontSize:'.8rem',color:'#dc2626',background:'#fef2f2',padding:'8px 12px',borderRadius:6,border:'1px solid #fecaca'}}>
+                          ⚠️ Este cadastro não tem e-mail do solicitante (cadastro antigo, antes da atualização do formulário). Não será possível enviar o e-mail automaticamente.
+                        </div>
+                      )}
                     </div>
 
                     {/* Preview do e-mail */}
                     <div style={{background:'#fff',borderRadius:10,border:'1px solid #D1FAE5',padding:16}}>
                       <div style={{fontSize:'.68rem',color:'#94a3b8',fontWeight:600,textTransform:'uppercase',letterSpacing:'.3px',marginBottom:8}}>Pré-visualização do e-mail</div>
                       <div style={{fontSize:'.82rem',color:'#0f172a',lineHeight:1.7}}>
-                        <p>Olá{concluirData.nomeSolicitante ? ` ${concluirData.nomeSolicitante}` : ''},</p>
+                        <p>Olá{sel?.nome_solicitante ? ` ${sel.nome_solicitante}` : ''},</p>
                         <p style={{marginTop:8}}>O cadastro de fornecedor que você solicitou foi concluído com sucesso!</p>
                         <div style={{margin:'12px 0',padding:'14px 18px',background:'#ECFDF5',borderRadius:10,border:'1px solid #A7F3D0',textAlign:'center'}}>
                           <div style={{fontSize:'.7rem',color:'#059669',fontWeight:600,textTransform:'uppercase',letterSpacing:'.5px',marginBottom:4}}>Código de Fornecedor Premix</div>
@@ -662,10 +675,10 @@ export default function Home() {
                     </div>
 
                     <div style={{display:'flex',gap:10,marginTop:4}}>
-                      <button onClick={concluirCadastro} disabled={sendingEmail} style={{flex:1,padding:'12px',borderRadius:10,border:'none',background: sendingEmail ? '#94a3b8' : '#059669',color:'#fff',fontFamily:'inherit',fontWeight:700,fontSize:'.84rem',cursor: sendingEmail ? 'not-allowed' : 'pointer',transition:'.15s'}}>
+                      <button onClick={concluirCadastro} disabled={sendingEmail || !sel?.email_solicitante} style={{flex:1,padding:'12px',borderRadius:10,border:'none',background: (sendingEmail || !sel?.email_solicitante) ? '#94a3b8' : '#059669',color:'#fff',fontFamily:'inherit',fontWeight:700,fontSize:'.84rem',cursor: (sendingEmail || !sel?.email_solicitante) ? 'not-allowed' : 'pointer',transition:'.15s'}}>
                         {sendingEmail ? '⏳ Enviando...' : '✓ Concluir e Enviar E-mail'}
                       </button>
-                      <button onClick={()=>{setShowConcluir(false);setConcluirData({codigo:'',emailSolicitante:'',nomeSolicitante:''})}} style={{padding:'12px 20px',borderRadius:10,border:'1px solid #A7F3D0',background:'#fff',fontFamily:'inherit',fontWeight:500,fontSize:'.84rem',cursor:'pointer',color:'#64748b'}}>Cancelar</button>
+                      <button onClick={()=>{setShowConcluir(false);setConcluirData({codigo:''})}} style={{padding:'12px 20px',borderRadius:10,border:'1px solid #A7F3D0',background:'#fff',fontFamily:'inherit',fontWeight:500,fontSize:'.84rem',cursor:'pointer',color:'#64748b'}}>Cancelar</button>
                     </div>
                   </div>
                 </div>
