@@ -704,17 +704,30 @@ export default function Home() {
      RENDER — LOGIN
      ═══════════════════════════════════════════════ */
   if (!user) return (
-    <div style={{minHeight:'100vh',background:'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Montserrat,system-ui,sans-serif',padding:20}}>
-      <div style={{background:'#fff',borderRadius:20,padding:'52px 44px',maxWidth:400,width:'100%',textAlign:'center',position:'relative',overflow:'hidden',boxShadow:'0 25px 60px rgba(0,0,0,.25)'}}>
-        <div style={{position:'absolute',top:0,left:0,right:0,height:3,background:'linear-gradient(90deg,#059669,#C8A951,#059669)'}} />
+    <div style={{minHeight:'100vh',background:'#F5F7FA',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'Inter','Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif",padding:20,position:'relative',overflow:'hidden'}}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+        @keyframes premixShimmer { from { background-position:0% 0 } to { background-position:200% 0 } }
+        @keyframes loginFadeIn { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:translateY(0) } }
+        .login-input:focus { background:#fff !important; border-color:#00A650 !important; box-shadow:0 0 0 3px #E6F7EE !important; }
+        .login-input { transition: all .15s; }
+        .login-btn:hover:not(:disabled) { background:#008C44 !important; box-shadow:0 6px 16px rgba(0,166,80,.35); transform:translateY(-1px); }
+        .login-btn { transition: all .15s; }
+      `}</style>
+      {/* Decorative background */}
+      <div style={{position:'absolute',top:'-200px',right:'-200px',width:500,height:500,background:'radial-gradient(circle,rgba(0,166,80,.08) 0%,transparent 70%)',pointerEvents:'none'}} />
+      <div style={{position:'absolute',bottom:'-200px',left:'-200px',width:500,height:500,background:'radial-gradient(circle,rgba(200,169,81,.08) 0%,transparent 70%)',pointerEvents:'none'}} />
+
+      <div style={{background:'#fff',borderRadius:16,padding:'48px 40px',maxWidth:420,width:'100%',textAlign:'center',position:'relative',overflow:'hidden',boxShadow:'0 12px 32px rgba(16,24,40,.08),0 4px 8px rgba(16,24,40,.04)',border:'1px solid #E5E9EF',animation:'loginFadeIn .35s cubic-bezier(.16,1,.3,1)'}}>
+        <div style={{position:'absolute',top:0,left:0,right:0,height:3,background:'linear-gradient(90deg,#00A650 0%,#00A650 30%,#C8A951 50%,#E63946 70%,#E63946 100%)',backgroundSize:'200% 100%',animation:'premixShimmer 8s linear infinite'}} />
         <img src="https://premix.com.br/wp-content/uploads/2023/06/Logotipo_Premix_Positivo_Com-Bandeira.png" alt="Premix" style={{height:44,marginBottom:28}} />
-        <h2 style={{fontSize:'1rem',fontWeight:700,letterSpacing:'.5px',marginBottom:4,color:'#0f172a'}}>Painel de Fornecedores</h2>
-        <p style={{fontSize:'.8rem',color:'#94a3b8',marginBottom:32}}>Núcleo Fiscal — Acesso restrito</p>
-        <form onSubmit={doLogin} style={{display:'flex',flexDirection:'column',gap:14}}>
-          <input placeholder="E-mail corporativo" type="email" value={loginForm.email} onChange={e=>setLF({...loginForm,email:e.target.value})} disabled={loginLocked} style={inputStyle()} />
-          <input placeholder="Senha" type="password" value={loginForm.senha} onChange={e=>setLF({...loginForm,senha:e.target.value})} disabled={loginLocked} style={inputStyle()} />
-          {loginErr && <p style={{color:'#DC2626',fontSize:'.78rem',margin:'-4px 0',textAlign:'left'}}>{loginErr}</p>}
-          <button type="submit" disabled={loginLocked} style={{width:'100%',padding:'14px',background:loginLocked?'#94a3b8':'#059669',color:'#fff',border:'none',borderRadius:10,fontFamily:'inherit',fontWeight:700,fontSize:'.88rem',cursor:loginLocked?'not-allowed':'pointer',letterSpacing:'.3px',transition:'.2s',marginTop:4}}>
+        <h2 style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:20,fontWeight:700,letterSpacing:'-.4px',marginBottom:6,color:'#1A2332'}}>Painel de Fornecedores</h2>
+        <p style={{fontSize:13,color:'#8B94A3',marginBottom:32}}>Núcleo Fiscal — Acesso restrito</p>
+        <form onSubmit={doLogin} style={{display:'flex',flexDirection:'column',gap:12}}>
+          <input className="login-input" placeholder="E-mail corporativo" type="email" value={loginForm.email} onChange={e=>setLF({...loginForm,email:e.target.value})} disabled={loginLocked} style={{width:'100%',padding:'12px 14px',background:'#F8F9FB',border:'1px solid #E5E9EF',borderRadius:10,fontSize:14,fontFamily:'inherit',color:'#1A2332',outline:'none'}} />
+          <input className="login-input" placeholder="Senha" type="password" value={loginForm.senha} onChange={e=>setLF({...loginForm,senha:e.target.value})} disabled={loginLocked} style={{width:'100%',padding:'12px 14px',background:'#F8F9FB',border:'1px solid #E5E9EF',borderRadius:10,fontSize:14,fontFamily:'inherit',color:'#1A2332',outline:'none'}} />
+          {loginErr && <p style={{color:'#E63946',fontSize:12,margin:'-2px 0',textAlign:'left',fontWeight:500}}>{loginErr}</p>}
+          <button className="login-btn" type="submit" disabled={loginLocked} style={{width:'100%',padding:'13px',background:loginLocked?'#B5BCC6':'#00A650',color:'#fff',border:'none',borderRadius:10,fontFamily:'inherit',fontWeight:600,fontSize:14,cursor:loginLocked?'not-allowed':'pointer',letterSpacing:'.2px',marginTop:6,boxShadow:loginLocked?'none':'0 1px 2px rgba(0,166,80,.3),inset 0 1px 0 rgba(255,255,255,.15)'}}>
             {loginLocked ? 'Aguarde...' : 'Entrar'}
           </button>
         </form>
@@ -747,57 +760,133 @@ export default function Home() {
      RENDER — MAIN APP
      ═══════════════════════════════════════════════ */
   return (
-    <div style={{minHeight:'100vh',background:'#f8fafc',fontFamily:'-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif'}}>
-      {/* Toast */}
-      {toast && <div style={{position:'fixed',bottom:28,left:'50%',transform:'translateX(-50%)',background:'#0f172a',color:'#fff',padding:'12px 24px',borderRadius:10,fontSize:'.84rem',fontWeight:600,zIndex:9999,boxShadow:'0 8px 30px rgba(0,0,0,.2)',animation:'slideUp .3s ease'}}>{toast}</div>}
+    <div style={{minHeight:'100vh',background:'#F5F7FA',fontFamily:"'Inter','Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif",color:'#1A2332',fontSize:14,lineHeight:1.5,WebkitFontSmoothing:'antialiased'}}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+        @keyframes slideUp { from { opacity:0; transform:translate(-50%,12px) } to { opacity:1; transform:translate(-50%,0) } }
+        @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+        @keyframes slideInRight { from { opacity:0; transform:translateX(20px) } to { opacity:1; transform:translateX(0) } }
+        @keyframes premixShimmer { from { background-position:0% 0 } to { background-position:200% 0 } }
+        .sb-link:hover { background:#F8F9FB; color:#1A2332 !important; }
+        .sb-link.active::before { content:''; position:absolute; left:-12px; top:50%; transform:translateY(-50%); width:3px; height:20px; background:#00A650; border-radius:0 2px 2px 0; }
+        .pmx-row:hover { background:#F8F9FB; }
+        .pmx-row { transition: background .12s; }
+        .pmx-stat:hover { border-color:#D4D9E0 !important; box-shadow:0 4px 12px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.04); transform:translateY(-1px); }
+        .pmx-stat { transition: all .2s; }
+        .pmx-act:hover { background:#fff !important; border-color:#D4D9E0 !important; transform:translateY(-1px); box-shadow:0 1px 2px rgba(16,24,40,.04); }
+        .pmx-act { transition: all .15s; }
+        .pmx-act.primary:hover { background:#00A650 !important; color:#fff !important; box-shadow:0 4px 8px rgba(0,166,80,.3) !important; }
+        .pmx-act.danger:hover  { background:#E63946 !important; color:#fff !important; box-shadow:0 4px 8px rgba(230,57,70,.3) !important; }
+        .pmx-cta:hover { background:#008C44 !important; box-shadow:0 4px 12px rgba(0,166,80,.35); transform:translateY(-1px); }
+        .pmx-cta { transition: all .15s; }
+        .pmx-icon-btn:hover { background:#F8F9FB; color:#1A2332 !important; }
+        .pmx-icon-btn { transition: all .15s; }
+        .pmx-subtab:hover { color:#1A2332 !important; }
+        .pmx-subtab { transition: color .15s; }
+        .pmx-search-input:focus { background:#fff !important; border-color:#00A650 !important; box-shadow:0 0 0 3px #E6F7EE; }
+        .pmx-search-input { transition: all .15s; }
+        .pmx-fade-in { animation: fadeIn .25s ease; }
+      `}</style>
 
-      {/* ══ HEADER ══ */}
-      <header style={{background:'#0f172a',position:'sticky',top:0,zIndex:100,borderBottom:'1px solid rgba(255,255,255,.06)'}}>
-        <div style={{height:3,background:'linear-gradient(90deg,#00A650 0%,#00A650 35%,#C8A951 50%,#E63946 65%,#E63946 100%)'}} />
-        <div style={{padding:'0 28px',display:'flex',alignItems:'center',justifyContent:'space-between',maxWidth:1440,margin:'0 auto',height:60}}>
-          <div style={{display:'flex',alignItems:'center',gap:14}}>
-            <img src="https://premix.com.br/wp-content/uploads/2023/06/Logotipo_Premix_Positivo_Com-Bandeira.png" alt="Premix" style={{height:26}} />
-            <div style={{height:20,width:1,background:'rgba(255,255,255,.12)'}} />
-            <span style={{color:'#e2e8f0',fontSize:'.78rem',fontWeight:600,letterSpacing:'.8px',textTransform:'uppercase'}}>Núcleo Fiscal</span>
+      {/* Toast */}
+      {toast && <div style={{position:'fixed',bottom:28,left:'50%',transform:'translateX(-50%)',background:'#1A2332',color:'#fff',padding:'12px 24px',borderRadius:10,fontSize:'.84rem',fontWeight:600,zIndex:9999,boxShadow:'0 12px 32px rgba(16,24,40,.18)',animation:'slideUp .3s cubic-bezier(.16,1,.3,1)'}}>{toast}</div>}
+
+      {/* ══ APP LAYOUT: SIDEBAR + MAIN ══ */}
+      <div style={{display:'grid',gridTemplateColumns:'240px 1fr',minHeight:'100vh'}}>
+
+        {/* ── SIDEBAR ── */}
+        <aside style={{background:'#fff',borderRight:'1px solid #E5E9EF',display:'flex',flexDirection:'column',position:'sticky',top:0,height:'100vh',zIndex:50}}>
+          {/* Brand */}
+          <div style={{padding:'18px 20px 16px',display:'flex',alignItems:'center',gap:12,borderBottom:'1px solid #E5E9EF'}}>
+            <img src="https://premix.com.br/wp-content/uploads/2023/06/Logotipo_Premix_Positivo_Com-Bandeira.png" alt="Premix" style={{height:30}} />
           </div>
 
-          <nav style={{display:'flex',gap:2}}>
+          {/* Nav */}
+          <nav style={{padding:'12px 12px 0',flex:1,overflowY:'auto'}}>
+            <div style={{fontSize:10,fontWeight:600,textTransform:'uppercase',letterSpacing:'.8px',color:'#B5BCC6',padding:'14px 12px 6px'}}>Geral</div>
             {[
-              { k:'cadastros', l:'Cadastros', icon:'📋' },
-              { k:'kanban',    l:'Gestão de Tarefas', icon:'📊' },
-              ...(isAdmin ? [{ k:'admin', l:'Equipe', icon:'⚙️' }] : [])
-            ].map(n => (
-              <button key={n.k} onClick={()=>{ setPage(n.k); setSel(null); setShowModal(false); }} style={{
-                padding:'8px 18px',borderRadius:8,border:'none',
-                background: page===n.k ? 'rgba(5,150,105,.15)' : 'transparent',
-                color: page===n.k ? '#34d399' : 'rgba(255,255,255,.5)',
-                fontFamily:'inherit',fontSize:'.8rem',fontWeight: page===n.k ? 700 : 500,
-                cursor:'pointer',transition:'.2s',letterSpacing:'.2px'
+              { k:'cadastros', l:'Cadastros',         icon:<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg>, count: forn.length + produtos.length + desbloqueios.length },
+              { k:'kanban',    l:'Gestão de Tarefas', icon:<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>, count: kanban.filter(k=>k.status!=='concluido').length, alert: true },
+            ].map(n => {
+              const active = page === n.k;
+              return (
+                <a key={n.k} onClick={()=>{ setPage(n.k); setSel(null); setShowModal(false); }} className={'sb-link' + (active ? ' active' : '')} style={{
+                  display:'flex',alignItems:'center',gap:11,padding:'9px 12px',borderRadius:8,
+                  fontSize:13,fontWeight: active ? 600 : 500,
+                  color: active ? '#008C44' : '#4F5868',
+                  background: active ? '#E6F7EE' : 'transparent',
+                  textDecoration:'none',cursor:'pointer',position:'relative',marginBottom:1
+                }}>
+                  {n.icon}
+                  <span style={{flex:1}}>{n.l}</span>
+                  {n.count > 0 && <span style={{fontWeight:700,fontSize:10,padding:'2px 7px',background: active ? '#00A650' : (n.alert ? '#E63946' : '#EEF1F5'),color: (active || n.alert) ? '#fff' : '#4F5868',borderRadius:20,minWidth:22,textAlign:'center',fontFamily:'Plus Jakarta Sans,sans-serif'}}>{n.count}</span>}
+                </a>
+              );
+            })}
+
+            {isAdmin && (<>
+              <div style={{fontSize:10,fontWeight:600,textTransform:'uppercase',letterSpacing:'.8px',color:'#B5BCC6',padding:'14px 12px 6px'}}>Administração</div>
+              <a onClick={()=>{ setPage('admin'); setSel(null); setShowModal(false); }} className={'sb-link' + (page==='admin' ? ' active' : '')} style={{
+                display:'flex',alignItems:'center',gap:11,padding:'9px 12px',borderRadius:8,fontSize:13,
+                fontWeight: page==='admin' ? 600 : 500,
+                color: page==='admin' ? '#008C44' : '#4F5868',
+                background: page==='admin' ? '#E6F7EE' : 'transparent',
+                textDecoration:'none',cursor:'pointer',position:'relative',marginBottom:1
               }}>
-                {n.icon} {n.l}
-              </button>
-            ))}
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                <span style={{flex:1}}>Equipe</span>
+                {usuarios.length > 0 && <span style={{fontWeight:700,fontSize:10,padding:'2px 7px',background: page==='admin' ? '#00A650' : '#EEF1F5',color: page==='admin' ? '#fff' : '#4F5868',borderRadius:20,minWidth:22,textAlign:'center',fontFamily:'Plus Jakarta Sans,sans-serif'}}>{usuarios.length}</span>}
+              </a>
+            </>)}
+
+            <div style={{fontSize:10,fontWeight:600,textTransform:'uppercase',letterSpacing:'.8px',color:'#B5BCC6',padding:'18px 12px 6px'}}>Aparência</div>
+            <a className="sb-link" style={{display:'flex',alignItems:'center',gap:11,padding:'9px 12px',borderRadius:8,fontSize:13,fontWeight:500,color:'#4F5868',cursor:'pointer',marginBottom:1,opacity:.6}} title="Em breve">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+              <span style={{flex:1}}>Temas & Cores</span>
+              <span style={{fontSize:9,fontWeight:700,padding:'1px 6px',background:'#FEF3C7',color:'#B45309',borderRadius:4,letterSpacing:'.3px'}}>EM BREVE</span>
+            </a>
           </nav>
 
-          <div style={{position:'relative'}}>
-            <button onClick={()=>setShowLogout(!showLogout)} style={{display:'flex',alignItems:'center',gap:10,padding:'6px 12px 6px 6px',background:'rgba(255,255,255,.06)',borderRadius:12,border:'none',cursor:'pointer'}}>
-              <div style={{width:32,height:32,borderRadius:10,background:'linear-gradient(135deg,#059669,#34d399)',display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontSize:'.75rem',fontWeight:700}}>{user.nome.split(' ').map(n=>n[0]).slice(0,2).join('')}</div>
-              <div style={{textAlign:'left',lineHeight:1.2}}>
-                <div style={{color:'#e2e8f0',fontSize:'.78rem',fontWeight:600}}>{user.nome.split(' ').slice(0,2).join(' ')}</div>
-                <div style={{color:'#64748b',fontSize:'.65rem'}}>{user.cargo}</div>
-              </div>
-              <span style={{color:'#64748b',fontSize:'.6rem',marginLeft:4}}>▾</span>
-            </button>
+          {/* Footer user */}
+          <div style={{padding:14,borderTop:'1px solid #E5E9EF',display:'flex',alignItems:'center',gap:11,cursor:'pointer',position:'relative'}} onClick={()=>setShowLogout(!showLogout)}>
+            <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(135deg,#00A650 0%,#008C44 100%)',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Plus Jakarta Sans,sans-serif',fontWeight:700,fontSize:12,color:'#fff',boxShadow:'0 4px 12px rgba(0,166,80,.25), inset 0 1px 0 rgba(255,255,255,.2)',flexShrink:0}}>{user.nome.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:13,fontWeight:600,color:'#1A2332',lineHeight:1.2,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{user.nome.split(' ').slice(0,2).join(' ')}</div>
+              <div style={{fontSize:11,color:'#8B94A3'}}>{user.cargo}</div>
+            </div>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#8B94A3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{transform: showLogout ? 'rotate(180deg)' : 'rotate(0)',transition:'.15s'}}><polyline points="6 9 12 15 18 9"/></svg>
             {showLogout && (
-              <div style={{position:'absolute',top:'calc(100% + 6px)',right:0,background:'#fff',borderRadius:12,boxShadow:'0 10px 40px rgba(0,0,0,.12)',border:'1px solid #e2e8f0',minWidth:190,overflow:'hidden',zIndex:200}}>
-                <button onClick={()=>{setCP(true);setShowLogout(false)}} style={menuItem()}>🔑 Trocar senha</button>
-                <div style={{height:1,background:'#f1f5f9',margin:'0 12px'}} />
-                <button onClick={()=>{localStorage.removeItem('premix_user');setUser(null)}} style={{...menuItem(),color:'#DC2626'}}>↪ Sair</button>
+              <div style={{position:'absolute',bottom:'calc(100% + 6px)',left:14,right:14,background:'#fff',borderRadius:10,boxShadow:'0 12px 32px rgba(16,24,40,.12),0 4px 8px rgba(16,24,40,.06)',border:'1px solid #E5E9EF',overflow:'hidden',zIndex:200}}>
+                <button onClick={(e)=>{e.stopPropagation();setCP(true);setShowLogout(false)}} style={menuItem()}>🔑 Trocar senha</button>
+                <div style={{height:1,background:'#EEF1F5'}} />
+                <button onClick={(e)=>{e.stopPropagation();localStorage.removeItem('premix_user');setUser(null)}} style={{...menuItem(),color:'#E63946'}}>↪ Sair</button>
               </div>
             )}
           </div>
-        </div>
-      </header>
+        </aside>
+
+        {/* ── MAIN ── */}
+        <div style={{display:'flex',flexDirection:'column',minWidth:0}}>
+
+          {/* TOPBAR */}
+          <header style={{background:'#fff',borderBottom:'1px solid #E5E9EF',padding:'12px 28px',display:'flex',alignItems:'center',gap:20,position:'sticky',top:0,zIndex:10}}>
+            <div style={{height:2,background:'linear-gradient(90deg,#00A650 0%,#00A650 30%,#C8A951 50%,#E63946 70%,#E63946 100%)',backgroundSize:'200% 100%',animation:'premixShimmer 8s linear infinite',position:'absolute',top:0,left:0,right:0}} />
+
+            <div style={{flex:1,maxWidth:480,position:'relative'}}>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#8B94A3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)'}}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <input className="pmx-search-input" type="text" placeholder="Buscar fornecedor, produto, CNPJ, e-mail..." value={search} onChange={e=>setSearch(e.target.value)} style={{width:'100%',padding:'10px 14px 10px 38px',background:'#F8F9FB',border:'1px solid transparent',borderRadius:8,fontFamily:'inherit',fontSize:13,color:'#1A2332',outline:'none'}} />
+            </div>
+
+            <div style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:6}}>
+              <button className="pmx-icon-btn" title="Notificações" style={{width:36,height:36,borderRadius:8,background:'transparent',border:'none',display:'flex',alignItems:'center',justifyContent:'center',color:'#4F5868',cursor:'pointer',position:'relative'}}>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+              </button>
+              <button className="pmx-icon-btn" title="Ajuda" style={{width:36,height:36,borderRadius:8,background:'transparent',border:'none',display:'flex',alignItems:'center',justifyContent:'center',color:'#4F5868',cursor:'pointer'}}>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+              </button>
+            </div>
+          </header>
+
 
       {/* ══ PAGE: CADASTROS ══ */}
       {page === 'cadastros' && (
@@ -1569,6 +1658,8 @@ export default function Home() {
         @keyframes scaleIn { from { opacity:0;transform:scale(.96) } to { opacity:1;transform:scale(1) } }
         @keyframes slideUp { from { opacity:0;transform:translateX(-50%) translateY(20px) } to { opacity:1;transform:translateX(-50%) translateY(0) } }
       `}</style>
+        </div>{/* end main */}
+      </div>{/* end grid */}
     </div>
   );
 }
