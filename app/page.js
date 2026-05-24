@@ -23,6 +23,73 @@ const KAN_COLS = [
   { k:'concluido',     l:'Concluído',     c:'#059669' },
 ];
 
+/* ── Sistema de Temas ─────────────────────────────── */
+const TEMAS = {
+  premix_claro: {
+    nome: 'Premix Claro',
+    descricao: 'Tema institucional Premix (padrão)',
+    bg: '#F5F7FA', surface: '#FFFFFF', surface2: '#F8F9FB', border: '#E5E9EF',
+    text1: '#1A2332', text2: '#4F5868', text3: '#8B94A3',
+    primary: '#00A650', primaryDark: '#008C44', primaryLight: '#E6F7EE',
+  },
+  premix_escuro: {
+    nome: 'Premix Escuro',
+    descricao: 'Versão noturna do tema Premix',
+    bg: '#0A0F14', surface: '#161B22', surface2: '#1C2128', border: '#30363D',
+    text1: '#E6EDF3', text2: '#9BA8B5', text3: '#6B7785',
+    primary: '#34D399', primaryDark: '#10B981', primaryLight: 'rgba(52,211,153,.15)',
+  },
+  foco: {
+    nome: 'Foco',
+    descricao: 'Minimalista cinza, sem distrações',
+    bg: '#FAFAFA', surface: '#FFFFFF', surface2: '#F4F4F5', border: '#E4E4E7',
+    text1: '#18181B', text2: '#52525B', text3: '#A1A1AA',
+    primary: '#3F3F46', primaryDark: '#27272A', primaryLight: '#F4F4F5',
+  },
+  campo: {
+    nome: 'Campo',
+    descricao: 'Verde Premix + dourado, ar rural',
+    bg: '#F7F8F3', surface: '#FFFFFF', surface2: '#F0F2E8', border: '#D9DCC8',
+    text1: '#2A3520', text2: '#556045', text3: '#8B9474',
+    primary: '#00A650', primaryDark: '#008C44', primaryLight: '#E6F7EE',
+  },
+  noite: {
+    nome: 'Noite',
+    descricao: 'Preto puro, alta legibilidade',
+    bg: '#000000', surface: '#0A0A0A', surface2: '#141414', border: '#262626',
+    text1: '#FAFAFA', text2: '#A3A3A3', text3: '#737373',
+    primary: '#22D3EE', primaryDark: '#06B6D4', primaryLight: 'rgba(34,211,238,.15)',
+  },
+};
+
+/* Curadoria de wallpapers Unsplash (URLs estáveis, 1200x800 ~150kb) */
+const WALLPAPERS = [
+  { id:'agro1', cat:'Agro',       url:'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1200&q=70', autor:'Federico Respini' },
+  { id:'agro2', cat:'Agro',       url:'https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=1200&q=70', autor:'Mark Stosberg' },
+  { id:'agro3', cat:'Agro',       url:'https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=1200&q=70', autor:'No Revisions' },
+  { id:'agro4', cat:'Agro',       url:'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1200&q=70', autor:'Tim Mossholder' },
+  { id:'nat1',  cat:'Natureza',   url:'https://images.unsplash.com/photo-1418065460487-3e41a6c84dc5?w=1200&q=70', autor:'Sergei Akulich' },
+  { id:'nat2',  cat:'Natureza',   url:'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1200&q=70', autor:'David Marcu' },
+  { id:'nat3',  cat:'Natureza',   url:'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=1200&q=70', autor:'Eberhard 🖐' },
+  { id:'nat4',  cat:'Natureza',   url:'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=1200&q=70', autor:'Luca Bravo' },
+  { id:'abs1',  cat:'Abstrato',   url:'https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=1200&q=70', autor:'Pawel Czerwinski' },
+  { id:'abs2',  cat:'Abstrato',   url:'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1200&q=70', autor:'Pawel Czerwinski' },
+  { id:'abs3',  cat:'Abstrato',   url:'https://images.unsplash.com/photo-1554034483-04fda0d3507b?w=1200&q=70', autor:'Henry & Co.' },
+  { id:'abs4',  cat:'Abstrato',   url:'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&q=70', autor:'Solen Feyissa' },
+  { id:'min1',  cat:'Minimalista', url:'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=1200&q=70', autor:'Pawel Czerwinski' },
+  { id:'min2',  cat:'Minimalista', url:'https://images.unsplash.com/photo-1557682260-96773eb01377?w=1200&q=70', autor:'Pawel Czerwinski' },
+  { id:'min3',  cat:'Minimalista', url:'https://images.unsplash.com/photo-1620503374956-c942862f0372?w=1200&q=70', autor:'Pawel Czerwinski' },
+  { id:'min4',  cat:'Minimalista', url:'https://images.unsplash.com/photo-1554034483-263c20973167?w=1200&q=70', autor:'Henry & Co.' },
+  { id:'tex1',  cat:'Textura',    url:'https://images.unsplash.com/photo-1517137744914-fbb030f54116?w=1200&q=70', autor:'Annie Spratt' },
+  { id:'tex2',  cat:'Textura',    url:'https://images.unsplash.com/photo-1550859492-d5da9d8e45f3?w=1200&q=70', autor:'Sven Mieke' },
+  { id:'tex3',  cat:'Textura',    url:'https://images.unsplash.com/photo-1573164574511-73c773193279?w=1200&q=70', autor:'Steve Johnson' },
+  { id:'tex4',  cat:'Textura',    url:'https://images.unsplash.com/photo-1604147706283-d7119b5b822c?w=1200&q=70', autor:'Pawel Czerwinski' },
+];
+
+/* Cores customizáveis (paleta sugerida) */
+const CORES_SUGERIDAS = ['#00A650','#008C44','#2563EB','#7C3AED','#E63946','#D97706','#C8A951','#06B6D4','#EC4899','#10B981','#6366F1','#1A2332'];
+
+
 const DEV_MOTIVOS = [
   'Conta bancária divergente dos dados do cadastro',
   'Conta bancária de terceiros (não é PJ/PF do cadastro)',
@@ -129,6 +196,15 @@ export default function Home() {
   const [concluirData, setConcluirData] = useState({ codigo:'' });
   const [sendingEmail, setSendingEmail] = useState(false);
 
+  /* ── Aparência: tema, wallpaper, cor, densidade ── */
+  const [tema, setTema] = useState('premix_claro');
+  const [corPrimaria, setCorPrimaria] = useState('#00A650');
+  const [wallpaper, setWallpaper] = useState(null);
+  const [wallpaperOpacidade, setWallpaperOpacidade] = useState(8);
+  const [densidade, setDensidade] = useState('normal');
+  const [prefsLoaded, setPrefsLoaded] = useState(false);
+  const [apCat, setApCat] = useState('Agro'); // categoria selecionada na galeria
+
   /* ── Kanban State ────────────────────────────── */
   const [kanView, setKanView] = useState('todos');
   const [showNewTask, setShowNewTask] = useState(false);
@@ -205,6 +281,63 @@ export default function Home() {
   }, [user]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  /* ── Aparência: carregar e salvar preferências do usuário ── */
+  const loadPrefs = useCallback(async () => {
+    if (!user?.email) return;
+    try {
+      const { data, error } = await supabase
+        .from('preferencias_usuario')
+        .select('*')
+        .eq('user_email', user.email)
+        .maybeSingle();
+      if (error) { console.warn('[loadPrefs]', error.message); }
+      if (data) {
+        if (data.tema) setTema(data.tema);
+        if (data.cor_primaria) setCorPrimaria(data.cor_primaria);
+        setWallpaper(data.wallpaper || null);
+        if (typeof data.wallpaper_opacidade === 'number') setWallpaperOpacidade(data.wallpaper_opacidade);
+        if (data.densidade) setDensidade(data.densidade);
+      }
+    } catch (e) { console.warn('[loadPrefs] exception', e); }
+    finally { setPrefsLoaded(true); }
+  }, [user]);
+
+  useEffect(() => { if (user) loadPrefs(); }, [user, loadPrefs]);
+
+  const savePrefs = async (patch) => {
+    if (!user?.email) return;
+    const payload = {
+      user_email: user.email,
+      tema, cor_primaria: corPrimaria,
+      wallpaper, wallpaper_opacidade: wallpaperOpacidade,
+      densidade,
+      ...patch,
+    };
+    try {
+      // upsert por user_email (UNIQUE)
+      const { error } = await supabase
+        .from('preferencias_usuario')
+        .upsert(payload, { onConflict: 'user_email' });
+      if (error) {
+        console.warn('[savePrefs]', error.message);
+        showToast('Erro ao salvar preferências');
+      }
+    } catch (e) {
+      console.warn('[savePrefs] exception', e);
+    }
+  };
+
+  /* ── Tema ativo (com cor primária custom aplicada) ── */
+  const T = (() => {
+    const base = TEMAS[tema] || TEMAS.premix_claro;
+    return { ...base, primary: corPrimaria || base.primary };
+  })();
+
+  /* ── Helpers de densidade ── */
+  const D = densidade === 'compacto' ? { cardPad:12, gapStat:10, rowPad:'10px 14px' }
+          : densidade === 'confortavel' ? { cardPad:24, gapStat:18, rowPad:'18px 18px' }
+          : { cardPad:18, gapStat:14, rowPad:'14px 16px' };
 
   /* ──────────────────────────────────────────────────────────────
      REALTIME — escuta mudanças e atualiza estado SEM disparar
@@ -739,19 +872,33 @@ export default function Home() {
      RENDER — TROCAR SENHA
      ═══════════════════════════════════════════════ */
   if (changePw) return (
-    <div style={{minHeight:'100vh',background:'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Montserrat,system-ui,sans-serif',padding:20}}>
-      <div style={{background:'#fff',borderRadius:20,padding:'52px 44px',maxWidth:400,width:'100%',textAlign:'center',position:'relative',overflow:'hidden',boxShadow:'0 25px 60px rgba(0,0,0,.25)'}}>
-        <div style={{position:'absolute',top:0,left:0,right:0,height:3,background:'linear-gradient(90deg,#059669,#C8A951,#059669)'}} />
-        <div style={{width:56,height:56,borderRadius:14,background:'#ECFDF5',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 20px',fontSize:'1.5rem'}}>🔐</div>
-        <h2 style={{fontSize:'1rem',fontWeight:700,marginBottom:4}}>Alterar Senha</h2>
-        <p style={{fontSize:'.78rem',color:'#94a3b8',marginBottom:24}}>{user.primeiro_login ? 'Primeiro acesso — crie uma nova senha' : 'Trocar senha atual'}</p>
-        <form onSubmit={doChangePw} style={{display:'flex',flexDirection:'column',gap:14}}>
-          <input placeholder="Nova senha (mín. 8 caracteres, maiúscula + número)" type="password" value={newPw.nova} onChange={e=>setNP({...newPw,nova:e.target.value})} style={inputStyle()} />
-          <input placeholder="Confirmar nova senha" type="password" value={newPw.conf} onChange={e=>setNP({...newPw,conf:e.target.value})} style={inputStyle()} />
-          {pwMsg && <p style={{color:'#DC2626',fontSize:'.78rem',margin:'-4px 0',textAlign:'left'}}>{pwMsg}</p>}
-          <button type="submit" style={{width:'100%',padding:'14px',background:'#059669',color:'#fff',border:'none',borderRadius:10,fontFamily:'inherit',fontWeight:700,fontSize:'.88rem',cursor:'pointer'}}>Salvar Nova Senha</button>
+    <div style={{minHeight:'100vh',background:'#F5F7FA',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'Inter','Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif",padding:20,position:'relative',overflow:'hidden'}}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+        @keyframes premixShimmer { from { background-position:0% 0 } to { background-position:200% 0 } }
+        @keyframes loginFadeIn { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:translateY(0) } }
+        .cp-input:focus { background:#fff !important; border-color:#00A650 !important; box-shadow:0 0 0 3px #E6F7EE !important; }
+        .cp-input { transition: all .15s; }
+        .cp-btn:hover { background:#008C44 !important; box-shadow:0 6px 16px rgba(0,166,80,.35); transform:translateY(-1px); }
+        .cp-btn { transition: all .15s; }
+      `}</style>
+      <div style={{position:'absolute',top:'-200px',right:'-200px',width:500,height:500,background:'radial-gradient(circle,rgba(0,166,80,.08) 0%,transparent 70%)',pointerEvents:'none'}} />
+      <div style={{position:'absolute',bottom:'-200px',left:'-200px',width:500,height:500,background:'radial-gradient(circle,rgba(200,169,81,.08) 0%,transparent 70%)',pointerEvents:'none'}} />
+
+      <div style={{background:'#fff',borderRadius:16,padding:'48px 40px',maxWidth:420,width:'100%',textAlign:'center',position:'relative',overflow:'hidden',boxShadow:'0 12px 32px rgba(16,24,40,.08),0 4px 8px rgba(16,24,40,.04)',border:'1px solid #E5E9EF',animation:'loginFadeIn .35s cubic-bezier(.16,1,.3,1)'}}>
+        <div style={{position:'absolute',top:0,left:0,right:0,height:3,background:'linear-gradient(90deg,#00A650 0%,#00A650 30%,#C8A951 50%,#E63946 70%,#E63946 100%)',backgroundSize:'200% 100%',animation:'premixShimmer 8s linear infinite'}} />
+        <div style={{width:56,height:56,borderRadius:14,background:'#E6F7EE',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 20px',color:'#00A650'}}>
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+        <h2 style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:20,fontWeight:700,letterSpacing:'-.4px',marginBottom:6,color:'#1A2332'}}>Alterar Senha</h2>
+        <p style={{fontSize:13,color:'#8B94A3',marginBottom:28}}>{user.primeiro_login ? 'Primeiro acesso — crie uma nova senha' : 'Trocar senha atual'}</p>
+        <form onSubmit={doChangePw} style={{display:'flex',flexDirection:'column',gap:12}}>
+          <input className="cp-input" placeholder="Nova senha (mín. 8 caracteres, maiúscula + número)" type="password" value={newPw.nova} onChange={e=>setNP({...newPw,nova:e.target.value})} style={{width:'100%',padding:'12px 14px',background:'#F8F9FB',border:'1px solid #E5E9EF',borderRadius:10,fontSize:14,fontFamily:'inherit',color:'#1A2332',outline:'none'}} />
+          <input className="cp-input" placeholder="Confirmar nova senha" type="password" value={newPw.conf} onChange={e=>setNP({...newPw,conf:e.target.value})} style={{width:'100%',padding:'12px 14px',background:'#F8F9FB',border:'1px solid #E5E9EF',borderRadius:10,fontSize:14,fontFamily:'inherit',color:'#1A2332',outline:'none'}} />
+          {pwMsg && <p style={{color:'#E63946',fontSize:12,margin:'-2px 0',textAlign:'left',fontWeight:500}}>{pwMsg}</p>}
+          <button className="cp-btn" type="submit" style={{width:'100%',padding:'13px',background:'#00A650',color:'#fff',border:'none',borderRadius:10,fontFamily:'inherit',fontWeight:600,fontSize:14,cursor:'pointer',boxShadow:'0 1px 2px rgba(0,166,80,.3),inset 0 1px 0 rgba(255,255,255,.15)',marginTop:6}}>Salvar Nova Senha</button>
         </form>
-        {!user.primeiro_login && <button onClick={()=>setCP(false)} style={{marginTop:14,background:'none',border:'none',color:'#94a3b8',cursor:'pointer',fontSize:'.78rem'}}>Cancelar</button>}
+        {!user.primeiro_login && <button onClick={()=>setCP(false)} style={{marginTop:16,background:'none',border:'none',color:'#8B94A3',cursor:'pointer',fontSize:13,fontWeight:500}}>Cancelar</button>}
       </div>
     </div>
   );
@@ -760,7 +907,16 @@ export default function Home() {
      RENDER — MAIN APP
      ═══════════════════════════════════════════════ */
   return (
-    <div style={{minHeight:'100vh',background:'#F5F7FA',fontFamily:"'Inter','Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif",color:'#1A2332',fontSize:14,lineHeight:1.5,WebkitFontSmoothing:'antialiased'}}>
+    <div style={{minHeight:'100vh',background:T.bg,fontFamily:"'Inter','Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif",color:T.text1,fontSize:14,lineHeight:1.5,WebkitFontSmoothing:'antialiased',position:'relative'}}>
+      {/* Wallpaper background (sutil, atrás de tudo) */}
+      {wallpaper && (
+        <div aria-hidden="true" style={{
+          position:'fixed',inset:0,zIndex:0,pointerEvents:'none',
+          backgroundImage:`url(${wallpaper})`,backgroundSize:'cover',backgroundPosition:'center',
+          opacity: wallpaperOpacidade / 100,
+        }} />
+      )}
+      <div style={{position:'relative',zIndex:1}}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
         @keyframes slideUp { from { opacity:0; transform:translate(-50%,12px) } to { opacity:1; transform:translate(-50%,0) } }
@@ -783,9 +939,18 @@ export default function Home() {
         .pmx-icon-btn { transition: all .15s; }
         .pmx-subtab:hover { color:#1A2332 !important; }
         .pmx-subtab { transition: color .15s; }
-        .pmx-search-input:focus { background:#fff !important; border-color:#00A650 !important; box-shadow:0 0 0 3px #E6F7EE; }
+        .pmx-search-input:focus { background:#fff !important; border-color:${T.primary} !important; box-shadow:0 0 0 3px ${T.primaryLight}; }
         .pmx-search-input { transition: all .15s; }
         .pmx-fade-in { animation: fadeIn .25s ease; }
+
+        /* Theme overrides para sidebar, topbar, page-head — só os elementos com classe pmx-themed */
+        .pmx-themed-bg { background: ${T.surface} !important; border-color: ${T.border} !important; }
+        .pmx-themed-text { color: ${T.text1} !important; }
+        .pmx-themed-muted { color: ${T.text2} !important; }
+        .pmx-themed-faint { color: ${T.text3} !important; }
+        .pmx-themed-surface2 { background: ${T.surface2} !important; }
+        .sb-link.active { background: ${T.primaryLight} !important; color: ${T.primaryDark} !important; }
+        .sb-link.active::before { background: ${T.primary} !important; }
       `}</style>
 
       {/* Toast */}
@@ -795,7 +960,7 @@ export default function Home() {
       <div style={{display:'grid',gridTemplateColumns:'240px 1fr',minHeight:'100vh'}}>
 
         {/* ── SIDEBAR ── */}
-        <aside style={{background:'#fff',borderRight:'1px solid #E5E9EF',display:'flex',flexDirection:'column',position:'sticky',top:0,height:'100vh',zIndex:50}}>
+        <aside className="pmx-themed-bg" style={{background:T.surface,borderRight:`1px solid ${T.border}`,display:'flex',flexDirection:'column',position:'sticky',top:0,height:'100vh',zIndex:50}}>
           {/* Brand */}
           <div style={{padding:'18px 20px 16px',display:'flex',alignItems:'center',gap:12,borderBottom:'1px solid #E5E9EF'}}>
             <img src="https://premix.com.br/wp-content/uploads/2023/06/Logotipo_Premix_Positivo_Com-Bandeira.png" alt="Premix" style={{height:30}} />
@@ -840,10 +1005,10 @@ export default function Home() {
             </>)}
 
             <div style={{fontSize:10,fontWeight:600,textTransform:'uppercase',letterSpacing:'.8px',color:'#B5BCC6',padding:'18px 12px 6px'}}>Aparência</div>
-            <a className="sb-link" style={{display:'flex',alignItems:'center',gap:11,padding:'9px 12px',borderRadius:8,fontSize:13,fontWeight:500,color:'#4F5868',cursor:'pointer',marginBottom:1,opacity:.6}} title="Em breve">
+            <a onClick={()=>{ setPage('aparencia'); setSel(null); setShowModal(false); }} className={'sb-link' + (page==='aparencia' ? ' active' : '')} style={{display:'flex',alignItems:'center',gap:11,padding:'9px 12px',borderRadius:8,fontSize:13,fontWeight: page==='aparencia' ? 600 : 500,color: page==='aparencia' ? '#008C44' : '#4F5868',background: page==='aparencia' ? '#E6F7EE' : 'transparent',textDecoration:'none',cursor:'pointer',position:'relative',marginBottom:1}}>
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
               <span style={{flex:1}}>Temas & Cores</span>
-              <span style={{fontSize:9,fontWeight:700,padding:'1px 6px',background:'#FEF3C7',color:'#B45309',borderRadius:4,letterSpacing:'.3px'}}>EM BREVE</span>
+              <span style={{fontSize:9,fontWeight:700,padding:'1px 6px',background:'#E6F7EE',color:'#008C44',borderRadius:4,letterSpacing:'.3px'}}>NOVO</span>
             </a>
           </nav>
 
@@ -869,7 +1034,7 @@ export default function Home() {
         <div style={{display:'flex',flexDirection:'column',minWidth:0}}>
 
           {/* TOPBAR */}
-          <header style={{background:'#fff',borderBottom:'1px solid #E5E9EF',padding:'12px 28px',display:'flex',alignItems:'center',gap:20,position:'sticky',top:0,zIndex:10}}>
+          <header className="pmx-themed-bg" style={{background:T.surface,borderBottom:`1px solid ${T.border}`,padding:'12px 28px',display:'flex',alignItems:'center',gap:20,position:'sticky',top:0,zIndex:10}}>
             <div style={{height:2,background:'linear-gradient(90deg,#00A650 0%,#00A650 30%,#C8A951 50%,#E63946 70%,#E63946 100%)',backgroundSize:'200% 100%',animation:'premixShimmer 8s linear infinite',position:'absolute',top:0,left:0,right:0}} />
 
             <div style={{flex:1,maxWidth:480,position:'relative'}}>
@@ -890,104 +1055,156 @@ export default function Home() {
 
       {/* ══ PAGE: CADASTROS ══ */}
       {page === 'cadastros' && (
-        <div style={{maxWidth:1440,margin:'0 auto',padding:'24px 28px'}}>
-
-          {/* Sub-abas: Fornecedores | Produtos | Desbloqueios */}
-          <div style={{display:'flex',gap:6,marginBottom:20,padding:6,background:'#f1f5f9',borderRadius:14,width:'fit-content'}}>
-            {[
-              { k:'fornecedores', l:'Fornecedores', n: forn.length, icon:'🏢' },
-              { k:'produtos',     l:'Produtos',     n: produtos.length, icon:'📦' },
-              { k:'desbloqueios', l:'Desbloqueios', n: desbloqueios.length, icon:'🔓' },
-            ].map(s => (
-              <button key={s.k} onClick={()=>{ setSubTab(s.k); setSel(null); setShowModal(false); setTab('pendentes'); }} style={{
-                padding:'10px 20px',borderRadius:10,border:'none',
-                background: subTab===s.k ? '#fff' : 'transparent',
-                color: subTab===s.k ? '#059669' : '#64748b',
-                fontFamily:'inherit',fontSize:'.82rem',fontWeight: subTab===s.k ? 700 : 500,
-                cursor:'pointer',transition:'.2s',
-                boxShadow: subTab===s.k ? '0 1px 3px rgba(0,0,0,.08)' : 'none',
-                display:'flex',alignItems:'center',gap:8
-              }}>
-                <span>{s.icon}</span>
-                <span>{s.l}</span>
-                <span style={{
-                  background: subTab===s.k ? '#ECFDF5' : '#e2e8f0',
-                  color: subTab===s.k ? '#059669' : '#94a3b8',
-                  padding:'2px 8px',borderRadius:20,fontSize:'.65rem',fontWeight:700,minWidth:20,textAlign:'center'
-                }}>{s.n}</span>
-              </button>
-            ))}
+        <div className="pmx-fade-in">
+          {/* Page Header (breadcrumb + title) */}
+          <div className="pmx-themed-bg" style={{background:T.surface,padding:'16px 28px',borderBottom:`1px solid ${T.border}`}}>
+            <div style={{fontSize:12,color:'#8B94A3',marginBottom:6,display:'flex',alignItems:'center',gap:6}}>
+              <span style={{cursor:'pointer'}}>Núcleo Fiscal</span>
+              <span>›</span>
+              <span style={{color:'#1A2332',fontWeight:500}}>Cadastros</span>
+            </div>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+              <h1 style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:22,fontWeight:700,color:'#1A2332',letterSpacing:'-.4px',margin:0}}>Cadastros</h1>
+              <div style={{display:'flex',gap:8}}>
+                <span style={{fontSize:12,color:'#8B94A3'}}>Atualizado em tempo real</span>
+                <span style={{width:8,height:8,borderRadius:'50%',background:'#00A650',boxShadow:'0 0 0 4px rgba(0,166,80,.15)',alignSelf:'center'}} />
+              </div>
+            </div>
           </div>
+
+          {/* Sub-tabs (estilo Bitrix: linha horizontal, underline) */}
+          <div className="pmx-themed-bg" style={{background:T.surface,padding:'0 28px',borderBottom:`1px solid ${T.border}`,display:'flex',gap:0}}>
+            {[
+              { k:'fornecedores', l:'Fornecedores', n: forn.length, icon:<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/><path d="M9 9v.01M9 12v.01M9 15v.01M9 18v.01"/></svg> },
+              { k:'produtos',     l:'Produtos',     n: produtos.length, icon:<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg> },
+              { k:'desbloqueios', l:'Desbloqueios', n: desbloqueios.length, icon:<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg> },
+            ].map(s => {
+              const active = subTab === s.k;
+              return (
+                <button key={s.k} className="pmx-subtab" onClick={()=>{ setSubTab(s.k); setSel(null); setShowModal(false); setTab('pendentes'); }} style={{
+                  position:'relative',padding:'14px 18px',background:'none',border:'none',
+                  fontFamily:'inherit',fontSize:13,fontWeight: active ? 600 : 500,
+                  color: active ? '#008C44' : '#4F5868',
+                  cursor:'pointer',display:'inline-flex',alignItems:'center',gap:8
+                }}>
+                  {s.icon}
+                  <span>{s.l}</span>
+                  <span style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontWeight:700,fontSize:10,padding:'1px 7px',background: active ? '#E6F7EE' : '#EEF1F5',color: active ? '#008C44' : '#4F5868',borderRadius:20,minWidth:20,textAlign:'center'}}>{s.n}</span>
+                  {active && <span style={{position:'absolute',bottom:-1,left:12,right:12,height:2,background:'#00A650',borderRadius:'2px 2px 0 0'}} />}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Content area */}
+          <div style={{padding:'22px 28px 32px'}}>
 
           {/* ── Sub-aba: PRODUTOS ── */}
           {subTab === 'produtos' && (
             <div>
-              {/* Stats */}
-              <div style={{display:'grid',gridTemplateColumns:'repeat(4, 1fr)',gap:12,marginBottom:20}}>
+              {/* Stats Produtos */}
+              <div style={{display:'grid',gridTemplateColumns:'repeat(4, 1fr)',gap:14,marginBottom:22}}>
                 {[
-                  { n: produtos.filter(p=>p.status==='pendente').length,   l:'Pendentes',  c:'#D97706', bg:'#FFFBEB' },
-                  { n: produtos.filter(p=>p.status==='em_analise').length, l:'Em Análise', c:'#2563EB', bg:'#EFF6FF' },
-                  { n: produtos.filter(p=>p.status==='aprovado').length,   l:'Aprovados',  c:'#059669', bg:'#ECFDF5' },
-                  { n: produtos.filter(p=>p.status==='rejeitado').length,  l:'Devolvidos', c:'#DC2626', bg:'#FEF2F2' },
+                  { n: produtos.filter(p=>p.status==='pendente').length,   l:'Pendentes',  c:'#D97706', bg:'#FEF3C7', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
+                  { n: produtos.filter(p=>p.status==='em_analise').length, l:'Em análise', c:'#2563EB', bg:'#DBEAFE', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg> },
+                  { n: produtos.filter(p=>p.status==='aprovado').length,   l:'Aprovados',  c:'#008C44', bg:'#E6F7EE', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> },
+                  { n: produtos.filter(p=>p.status==='rejeitado').length,  l:'Devolvidos', c:'#E63946', bg:'#FEE2E2', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></svg> },
                 ].map((s,i)=>(
-                  <div key={i} style={{padding:'16px 18px',borderRadius:12,background:s.bg,border:'1px solid rgba(0,0,0,.04)'}}>
-                    <div style={{fontSize:'.7rem',color:s.c,fontWeight:600,letterSpacing:'.3px',textTransform:'uppercase'}}>{s.l}</div>
-                    <div style={{fontSize:'1.7rem',fontWeight:800,color:s.c,marginTop:2}}>{s.n}</div>
+                  <div key={i} className="pmx-stat" style={{background:'#fff',border:'1px solid #E5E9EF',borderRadius:10,padding:'16px 18px',cursor:'pointer'}}>
+                    <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>
+                      <div style={{width:32,height:32,borderRadius:8,background:s.bg,color:s.c,display:'flex',alignItems:'center',justifyContent:'center'}}>{s.icon}</div>
+                      <div style={{fontSize:11,fontWeight:600,color:'#8B94A3',textTransform:'uppercase',letterSpacing:'.5px'}}>{s.l}</div>
+                    </div>
+                    <div style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:28,fontWeight:700,color:'#1A2332',lineHeight:1.1,letterSpacing:'-.8px'}}>{s.n}</div>
                   </div>
                 ))}
               </div>
 
-              {/* Lista */}
-              <div style={{background:'#fff',borderRadius:16,border:'1px solid #e2e8f0',padding:18}}>
-                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
-                  <h2 style={{fontSize:'.95rem',fontWeight:700,color:'#0f172a'}}>Cadastros de Produtos</h2>
-                  <span style={{fontSize:'.72rem',color:'#94a3b8'}}>{produtos.length} total</span>
+              {/* Painel Produtos */}
+              <div style={{background:'#fff',borderRadius:14,border:'1px solid #E5E9EF',overflow:'hidden'}}>
+                <div style={{padding:'14px 20px',borderBottom:'1px solid #E5E9EF',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                  <h2 style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:15,fontWeight:700,color:'#1A2332',margin:0}}>Cadastros de Produtos</h2>
+                  <span style={{fontSize:12,color:'#8B94A3'}}>{produtos.length} total</span>
                 </div>
 
                 {produtos.length === 0 ? (
-                  <div style={{textAlign:'center',padding:60,color:'#94a3b8'}}>
-                    <div style={{fontSize:'2.5rem',marginBottom:12}}>📦</div>
-                    <div style={{fontWeight:600}}>Nenhum cadastro de produto ainda</div>
-                    <div style={{fontSize:'.78rem',marginTop:4}}>Os cadastros aparecem aqui quando enviados pelo formulário interno</div>
+                  <div style={{textAlign:'center',padding:60}}>
+                    <div style={{width:64,height:64,margin:'0 auto 14px',background:'#F8F9FB',borderRadius:14,display:'flex',alignItems:'center',justifyContent:'center',color:'#B5BCC6'}}>
+                      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+                    </div>
+                    <div style={{fontWeight:600,color:'#4F5868',fontSize:14}}>Nenhum cadastro de produto ainda</div>
+                    <div style={{fontSize:12,color:'#8B94A3',marginTop:4}}>Os cadastros aparecem aqui quando enviados pelo formulário interno</div>
                   </div>
                 ) : (
-                  <div style={{display:'grid',gap:8}}>
-                    {produtos.map(p => {
-                      const st = ST[p.status] || ST.pendente;
-                      const isFinal = p.status === 'aprovado' || p.status === 'rejeitado';
-                      return (
-                        <div key={p.id} style={{display:'flex',alignItems:'flex-start',gap:14,padding:'14px 16px',borderRadius:10,border:'1px solid #e2e8f0',background:'#fff'}}>
-                          <div style={{flex:1,minWidth:0}}>
-                            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4,flexWrap:'wrap'}}>
-                              <span style={{background:st.bg,color:st.c,padding:'2px 10px',borderRadius:20,fontSize:'.68rem',fontWeight:700}}>{st.l}</span>
-                              {p.codigo_protheus && <span style={{fontFamily:'monospace',background:'#ECFDF5',color:'#059669',padding:'2px 8px',borderRadius:5,fontSize:'.72rem',fontWeight:700}}>{p.codigo_protheus}</span>}
-                              {p.ncm && <span style={{fontSize:'.7rem',color:'#64748b'}}>NCM: <strong>{p.ncm}</strong></span>}
-                              {p.unidade_medida && <span style={{fontSize:'.7rem',color:'#64748b'}}>UN: <strong>{p.unidade_medida}</strong></span>}
-                            </div>
-                            <div style={{fontWeight:600,color:'#0f172a',fontSize:'.88rem',marginBottom:2,lineHeight:1.3}}>{(p.descricao||'').slice(0,140)}{p.descricao && p.descricao.length > 140 ? '…' : ''}</div>
-                            {p.finalidade && <div style={{fontSize:'.74rem',color:'#475569',marginBottom:4}}><strong>Finalidade:</strong> {p.finalidade}</div>}
-                            <div style={{fontSize:'.72rem',color:'#94a3b8'}}>
-                              {p.nome_solicitante} ({p.email_solicitante}) · {new Date(p.created_at).toLocaleDateString('pt-BR')}
-                              {p.atribuido_para && <span> · Em análise: <strong style={{color:'#475569'}}>{p.atribuido_para}</strong></span>}
-                            </div>
-                            {p.motivo_devolucao && <div style={{color:'#DC2626',marginTop:4,fontSize:'.72rem'}}>Motivo: {p.motivo_devolucao}</div>}
-                          </div>
-                          {!isFinal && (
-                            <div style={{display:'flex',gap:6,flexShrink:0,flexWrap:'wrap',justifyContent:'flex-end'}}>
-                              {p.status === 'pendente' && (
-                                <button onClick={()=>pegarProduto(p.id)} style={btnAction('#2563EB','#EFF6FF')}>📌 Pegar</button>
-                              )}
-                              <button onClick={()=>{
-                                const cod = prompt('Código do produto no Protheus:');
-                                if (cod) concluirProduto(p, cod);
-                              }} style={btnAction('#059669','#ECFDF5')}>✓ Concluir</button>
-                              {isAdmin && <button onClick={()=>excluirProduto(p.id)} style={btnAction('#94a3b8','#F8FAFC')}>🗑</button>}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <table style={{width:'100%',borderCollapse:'collapse'}}>
+                    <thead>
+                      <tr>
+                        <th style={thS()}>Produto</th>
+                        <th style={thS()}>Código</th>
+                        <th style={thS()}>Solicitante</th>
+                        <th style={thS()}>Status</th>
+                        <th style={{...thS(),textAlign:'right'}}>Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {produtos.map(p => {
+                        const st = ST[p.status] || ST.pendente;
+                        const stColor = p.status==='aprovado'?'#008C44':p.status==='rejeitado'?'#E63946':p.status==='em_analise'?'#2563EB':'#D97706';
+                        const stBg = p.status==='aprovado'?'#E6F7EE':p.status==='rejeitado'?'#FEE2E2':p.status==='em_analise'?'#DBEAFE':'#FEF3C7';
+                        const isFinal = p.status === 'aprovado' || p.status === 'rejeitado';
+                        return (
+                          <tr key={p.id} className="pmx-row" style={{borderBottom:'1px solid #E5E9EF'}}>
+                            <td style={tdSnew()}>
+                              <div style={{display:'flex',alignItems:'flex-start',gap:12}}>
+                                <div style={{width:36,height:36,borderRadius:9,background:'#FEF6E0',color:'#B8941F',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+                                </div>
+                                <div style={{minWidth:0}}>
+                                  <div style={{fontWeight:600,color:'#1A2332',fontSize:13,lineHeight:1.3}}>{(p.descricao||'').slice(0,120)}{p.descricao && p.descricao.length>120 ? '…' : ''}</div>
+                                  <div style={{fontSize:11,color:'#8B94A3',marginTop:2,display:'flex',gap:8,flexWrap:'wrap'}}>
+                                    {p.ncm && <span>NCM: <strong>{p.ncm}</strong></span>}
+                                    {p.unidade_medida && <span>UN: <strong>{p.unidade_medida}</strong></span>}
+                                  </div>
+                                  {p.finalidade && <div style={{fontSize:11,color:'#4F5868',marginTop:2}}>{p.finalidade.slice(0,80)}</div>}
+                                  {p.motivo_devolucao && <div style={{color:'#E63946',marginTop:3,fontSize:11}}>↩ {p.motivo_devolucao.slice(0,80)}</div>}
+                                </div>
+                              </div>
+                            </td>
+                            <td style={tdSnew()}>
+                              {p.codigo_protheus ? <span style={{fontFamily:'JetBrains Mono,monospace',fontSize:11,fontWeight:700,padding:'2px 8px',background:'#E6F7EE',color:'#008C44',borderRadius:5,letterSpacing:'.5px'}}>{p.codigo_protheus}</span> : <span style={{color:'#B5BCC6',fontSize:12}}>—</span>}
+                            </td>
+                            <td style={{...tdSnew(),fontSize:12,color:'#4F5868'}}>
+                              {p.nome_solicitante}
+                              <div style={{fontSize:11,color:'#8B94A3'}}>{new Date(p.created_at).toLocaleDateString('pt-BR')}</div>
+                            </td>
+                            <td style={tdSnew()}>
+                              <span style={{display:'inline-flex',alignItems:'center',gap:5,padding:'3px 10px',borderRadius:20,fontSize:11,fontWeight:600,color:stColor,background:stBg}}>
+                                <span style={{width:6,height:6,borderRadius:'50%',background:stColor}} />
+                                {st.l}
+                              </span>
+                            </td>
+                            <td style={{...tdSnew(),textAlign:'right'}}>
+                              {!isFinal ? (
+                                <div style={{display:'inline-flex',gap:4}}>
+                                  {p.status === 'pendente' && (
+                                    <button className="pmx-act" onClick={()=>pegarProduto(p.id)} title="Pegar para mim" style={actBtn()}>
+                                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>
+                                    </button>
+                                  )}
+                                  <button className="pmx-act primary" onClick={()=>{const cod = prompt('Código do produto no Protheus:'); if (cod) concluirProduto(p, cod);}} title="Concluir" style={actBtn('primary')}>
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                                  </button>
+                                  {isAdmin && <button className="pmx-act danger" onClick={()=>excluirProduto(p.id)} title="Excluir" style={actBtn('danger')}>
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                  </button>}
+                                </div>
+                              ) : <span style={{color:'#B5BCC6',fontSize:12}}>—</span>}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 )}
               </div>
             </div>
@@ -996,71 +1213,106 @@ export default function Home() {
           {/* ── Sub-aba: DESBLOQUEIOS ── */}
           {subTab === 'desbloqueios' && (
             <div>
-              {/* Stats */}
-              <div style={{display:'grid',gridTemplateColumns:'repeat(4, 1fr)',gap:12,marginBottom:20}}>
+              {/* Stats Desbloqueios */}
+              <div style={{display:'grid',gridTemplateColumns:'repeat(4, 1fr)',gap:14,marginBottom:22}}>
                 {[
-                  { n: desbloqueios.filter(d=>d.status==='pendente').length,     l:'Pendentes',     c:'#D97706', bg:'#FFFBEB' },
-                  { n: desbloqueios.filter(d=>d.status==='em_analise').length,   l:'Em Análise',    c:'#2563EB', bg:'#EFF6FF' },
-                  { n: desbloqueios.filter(d=>d.status==='desbloqueado').length, l:'Desbloqueados', c:'#059669', bg:'#ECFDF5' },
-                  { n: desbloqueios.filter(d=>d.status==='rejeitado').length,    l:'Rejeitados',    c:'#DC2626', bg:'#FEF2F2' },
+                  { n: desbloqueios.filter(d=>d.status==='pendente').length,     l:'Pendentes',     c:'#D97706', bg:'#FEF3C7', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
+                  { n: desbloqueios.filter(d=>d.status==='em_analise').length,   l:'Em análise',    c:'#2563EB', bg:'#DBEAFE', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg> },
+                  { n: desbloqueios.filter(d=>d.status==='desbloqueado').length, l:'Desbloqueados', c:'#008C44', bg:'#E6F7EE', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg> },
+                  { n: desbloqueios.filter(d=>d.status==='rejeitado').length,    l:'Rejeitados',    c:'#E63946', bg:'#FEE2E2', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> },
                 ].map((s,i)=>(
-                  <div key={i} style={{padding:'16px 18px',borderRadius:12,background:s.bg,border:'1px solid rgba(0,0,0,.04)'}}>
-                    <div style={{fontSize:'.7rem',color:s.c,fontWeight:600,letterSpacing:'.3px',textTransform:'uppercase'}}>{s.l}</div>
-                    <div style={{fontSize:'1.7rem',fontWeight:800,color:s.c,marginTop:2}}>{s.n}</div>
+                  <div key={i} className="pmx-stat" style={{background:'#fff',border:'1px solid #E5E9EF',borderRadius:10,padding:'16px 18px',cursor:'pointer'}}>
+                    <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>
+                      <div style={{width:32,height:32,borderRadius:8,background:s.bg,color:s.c,display:'flex',alignItems:'center',justifyContent:'center'}}>{s.icon}</div>
+                      <div style={{fontSize:11,fontWeight:600,color:'#8B94A3',textTransform:'uppercase',letterSpacing:'.5px'}}>{s.l}</div>
+                    </div>
+                    <div style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:28,fontWeight:700,color:'#1A2332',lineHeight:1.1,letterSpacing:'-.8px'}}>{s.n}</div>
                   </div>
                 ))}
               </div>
 
-              {/* Lista */}
-              <div style={{background:'#fff',borderRadius:16,border:'1px solid #e2e8f0',padding:18}}>
-                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
-                  <h2 style={{fontSize:'.95rem',fontWeight:700,color:'#0f172a'}}>Pedidos de Desbloqueio</h2>
-                  <span style={{fontSize:'.72rem',color:'#94a3b8'}}>{desbloqueios.length} total</span>
+              {/* Painel Desbloqueios */}
+              <div style={{background:'#fff',borderRadius:14,border:'1px solid #E5E9EF',overflow:'hidden'}}>
+                <div style={{padding:'14px 20px',borderBottom:'1px solid #E5E9EF',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                  <h2 style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:15,fontWeight:700,color:'#1A2332',margin:0}}>Pedidos de Desbloqueio</h2>
+                  <span style={{fontSize:12,color:'#8B94A3'}}>{desbloqueios.length} total</span>
                 </div>
 
                 {desbloqueios.length === 0 ? (
-                  <div style={{textAlign:'center',padding:60,color:'#94a3b8'}}>
-                    <div style={{fontSize:'2.5rem',marginBottom:12}}>🔓</div>
-                    <div style={{fontWeight:600}}>Nenhum pedido de desbloqueio ainda</div>
-                    <div style={{fontSize:'.78rem',marginTop:4}}>Os pedidos aparecem aqui quando enviados pelo formulário interno</div>
+                  <div style={{textAlign:'center',padding:60}}>
+                    <div style={{width:64,height:64,margin:'0 auto 14px',background:'#F8F9FB',borderRadius:14,display:'flex',alignItems:'center',justifyContent:'center',color:'#B5BCC6'}}>
+                      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+                    </div>
+                    <div style={{fontWeight:600,color:'#4F5868',fontSize:14}}>Nenhum pedido de desbloqueio ainda</div>
+                    <div style={{fontSize:12,color:'#8B94A3',marginTop:4}}>Os pedidos aparecem aqui quando enviados pelo formulário interno</div>
                   </div>
                 ) : (
-                  <div style={{display:'grid',gap:8}}>
-                    {desbloqueios.map(d => {
-                      const st = ST[d.status === 'desbloqueado' ? 'aprovado' : d.status] || ST.pendente;
-                      const statusLabel = d.status === 'desbloqueado' ? 'Desbloqueado' : st.l;
-                      const isFinal = d.status === 'desbloqueado' || d.status === 'rejeitado';
-                      return (
-                        <div key={d.id} style={{display:'flex',alignItems:'center',gap:14,padding:'14px 16px',borderRadius:10,border:'1px solid #e2e8f0',background:'#fff'}}>
-                          <div style={{flex:1,minWidth:0}}>
-                            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4,flexWrap:'wrap'}}>
-                              <span style={{fontFamily:'monospace',background:'#fef3c7',color:'#92400e',padding:'2px 8px',borderRadius:5,fontSize:'.78rem',fontWeight:700}}>{d.codigo_produto}</span>
-                              <span style={{fontWeight:600,color:'#0f172a',fontSize:'.9rem'}}>{d.nome_produto}</span>
-                              <span style={{background:st.bg,color:st.c,padding:'2px 10px',borderRadius:20,fontSize:'.68rem',fontWeight:700}}>{statusLabel}</span>
-                            </div>
-                            <div style={{fontSize:'.72rem',color:'#94a3b8'}}>
-                              {d.nome_solicitante} ({d.email_solicitante}) · {new Date(d.created_at).toLocaleDateString('pt-BR')}
-                              {d.atribuido_para && <span> · Em análise: <strong style={{color:'#475569'}}>{d.atribuido_para}</strong></span>}
-                              {d.motivo_rejeicao && <div style={{color:'#DC2626',marginTop:4,fontSize:'.72rem'}}>Motivo da rejeição: {d.motivo_rejeicao}</div>}
-                            </div>
-                          </div>
-                          {!isFinal && (
-                            <div style={{display:'flex',gap:6,flexShrink:0}}>
-                              {d.status === 'pendente' && (
-                                <button onClick={()=>pegarDesbloqueio(d.id)} style={btnAction('#2563EB','#EFF6FF')}>📌 Pegar</button>
-                              )}
-                              <button onClick={()=>concluirDesbloqueio(d)} style={btnAction('#059669','#ECFDF5')}>✓ Desbloquear</button>
-                              <button onClick={()=>{
-                                const m = prompt('Motivo da rejeição:');
-                                if (m) rejeitarDesbloqueio(d, m);
-                              }} style={btnAction('#DC2626','#FEF2F2')}>↩ Rejeitar</button>
-                              {isAdmin && <button onClick={()=>excluirDesbloqueio(d.id)} style={btnAction('#94a3b8','#F8FAFC')}>🗑</button>}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <table style={{width:'100%',borderCollapse:'collapse'}}>
+                    <thead>
+                      <tr>
+                        <th style={thS()}>Produto</th>
+                        <th style={thS()}>Solicitante</th>
+                        <th style={thS()}>Status</th>
+                        <th style={{...thS(),textAlign:'right'}}>Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {desbloqueios.map(d => {
+                        const stColor = d.status==='desbloqueado'?'#008C44':d.status==='rejeitado'?'#E63946':d.status==='em_analise'?'#2563EB':'#D97706';
+                        const stBg = d.status==='desbloqueado'?'#E6F7EE':d.status==='rejeitado'?'#FEE2E2':d.status==='em_analise'?'#DBEAFE':'#FEF3C7';
+                        const statusLabel = d.status==='desbloqueado'?'Desbloqueado':d.status==='rejeitado'?'Rejeitado':d.status==='em_analise'?'Em análise':'Pendente';
+                        const isFinal = d.status === 'desbloqueado' || d.status === 'rejeitado';
+                        return (
+                          <tr key={d.id} className="pmx-row" style={{borderBottom:'1px solid #E5E9EF'}}>
+                            <td style={tdSnew()}>
+                              <div style={{display:'flex',alignItems:'center',gap:12}}>
+                                <div style={{width:36,height:36,borderRadius:9,background:'#FEF3C7',color:'#B45309',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+                                </div>
+                                <div style={{minWidth:0}}>
+                                  <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:2,flexWrap:'wrap'}}>
+                                    <span style={{fontFamily:'JetBrains Mono,monospace',background:'#FEF3C7',color:'#B45309',padding:'2px 8px',borderRadius:5,fontSize:11,fontWeight:700}}>{d.codigo_produto}</span>
+                                  </div>
+                                  <div style={{fontWeight:600,color:'#1A2332',fontSize:13}}>{d.nome_produto}</div>
+                                  {d.motivo_rejeicao && <div style={{color:'#E63946',marginTop:3,fontSize:11}}>↩ {d.motivo_rejeicao.slice(0,80)}</div>}
+                                </div>
+                              </div>
+                            </td>
+                            <td style={{...tdSnew(),fontSize:12,color:'#4F5868'}}>
+                              {d.nome_solicitante}
+                              <div style={{fontSize:11,color:'#8B94A3'}}>{new Date(d.created_at).toLocaleDateString('pt-BR')}</div>
+                            </td>
+                            <td style={tdSnew()}>
+                              <span style={{display:'inline-flex',alignItems:'center',gap:5,padding:'3px 10px',borderRadius:20,fontSize:11,fontWeight:600,color:stColor,background:stBg}}>
+                                <span style={{width:6,height:6,borderRadius:'50%',background:stColor}} />
+                                {statusLabel}
+                              </span>
+                            </td>
+                            <td style={{...tdSnew(),textAlign:'right'}}>
+                              {!isFinal ? (
+                                <div style={{display:'inline-flex',gap:4}}>
+                                  {d.status === 'pendente' && (
+                                    <button className="pmx-act" onClick={()=>pegarDesbloqueio(d.id)} title="Pegar para mim" style={actBtn()}>
+                                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>
+                                    </button>
+                                  )}
+                                  <button className="pmx-act primary" onClick={()=>concluirDesbloqueio(d)} title="Desbloquear" style={actBtn('primary')}>
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                                  </button>
+                                  <button className="pmx-act danger" onClick={()=>{const m = prompt('Motivo da rejeição:'); if (m) rejeitarDesbloqueio(d, m);}} title="Rejeitar" style={actBtn('danger')}>
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></svg>
+                                  </button>
+                                  {isAdmin && <button className="pmx-act" onClick={()=>excluirDesbloqueio(d.id)} title="Excluir" style={actBtn()}>
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                  </button>}
+                                </div>
+                              ) : <span style={{color:'#B5BCC6',fontSize:12}}>—</span>}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 )}
               </div>
             </div>
@@ -1068,44 +1320,51 @@ export default function Home() {
 
           {/* ── Sub-aba: FORNECEDORES (conteúdo existente) ── */}
           {subTab === 'fornecedores' && (<>
-          {/* Stats */}
-          <div style={{display:'grid',gridTemplateColumns:'repeat(5, 1fr)',gap:14,marginBottom:24}}>
+          {/* Stats — estilo Bitrix denso */}
+          <div style={{display:'grid',gridTemplateColumns:'repeat(5, 1fr)',gap:14,marginBottom:22}}>
             {[
-              { n: pend.filter(f=>f.status==='pendente').length,   l:'Pendentes',  c:'#D97706', bg:'linear-gradient(135deg,#FFFBEB,#FEF3C7)' },
-              { n: pend.filter(f=>f.status==='em_analise').length, l:'Em Análise', c:'#2563EB', bg:'linear-gradient(135deg,#EFF6FF,#DBEAFE)' },
-              { n: done.filter(f=>f.status==='aprovado').length,   l:'Concluídos', c:'#059669', bg:'linear-gradient(135deg,#ECFDF5,#D1FAE5)' },
-              { n: done.filter(f=>f.status==='rejeitado').length,  l:'Devolvidos', c:'#DC2626', bg:'linear-gradient(135deg,#FEF2F2,#FEE2E2)' },
-              { n: forn.length,                                     l:'Total',     c:'#0f172a', bg:'linear-gradient(135deg,#f8fafc,#e2e8f0)' },
+              { n: pend.filter(f=>f.status==='pendente').length,   l:'Pendentes',  c:'#D97706', bg:'#FEF3C7', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
+              { n: pend.filter(f=>f.status==='em_analise').length, l:'Em análise', c:'#2563EB', bg:'#DBEAFE', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg> },
+              { n: done.filter(f=>f.status==='aprovado').length,   l:'Concluídos', c:'#008C44', bg:'#E6F7EE', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> },
+              { n: done.filter(f=>f.status==='rejeitado').length,  l:'Devolvidos', c:'#E63946', bg:'#FEE2E2', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></svg> },
+              { n: forn.length,                                     l:'Total',      c:'#B8941F', bg:'#FEF6E0', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg> },
             ].map((s,i) => (
-              <div key={i} style={{padding:'20px',borderRadius:14,background:s.bg,border:'1px solid rgba(0,0,0,.04)'}}>
-                <div style={{fontSize:'.72rem',color:s.c,fontWeight:600,letterSpacing:'.3px',textTransform:'uppercase',opacity:.8}}>{s.l}</div>
-                <div style={{fontSize:'2rem',fontWeight:800,color:s.c,marginTop:4,letterSpacing:'-1px'}}>{s.n}</div>
+              <div key={i} className="pmx-stat" style={{background:'#fff',border:'1px solid #E5E9EF',borderRadius:10,padding:'16px 18px',cursor:'pointer'}}>
+                <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>
+                  <div style={{width:32,height:32,borderRadius:8,background:s.bg,color:s.c,display:'flex',alignItems:'center',justifyContent:'center'}}>{s.icon}</div>
+                  <div style={{fontSize:11,fontWeight:600,color:'#8B94A3',textTransform:'uppercase',letterSpacing:'.5px'}}>{s.l}</div>
+                </div>
+                <div style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:28,fontWeight:700,color:'#1A2332',lineHeight:1.1,letterSpacing:'-.8px'}}>{s.n}</div>
               </div>
             ))}
           </div>
 
-          {/* Tabs + Filtros */}
-          <div style={{background:'#fff',borderRadius:'16px 16px 0 0',border:'1px solid #e2e8f0',borderBottom:'none'}}>
-            <div style={{display:'flex',borderBottom:'1px solid #e2e8f0'}}>
+          {/* Painel principal: tabs + filtros + lista */}
+          <div style={{background:'#fff',borderRadius:14,border:'1px solid #E5E9EF',overflow:'hidden'}}>
+            <div style={{display:'flex',alignItems:'center',borderBottom:'1px solid #E5E9EF',padding:'0 20px'}}>
               {[
                 { k:'pendentes', l:'Tarefas', n:pend.length },
                 { k:'concluidos', l:'Concluídos & Devolvidos', n:done.length }
-              ].map(t => (
-                <button key={t.k} onClick={()=>{setTab(t.k);setSel(null);setShowModal(false)}} style={{
-                  padding:'14px 24px',border:'none',background:'transparent',
-                  fontFamily:'inherit',fontSize:'.82rem',fontWeight: tab===t.k ? 700 : 500,
-                  color: tab===t.k ? '#059669' : '#94a3b8',cursor:'pointer',
-                  borderBottom: tab===t.k ? '2px solid #059669' : '2px solid transparent',
-                  marginBottom:-1,transition:'.15s'
-                }}>
-                  {t.l} <span style={{background: tab===t.k?'#059669':'#e2e8f0',color: tab===t.k?'#fff':'#94a3b8',padding:'2px 8px',borderRadius:20,fontSize:'.68rem',fontWeight:700,marginLeft:6}}>{t.n}</span>
-                </button>
-              ))}
+              ].map(t => {
+                const active = tab === t.k;
+                return (
+                  <button key={t.k} className="pmx-subtab" onClick={()=>{setTab(t.k);setSel(null);setShowModal(false)}} style={{
+                    position:'relative',padding:'14px 16px',background:'none',border:'none',
+                    fontFamily:'inherit',fontSize:13,fontWeight: active ? 600 : 500,
+                    color: active ? '#008C44' : '#4F5868',
+                    cursor:'pointer',display:'inline-flex',alignItems:'center',gap:7
+                  }}>
+                    {t.l}
+                    <span style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontWeight:700,fontSize:10,padding:'1px 7px',background: active ? '#E6F7EE' : '#EEF1F5',color: active ? '#008C44' : '#4F5868',borderRadius:20}}>{t.n}</span>
+                    {active && <span style={{position:'absolute',bottom:-1,left:12,right:12,height:2,background:'#00A650'}} />}
+                  </button>
+                );
+              })}
             </div>
-            <div style={{padding:'14px 18px',display:'flex',gap:10,flexWrap:'wrap',alignItems:'center'}}>
-              <div style={{position:'relative',flex:'1 1 280px'}}>
-                <span style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',fontSize:'.85rem',color:'#94a3b8'}}>🔍</span>
-                <input placeholder="Buscar nome, CNPJ, e-mail..." value={tab==='pendentes'?search:searchDone} onChange={e=>tab==='pendentes'?setSearch(e.target.value):setSearchDone(e.target.value)} style={{...inputStyle(),paddingLeft:36,marginBottom:0}} />
+            <div style={{padding:'12px 20px',display:'flex',gap:10,flexWrap:'wrap',alignItems:'center',borderBottom:'1px solid #E5E9EF',background:'#F8F9FB'}}>
+              <div style={{position:'relative',flex:'1 1 280px',maxWidth:400}}>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#8B94A3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)'}}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input className="pmx-search-input" placeholder="Buscar nome, CNPJ, e-mail..." value={tab==='pendentes'?search:searchDone} onChange={e=>tab==='pendentes'?setSearch(e.target.value):setSearchDone(e.target.value)} style={{width:'100%',padding:'8px 12px 8px 34px',background:'#fff',border:'1px solid #E5E9EF',borderRadius:8,fontFamily:'inherit',fontSize:13,color:'#1A2332',outline:'none'}} />
               </div>
               <select value={filterTipo} onChange={e=>setFilterTipo(e.target.value)} style={selectStyle()}>
                 <option value="todos">Todos os tipos</option>
@@ -1117,108 +1376,169 @@ export default function Home() {
                 {usuarios.map(u => <option key={u.id} value={u.nome}>{u.nome}</option>)}
               </select>
             </div>
-          </div>
 
-          {/* Lista de Cadastros */}
-          <div style={{background:'#fff',padding:'8px 18px 18px',borderRadius:'0 0 16px 16px',border:'1px solid #e2e8f0',borderTop:'none',minHeight:300}}>
+          {/* Lista de Cadastros — tabela densa estilo Bitrix */}
+          <div style={{minHeight:300}}>
             {loading ? (
-              <div style={{textAlign:'center',padding:80,color:'#94a3b8'}}>
-                <div style={{fontSize:'1.2rem',marginBottom:8}}>Carregando...</div>
+              <div style={{textAlign:'center',padding:80,color:'#8B94A3'}}>
+                <div style={{fontSize:13,marginBottom:8}}>Carregando cadastros...</div>
               </div>
             ) : (tab==='pendentes' ? listPend : listDone).length === 0 ? (
-              <div style={{textAlign:'center',padding:80,color:'#94a3b8'}}>
-                <div style={{fontSize:'2.5rem',marginBottom:12}}>📭</div>
-                <div style={{fontWeight:600}}>Nenhum cadastro encontrado</div>
+              <div style={{textAlign:'center',padding:80}}>
+                <div style={{width:64,height:64,margin:'0 auto 14px',background:'#F8F9FB',borderRadius:14,display:'flex',alignItems:'center',justifyContent:'center',color:'#B5BCC6'}}>
+                  <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                </div>
+                <div style={{fontWeight:600,color:'#4F5868',fontSize:14}}>Nenhum cadastro encontrado</div>
+                <div style={{fontSize:12,color:'#8B94A3',marginTop:4}}>Ajuste os filtros ou aguarde novos envios</div>
               </div>
             ) : (
-              <div style={{display:'grid',gap:8}}>
-                {(tab==='pendentes' ? listPend : listDone).map(f => {
-                  const st = ST[f.status] || ST.pendente;
-                  return (
-                    <div key={f.id} onClick={()=>openDetail(f)} style={{
-                      display:'flex',alignItems:'center',gap:16,padding:'14px 18px',borderRadius:12,
-                      border:'1px solid #e2e8f0',cursor:'pointer',transition:'.15s',
-                      background: sel?.id===f.id ? '#f0fdf4' : '#fff',
-                    }}
-                    onMouseEnter={e=>e.currentTarget.style.borderColor='#059669'}
-                    onMouseLeave={e=>e.currentTarget.style.borderColor=sel?.id===f.id?'#059669':'#e2e8f0'}>
-                      <div style={{width:42,height:42,borderRadius:10,background:st.bg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.1rem',flexShrink:0}}>
-                        {f.tipo_cadastro==='pf'?'👤':f.tipo_cadastro==='motorista'?'🚛':'🏢'}
-                      </div>
-                      <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontWeight:600,fontSize:'.88rem',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',color:'#0f172a'}}>{sanitize(f.razao_social || f.nome_completo || 'Sem nome')}</div>
-                        <div style={{fontSize:'.75rem',color:'#94a3b8',marginTop:2}}>{f.cnpj || f.cpf || '-'} • {f.email || '-'}</div>
-                      </div>
-                      <div style={{display:'flex',gap:6,alignItems:'center',flexShrink:0}}>
-                        <span style={{padding:'4px 10px',borderRadius:6,fontSize:'.68rem',fontWeight:700,background:'#f1f5f9',color:'#475569'}}>{TL[f.tipo_cadastro] || 'PJ'}</span>
-                        <span style={{padding:'4px 10px',borderRadius:6,fontSize:'.68rem',fontWeight:700,background:st.bg,color:st.c}}>{st.l}</span>
-                      </div>
-                      <div style={{textAlign:'right',flexShrink:0,minWidth:100}}>
-                        <div style={{fontSize:'.7rem',color:'#94a3b8'}}>{fmtDate(f.created_at)}</div>
-                        {f.atribuido_para && <div style={{fontSize:'.68rem',color:'#2563EB',fontWeight:600,marginTop:2}}>👤 {f.atribuido_para.split(' ')[0]}</div>}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              <table style={{width:'100%',borderCollapse:'collapse'}}>
+                <thead>
+                  <tr>
+                    <th style={thS()}>Solicitante</th>
+                    <th style={thS()}>Documento</th>
+                    <th style={thS()}>Recebido</th>
+                    <th style={thS()}>Status</th>
+                    <th style={thS()}>Responsável</th>
+                    <th style={{...thS(),textAlign:'right'}}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(tab==='pendentes' ? listPend : listDone).map(f => {
+                    const st = ST[f.status] || ST.pendente;
+                    const stColor = f.status==='aprovado'?'#008C44':f.status==='rejeitado'?'#E63946':f.status==='em_analise'?'#2563EB':'#D97706';
+                    const stBg = f.status==='aprovado'?'#E6F7EE':f.status==='rejeitado'?'#FEE2E2':f.status==='em_analise'?'#DBEAFE':'#FEF3C7';
+                    const tipoColors = { pf:{bg:'#EDE9FE',c:'#7C3AED'}, motorista:{bg:'#FEE2E2',c:'#E63946'}, atualizacao:{bg:'#FEF3C7',c:'#B45309'}, default:{bg:'#DBEAFE',c:'#2563EB'} };
+                    const tipo = tipoColors[f.tipo_cadastro] || tipoColors.default;
+                    const tipoIcon = f.tipo_cadastro==='pf'
+                      ? <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                      : f.tipo_cadastro==='motorista'
+                      ? <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                      : <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/></svg>;
+                    return (
+                      <tr key={f.id} className="pmx-row" onClick={()=>openDetail(f)} style={{borderBottom:'1px solid #E5E9EF',cursor:'pointer',background: sel?.id===f.id ? '#F0FDF4' : 'transparent'}}>
+                        <td style={tdSnew()}>
+                          <div style={{display:'flex',alignItems:'center',gap:12}}>
+                            <div style={{width:36,height:36,borderRadius:9,background:tipo.bg,color:tipo.c,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{tipoIcon}</div>
+                            <div style={{minWidth:0}}>
+                              <div style={{fontWeight:600,color:'#1A2332',fontSize:13,display:'flex',alignItems:'center',gap:6,flexWrap:'wrap'}}>
+                                {sanitize(f.razao_social || f.nome_completo || 'Sem nome')}
+                                <span style={{display:'inline-block',fontSize:9,fontWeight:700,textTransform:'uppercase',letterSpacing:'.4px',padding:'1px 6px',borderRadius:3,background:tipo.bg,color:tipo.c}}>{TL[f.tipo_cadastro]||'PJ'}</span>
+                              </div>
+                              <div style={{fontSize:11,color:'#8B94A3',marginTop:1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',maxWidth:280}}>{f.email || '-'}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{...tdSnew(),fontFamily:'JetBrains Mono,SF Mono,Consolas,monospace',fontSize:12,color:'#4F5868'}}>{f.cnpj || f.cpf || '-'}</td>
+                        <td style={{...tdSnew(),color:'#4F5868',fontSize:12,whiteSpace:'nowrap'}}>{fmtDate(f.created_at)}</td>
+                        <td style={tdSnew()}>
+                          <span style={{display:'inline-flex',alignItems:'center',gap:5,padding:'3px 10px',borderRadius:20,fontSize:11,fontWeight:600,color:stColor,background:stBg}}>
+                            <span style={{width:6,height:6,borderRadius:'50%',background:stColor}} />
+                            {st.l}
+                          </span>
+                        </td>
+                        <td style={tdSnew()}>
+                          {f.atribuido_para ? (
+                            <div style={{display:'flex',alignItems:'center',gap:7}}>
+                              <div style={{width:24,height:24,borderRadius:'50%',background:'linear-gradient(135deg,#00A650,#008C44)',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Plus Jakarta Sans,sans-serif',fontWeight:700,fontSize:10,color:'#fff'}}>{f.atribuido_para.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
+                              <span style={{fontSize:12,color:'#4F5868'}}>{f.atribuido_para.split(' ')[0]}</span>
+                            </div>
+                          ) : (
+                            <span style={{color:'#B5BCC6',fontStyle:'italic',fontSize:12}}>Sem responsável</span>
+                          )}
+                        </td>
+                        <td style={{...tdSnew(),textAlign:'right'}}>
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#B5BCC6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline-block'}}><polyline points="9 18 15 12 9 6"/></svg>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             )}
           </div>
+          </div>{/* end panel */}
           </>)}{/* fim sub-aba fornecedores */}
+          </div>{/* end content padding */}
         </div>
       )}
 
       {/* ══ MODAL CENTRAL — DETALHE DO CADASTRO ══ */}
       {showModal && sel && (
-        <div style={{position:'fixed',inset:0,background:'rgba(15,23,42,.6)',backdropFilter:'blur(4px)',zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',padding:20,animation:'fadeIn .2s ease'}} onClick={e=>{if(e.target===e.currentTarget)closeDetail()}}>
-          <div style={{background:'#fff',borderRadius:20,width:'100%',maxWidth:720,maxHeight:'90vh',display:'flex',flexDirection:'column',boxShadow:'0 25px 60px rgba(0,0,0,.2)',animation:'scaleIn .25s ease'}}>
+        <div style={{position:'fixed',inset:0,background:'rgba(26,35,50,.55)',backdropFilter:'blur(6px)',WebkitBackdropFilter:'blur(6px)',zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',padding:20,animation:'fadeIn .2s ease'}} onClick={e=>{if(e.target===e.currentTarget)closeDetail()}}>
+          <div style={{background:'#fff',borderRadius:14,width:'100%',maxWidth:760,maxHeight:'90vh',display:'flex',flexDirection:'column',boxShadow:'0 24px 64px rgba(16,24,40,.18),0 8px 16px rgba(16,24,40,.08)',animation:'scaleIn .25s cubic-bezier(.16,1,.3,1)',border:'1px solid #E5E9EF'}}>
             {/* Header */}
-            <div style={{padding:'20px 28px',borderBottom:'1px solid #e2e8f0',display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0}}>
+            <div style={{padding:'18px 24px',borderBottom:'1px solid #E5E9EF',display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0,background:'linear-gradient(180deg,#F8F9FB 0%,#fff 100%)'}}>
               <div style={{display:'flex',alignItems:'center',gap:14}}>
-                <div style={{width:44,height:44,borderRadius:12,background:ST[sel.status]?.bg||'#f1f5f9',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.2rem'}}>
-                  {sel.tipo_cadastro==='pf'?'👤':sel.tipo_cadastro==='motorista'?'🚛':'🏢'}
+                <div style={{width:44,height:44,borderRadius:11,background: sel.tipo_cadastro==='pf'?'#EDE9FE':sel.tipo_cadastro==='motorista'?'#FEE2E2':'#DBEAFE', color: sel.tipo_cadastro==='pf'?'#7C3AED':sel.tipo_cadastro==='motorista'?'#E63946':'#2563EB', display:'flex',alignItems:'center',justifyContent:'center'}}>
+                  {sel.tipo_cadastro==='pf'
+                    ? <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    : sel.tipo_cadastro==='motorista'
+                    ? <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                    : <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/></svg>}
                 </div>
                 <div>
-                  <h2 style={{fontSize:'1rem',fontWeight:700,color:'#0f172a',margin:0}}>{sanitize(sel.razao_social || sel.nome_completo)}</h2>
-                  <span style={{fontSize:'.75rem',color:'#94a3b8'}}>{TL[sel.tipo_cadastro]||'PJ'} • {fmtDate(sel.created_at)}</span>
+                  <h2 style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:16,fontWeight:700,color:'#1A2332',margin:0,letterSpacing:'-.3px'}}>{sanitize(sel.razao_social || sel.nome_completo)}</h2>
+                  <span style={{fontSize:12,color:'#8B94A3'}}>{TL[sel.tipo_cadastro]||'PJ'} · {fmtDate(sel.created_at)}</span>
                 </div>
               </div>
-              <button onClick={closeDetail} style={{width:36,height:36,borderRadius:10,border:'1px solid #e2e8f0',background:'#fff',cursor:'pointer',fontSize:'1rem',display:'flex',alignItems:'center',justifyContent:'center',color:'#94a3b8',transition:'.15s'}}
-                onMouseEnter={e=>e.currentTarget.style.background='#f1f5f9'}
-                onMouseLeave={e=>e.currentTarget.style.background='#fff'}>✕</button>
+              <button className="pmx-icon-btn" onClick={closeDetail} style={{width:36,height:36,borderRadius:8,border:'1px solid #E5E9EF',background:'#fff',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',color:'#8B94A3'}}>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
             </div>
 
             {/* Scrollable Body */}
-            <div style={{padding:'24px 28px',overflowY:'auto',flex:1}}>
-              {/* Ações */}
-              <div style={{display:'flex',gap:8,marginBottom:20,flexWrap:'wrap'}}>
-                {sel.status==='pendente' && !sel.atribuido_para && <ActionBtn onClick={()=>assignTo(sel.id,user.nome)} color="#059669" bg="#ECFDF5" disabled={saving}>📌 Pegar para mim</ActionBtn>}
+            <div style={{padding:'22px 24px',overflowY:'auto',flex:1,background:'#FAFBFC'}}>
+              {/* Ações principais */}
+              <div style={{display:'flex',gap:8,marginBottom:18,flexWrap:'wrap'}}>
+                {sel.status==='pendente' && !sel.atribuido_para && (
+                  <button onClick={()=>assignTo(sel.id,user.nome)} disabled={saving} style={modalActBtn('primary')}>
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>
+                    Pegar para mim
+                  </button>
+                )}
                 {(sel.status==='pendente'||sel.status==='em_analise') && <>
-                  <ActionBtn onClick={()=>setShowAssign(true)} color="#2563EB" bg="#EFF6FF" disabled={saving}>👥 Direcionar</ActionBtn>
-                  <ActionBtn onClick={()=>setShowConcluir(true)} color="#059669" bg="#ECFDF5" disabled={saving}>✓ Concluir</ActionBtn>
-                  <ActionBtn onClick={()=>setShowDev(true)} color="#DC2626" bg="#FEF2F2" disabled={saving}>↩ Devolver</ActionBtn>
+                  <button onClick={()=>setShowAssign(true)} disabled={saving} style={modalActBtn('info')}>
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 11h-6"/><path d="m19 8 3 3-3 3"/></svg>
+                    Direcionar
+                  </button>
+                  <button onClick={()=>setShowConcluir(true)} disabled={saving} style={modalActBtn('primary')}>
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                    Concluir
+                  </button>
+                  <button onClick={()=>setShowDev(true)} disabled={saving} style={modalActBtn('danger')}>
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></svg>
+                    Devolver
+                  </button>
                 </>}
-                {isSubAdmin && <ActionBtn onClick={()=>deleteForn(sel.id)} color="#DC2626" bg="#FEF2F2">🗑 Excluir</ActionBtn>}
+                {isSubAdmin && (
+                  <button onClick={()=>deleteForn(sel.id)} style={{...modalActBtn('danger'),marginLeft:'auto'}}>
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    Excluir
+                  </button>
+                )}
               </div>
 
               {/* Assign Panel */}
               {showAssign && (
-                <div style={{padding:16,background:'#EFF6FF',borderRadius:12,marginBottom:16,border:'1px solid #BFDBFE'}}>
-                  <div style={{fontSize:'.78rem',fontWeight:700,color:'#2563EB',marginBottom:10}}>Direcionar para:</div>
+                <div style={{padding:16,background:'#fff',borderRadius:10,marginBottom:16,border:'1px solid #BFDBFE',boxShadow:'0 1px 2px rgba(16,24,40,.04)'}}>
+                  <div style={{fontSize:12,fontWeight:700,color:'#2563EB',marginBottom:10,textTransform:'uppercase',letterSpacing:'.5px'}}>Direcionar para</div>
                   <div style={{display:'grid',gap:6}}>
                     {usuarios.filter(u=>u.ativo).map(u => (
-                      <button key={u.id} onClick={()=>assignTo(sel.id,u.nome)} style={{padding:'10px 14px',borderRadius:8,border:'1px solid #BFDBFE',background:'#fff',cursor:'pointer',textAlign:'left',fontSize:'.82rem',fontFamily:'inherit',transition:'.15s'}}
-                        onMouseEnter={e=>e.currentTarget.style.background='#EFF6FF'} onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
-                        <strong>{u.nome}</strong> <span style={{color:'#94a3b8',fontSize:'.72rem'}}>— {u.cargo}</span>
+                      <button key={u.id} onClick={()=>assignTo(sel.id,u.nome)} style={{padding:'10px 14px',borderRadius:8,border:'1px solid #E5E9EF',background:'#fff',cursor:'pointer',textAlign:'left',fontSize:13,fontFamily:'inherit',transition:'.15s',display:'flex',alignItems:'center',gap:10}}
+                        onMouseEnter={e=>e.currentTarget.style.background='#F0F7FF'} onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
+                        <div style={{width:28,height:28,borderRadius:'50%',background:'linear-gradient(135deg,#3B82F6,#2563EB)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Plus Jakarta Sans,sans-serif',fontWeight:700,fontSize:11}}>{u.nome.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
+                        <div style={{flex:1}}><strong style={{color:'#1A2332'}}>{u.nome}</strong> <span style={{color:'#8B94A3',fontSize:12}}>— {u.cargo}</span></div>
                       </button>
                     ))}
                   </div>
-                  <button onClick={()=>setShowAssign(false)} style={{marginTop:8,background:'none',border:'none',color:'#94a3b8',cursor:'pointer',fontSize:'.75rem'}}>Cancelar</button>
+                  <button onClick={()=>setShowAssign(false)} style={{marginTop:8,background:'none',border:'none',color:'#8B94A3',cursor:'pointer',fontSize:12,fontWeight:500}}>Cancelar</button>
                 </div>
               )}
 
               {/* Devolutiva — motivo + campos a corrigir + link único */}
               {showDev && (
-                <div style={{padding:18,background:'#FEF2F2',borderRadius:14,marginBottom:16,border:'1px solid #FECACA'}}>
+                <div style={{padding:18,background:'#fff',borderRadius:12,marginBottom:16,border:'1px solid #FECACA',boxShadow:'0 1px 2px rgba(230,57,70,.06)'}}>
                   <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
                     <div style={{width:32,height:32,borderRadius:8,background:'#DC2626',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'.9rem',color:'#fff'}}>↩</div>
                     <div style={{fontSize:'.88rem',fontWeight:700,color:'#DC2626'}}>Devolver para Correção</div>
@@ -1296,62 +1616,81 @@ export default function Home() {
 
               {/* Painel Concluir — só código (e-mail vem do cadastro) */}
               {showConcluir && (
-                <div style={{padding:20,background:'#ECFDF5',borderRadius:14,marginBottom:16,border:'1px solid #A7F3D0'}}>
-                  <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
-                    <div style={{width:32,height:32,borderRadius:8,background:'#059669',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'.9rem'}}>✓</div>
-                    <div style={{fontSize:'.88rem',fontWeight:700,color:'#059669'}}>Concluir Cadastro</div>
+                <div style={{padding:20,background:'#fff',borderRadius:12,marginBottom:16,border:'1px solid #A7F3D0',boxShadow:'0 1px 2px rgba(0,166,80,.06)'}}>
+                  <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:6}}>
+                    <div style={{width:32,height:32,borderRadius:8,background:'#00A650',display:'flex',alignItems:'center',justifyContent:'center',color:'#fff'}}>
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                    </div>
+                    <div style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:15,fontWeight:700,color:'#1A2332'}}>Concluir Cadastro</div>
                   </div>
-                  <div style={{fontSize:'.74rem',color:'#64748b',marginBottom:16}}>Informe apenas o código gerado pelo sistema. O e-mail será enviado para o solicitante automaticamente.</div>
+                  <div style={{fontSize:12,color:'#8B94A3',marginBottom:16,paddingLeft:42}}>Informe o código gerado pelo sistema. O e-mail será enviado para o solicitante automaticamente.</div>
 
                   <div style={{display:'grid',gap:12}}>
                     <div>
-                      <label style={{fontSize:'.72rem',fontWeight:700,color:'#059669',textTransform:'uppercase',letterSpacing:'.3px',marginBottom:4,display:'block'}}>Código do Fornecedor *</label>
-                      <input value={concluirData.codigo} onChange={e=>setConcluirData({...concluirData,codigo:e.target.value})} placeholder="Ex: FORN-00451" style={{width:'100%',padding:'12px 14px',borderRadius:10,border:'1px solid #A7F3D0',fontSize:'.9rem',fontWeight:600,outline:'none',fontFamily:'inherit',background:'#fff',letterSpacing:'.5px'}} autoFocus />
+                      <label style={{fontSize:11,fontWeight:700,color:'#008C44',textTransform:'uppercase',letterSpacing:'.4px',marginBottom:5,display:'block'}}>Código do Fornecedor *</label>
+                      <input value={concluirData.codigo} onChange={e=>setConcluirData({...concluirData,codigo:e.target.value})} placeholder="Ex: FORN-00451" style={{width:'100%',padding:'12px 14px',borderRadius:9,border:'1px solid #A7F3D0',fontSize:14,fontWeight:600,outline:'none',fontFamily:'JetBrains Mono,SF Mono,Consolas,monospace',background:'#F0FDF4',letterSpacing:'.5px',color:'#1A2332'}} autoFocus />
                     </div>
 
                     {/* Dados do solicitante (vindos do cadastro) */}
-                    <div style={{background:'#fff',borderRadius:10,border:'1px solid #D1FAE5',padding:14}}>
-                      <div style={{fontSize:'.68rem',color:'#94a3b8',fontWeight:600,textTransform:'uppercase',letterSpacing:'.3px',marginBottom:8}}>Será enviado para</div>
+                    <div style={{background:'#F8F9FB',borderRadius:9,border:'1px solid #E5E9EF',padding:12}}>
+                      <div style={{fontSize:10,color:'#8B94A3',fontWeight:700,textTransform:'uppercase',letterSpacing:'.5px',marginBottom:6}}>Será enviado para</div>
                       {(sel?.email_solicitante) ? (
-                        <div style={{fontSize:'.85rem',color:'#0f172a'}}>
-                          <div style={{fontWeight:600}}>{sel.nome_solicitante || 'Solicitante'}</div>
-                          <div style={{color:'#64748b',fontSize:'.8rem',marginTop:2}}>{sel.email_solicitante}</div>
+                        <div style={{fontSize:13,color:'#1A2332',display:'flex',alignItems:'center',gap:10}}>
+                          <div style={{width:32,height:32,borderRadius:'50%',background:'linear-gradient(135deg,#00A650,#008C44)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Plus Jakarta Sans,sans-serif',fontWeight:700,fontSize:12}}>{(sel.nome_solicitante || 'S').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
+                          <div>
+                            <div style={{fontWeight:600}}>{sel.nome_solicitante || 'Solicitante'}</div>
+                            <div style={{color:'#8B94A3',fontSize:12,marginTop:1}}>{sel.email_solicitante}</div>
+                          </div>
                         </div>
                       ) : (
-                        <div style={{fontSize:'.8rem',color:'#dc2626',background:'#fef2f2',padding:'8px 12px',borderRadius:6,border:'1px solid #fecaca'}}>
-                          ⚠️ Este cadastro não tem e-mail do solicitante (cadastro antigo, antes da atualização do formulário). Não será possível enviar o e-mail automaticamente.
+                        <div style={{fontSize:12,color:'#E63946',background:'#FEE2E2',padding:'8px 12px',borderRadius:6,border:'1px solid #FECACA',display:'flex',alignItems:'flex-start',gap:8}}>
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:1}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                          <span>Este cadastro não tem e-mail do solicitante (cadastro antigo). Não será possível enviar o e-mail automaticamente.</span>
                         </div>
                       )}
                     </div>
 
                     {/* Preview do e-mail */}
-                    <div style={{background:'#fff',borderRadius:10,border:'1px solid #D1FAE5',padding:16}}>
-                      <div style={{fontSize:'.68rem',color:'#94a3b8',fontWeight:600,textTransform:'uppercase',letterSpacing:'.3px',marginBottom:8}}>Pré-visualização do e-mail</div>
-                      <div style={{fontSize:'.82rem',color:'#0f172a',lineHeight:1.7}}>
+                    <div style={{background:'#fff',borderRadius:9,border:'1px solid #E5E9EF',padding:14}}>
+                      <div style={{fontSize:10,color:'#8B94A3',fontWeight:700,textTransform:'uppercase',letterSpacing:'.5px',marginBottom:8}}>Pré-visualização do e-mail</div>
+                      <div style={{fontSize:13,color:'#1A2332',lineHeight:1.6}}>
                         <p>Olá{sel?.nome_solicitante ? ` ${sel.nome_solicitante}` : ''},</p>
-                        <p style={{marginTop:8}}>O cadastro de fornecedor que você solicitou foi concluído com sucesso!</p>
-                        <div style={{margin:'12px 0',padding:'14px 18px',background:'#ECFDF5',borderRadius:10,border:'1px solid #A7F3D0',textAlign:'center'}}>
-                          <div style={{fontSize:'.7rem',color:'#059669',fontWeight:600,textTransform:'uppercase',letterSpacing:'.5px',marginBottom:4}}>Código de Fornecedor Premix</div>
-                          <div style={{fontSize:'1.3rem',fontWeight:800,color:'#059669',letterSpacing:'1px'}}>{concluirData.codigo || '—'}</div>
+                        <p style={{marginTop:6}}>O cadastro de fornecedor que você solicitou foi concluído com sucesso!</p>
+                        <div style={{margin:'12px 0',padding:'14px 18px',background:'linear-gradient(135deg,#F0FDF4 0%,#DCFCE7 100%)',borderRadius:9,border:'1.5px solid #86EFAC',textAlign:'center'}}>
+                          <div style={{fontSize:10,color:'#008C44',fontWeight:700,textTransform:'uppercase',letterSpacing:'1px',marginBottom:4}}>Código de Fornecedor Premix</div>
+                          <div style={{fontFamily:'JetBrains Mono,monospace',fontSize:20,fontWeight:800,color:'#008C44',letterSpacing:'1.5px'}}>{concluirData.codigo || '—'}</div>
                         </div>
-                        <p style={{fontSize:'.78rem',color:'#64748b',marginTop:8}}>Em caso de dúvidas, entre em contato com o Núcleo Fiscal.</p>
-                        <p style={{fontSize:'.78rem',color:'#64748b',marginTop:4}}>Atenciosamente,<br/>Núcleo Fiscal — Premix</p>
+                        <p style={{fontSize:12,color:'#8B94A3',marginTop:8}}>Em caso de dúvidas, entre em contato com o Núcleo Fiscal.</p>
                       </div>
                     </div>
 
                     <div style={{display:'flex',gap:10,marginTop:4}}>
-                      <button onClick={concluirCadastro} disabled={sendingEmail || !sel?.email_solicitante} style={{flex:1,padding:'12px',borderRadius:10,border:'none',background: (sendingEmail || !sel?.email_solicitante) ? '#94a3b8' : '#059669',color:'#fff',fontFamily:'inherit',fontWeight:700,fontSize:'.84rem',cursor: (sendingEmail || !sel?.email_solicitante) ? 'not-allowed' : 'pointer',transition:'.15s'}}>
-                        {sendingEmail ? '⏳ Enviando...' : '✓ Concluir e Enviar E-mail'}
+                      <button onClick={concluirCadastro} disabled={sendingEmail || !sel?.email_solicitante} style={{flex:1,padding:'13px',borderRadius:10,border:'none',background: (sendingEmail || !sel?.email_solicitante) ? '#B5BCC6' : '#00A650',color:'#fff',fontFamily:'inherit',fontWeight:600,fontSize:14,cursor: (sendingEmail || !sel?.email_solicitante) ? 'not-allowed' : 'pointer',transition:'.15s',display:'inline-flex',alignItems:'center',justifyContent:'center',gap:8,boxShadow: (sendingEmail || !sel?.email_solicitante) ? 'none' : '0 1px 2px rgba(0,166,80,.3),inset 0 1px 0 rgba(255,255,255,.15)'}}>
+                        {sendingEmail ? (
+                          <>⏳ Enviando...</>
+                        ) : (
+                          <><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Concluir e Enviar E-mail</>
+                        )}
                       </button>
-                      <button onClick={()=>{setShowConcluir(false);setConcluirData({codigo:''})}} style={{padding:'12px 20px',borderRadius:10,border:'1px solid #A7F3D0',background:'#fff',fontFamily:'inherit',fontWeight:500,fontSize:'.84rem',cursor:'pointer',color:'#64748b'}}>Cancelar</button>
+                      <button onClick={()=>{setShowConcluir(false);setConcluirData({codigo:''})}} style={{padding:'13px 22px',borderRadius:10,border:'1px solid #E5E9EF',background:'#fff',fontFamily:'inherit',fontWeight:500,fontSize:14,cursor:'pointer',color:'#4F5868'}}>Cancelar</button>
                     </div>
                   </div>
                 </div>
               )}
 
               {/* Info Badges */}
-              {sel.atribuido_para && <div style={{padding:'10px 14px',background:'#EFF6FF',borderRadius:10,fontSize:'.78rem',marginBottom:14,color:'#2563EB',display:'flex',alignItems:'center',gap:6}}>👤 Responsável: <strong>{sel.atribuido_para}</strong>{sel.finalizado_por && <span style={{color:'#94a3b8'}}> • Finalizado por: <strong style={{color:'#059669'}}>{sel.finalizado_por}</strong></span>}</div>}
-              {sel.motivo_devolucao && <div style={{padding:'10px 14px',background:'#FEF2F2',borderRadius:10,fontSize:'.78rem',marginBottom:14,color:'#DC2626'}}>↩ <strong>Motivo:</strong> {sanitize(sel.motivo_devolucao)}</div>}
+              {sel.atribuido_para && (
+                <div style={{padding:'10px 14px',background:'#fff',border:'1px solid #BFDBFE',borderRadius:9,fontSize:13,marginBottom:12,display:'flex',alignItems:'center',gap:10}}>
+                  <div style={{width:24,height:24,borderRadius:'50%',background:'linear-gradient(135deg,#3B82F6,#2563EB)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Plus Jakarta Sans,sans-serif',fontWeight:700,fontSize:10,flexShrink:0}}>{sel.atribuido_para.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
+                  <span style={{color:'#4F5868'}}>Responsável: <strong style={{color:'#1A2332'}}>{sel.atribuido_para}</strong>{sel.finalizado_por && <span style={{color:'#8B94A3'}}> · Finalizado por: <strong style={{color:'#008C44'}}>{sel.finalizado_por}</strong></span>}</span>
+                </div>
+              )}
+              {sel.motivo_devolucao && (
+                <div style={{padding:'12px 14px',background:'#FEF2F2',border:'1px solid #FECACA',borderRadius:9,fontSize:13,marginBottom:12,display:'flex',gap:10}}>
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:2}}><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></svg>
+                  <div style={{color:'#991B1B'}}><strong>Motivo da devolução:</strong> {sanitize(sel.motivo_devolucao)}</div>
+                </div>
+              )}
 
               {/* Dados do Cadastro — Layout Profissional */}
               {(sel.tipo_cadastro === 'pj' || !sel.tipo_cadastro) ? (
@@ -1365,22 +1704,30 @@ export default function Home() {
 
               {/* Documentos */}
               <div style={{marginBottom:20}}>
-                <div style={{fontSize:'.78rem',fontWeight:700,color:'#0f172a',marginBottom:10,display:'flex',alignItems:'center',gap:6}}>📎 Documentos</div>
+                <div style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:13,fontWeight:700,color:'#1A2332',marginBottom:10,display:'flex',alignItems:'center',gap:8}}>
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#00A650" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                  Documentos anexados
+                </div>
                 <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
                   {[[sel.comprovante_cnpj_url,'CNPJ'],[sel.contrato_social_url,'Contrato Social'],[sel.comprovante_bancario_url,'Comp. Bancário'],[sel.documento_identidade_url,'Doc. Identidade']].filter(([u])=>u).map(([u,l],i) => (
-                    <a key={i} href={u} target="_blank" rel="noreferrer noopener" style={{padding:'8px 14px',background:'#EFF6FF',borderRadius:8,color:'#2563EB',fontSize:'.75rem',fontWeight:600,textDecoration:'none',transition:'.15s',border:'1px solid #BFDBFE'}}
-                      onMouseEnter={e=>e.currentTarget.style.background='#DBEAFE'} onMouseLeave={e=>e.currentTarget.style.background='#EFF6FF'}>
-                      📄 {l}
+                    <a key={i} href={u} target="_blank" rel="noreferrer noopener" style={{padding:'9px 14px',background:'#fff',borderRadius:8,color:'#2563EB',fontSize:12,fontWeight:600,textDecoration:'none',transition:'.15s',border:'1px solid #BFDBFE',display:'inline-flex',alignItems:'center',gap:7,boxShadow:'0 1px 2px rgba(16,24,40,.04)'}}
+                      onMouseEnter={e=>{e.currentTarget.style.background='#F0F7FF';e.currentTarget.style.transform='translateY(-1px)';e.currentTarget.style.boxShadow='0 4px 8px rgba(37,99,235,.15)';}} onMouseLeave={e=>{e.currentTarget.style.background='#fff';e.currentTarget.style.transform='translateY(0)';e.currentTarget.style.boxShadow='0 1px 2px rgba(16,24,40,.04)';}}>
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      {l}
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{opacity:.5}}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                     </a>
                   ))}
-                  {![[sel.comprovante_cnpj_url],[sel.contrato_social_url],[sel.comprovante_bancario_url],[sel.documento_identidade_url]].some(([u])=>u) && <span style={{fontSize:'.78rem',color:'#94a3b8'}}>Nenhum documento anexado</span>}
+                  {![[sel.comprovante_cnpj_url],[sel.contrato_social_url],[sel.comprovante_bancario_url],[sel.documento_identidade_url]].some(([u])=>u) && <span style={{fontSize:13,color:'#8B94A3',fontStyle:'italic'}}>Nenhum documento anexado</span>}
                 </div>
               </div>
 
               {/* Observações */}
               <div>
-                <div style={{fontSize:'.78rem',fontWeight:700,color:'#0f172a',marginBottom:8,display:'flex',alignItems:'center',gap:6}}>📝 Observações internas</div>
-                <textarea ref={obsRef} defaultValue={sel.observacoes_internas||''} key={sel.id} placeholder="Adicione anotações internas aqui..." onBlur={()=>saveObs(sel.id)} style={{width:'100%',padding:'12px 14px',borderRadius:10,border:'1px solid #e2e8f0',fontSize:'.84rem',minHeight:70,resize:'vertical',outline:'none',fontFamily:'inherit',background:'#f8fafc',transition:'.15s'}} onFocus={e=>e.target.style.borderColor='#059669'} />
+                <div style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:13,fontWeight:700,color:'#1A2332',marginBottom:8,display:'flex',alignItems:'center',gap:8}}>
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#00A650" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  Observações internas
+                </div>
+                <textarea ref={obsRef} defaultValue={sel.observacoes_internas||''} key={sel.id} placeholder="Adicione anotações internas aqui... (apenas a equipe do Núcleo Fiscal vê)" onBlur={()=>saveObs(sel.id)} style={{width:'100%',padding:'12px 14px',borderRadius:9,border:'1px solid #E5E9EF',fontSize:13,minHeight:80,resize:'vertical',outline:'none',fontFamily:'inherit',background:'#fff',transition:'.15s',color:'#1A2332',lineHeight:1.5}} onFocus={e=>{e.target.style.borderColor='#00A650';e.target.style.boxShadow='0 0 0 3px #E6F7EE';}} onBlurCapture={e=>{e.target.style.borderColor='#E5E9EF';e.target.style.boxShadow='none';}} />
               </div>
             </div>
           </div>
@@ -1389,25 +1736,35 @@ export default function Home() {
 
       {/* ══ PAGE: GESTÃO DE TAREFAS ══ */}
       {page === 'kanban' && (
-        <div style={{maxWidth:1440,margin:'0 auto',padding:'24px 28px'}}>
+        <div className="pmx-fade-in">
+          <div className="pmx-themed-bg" style={{background:T.surface,padding:'16px 28px',borderBottom:`1px solid ${T.border}`}}>
+            <div style={{fontSize:12,color:'#8B94A3',marginBottom:6,display:'flex',alignItems:'center',gap:6}}>
+              <span style={{cursor:'pointer'}}>Núcleo Fiscal</span>
+              <span>›</span>
+              <span style={{color:'#1A2332',fontWeight:500}}>Gestão de Tarefas</span>
+            </div>
+            <h1 style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:22,fontWeight:700,color:'#1A2332',letterSpacing:'-.4px',margin:0}}>Gestão de Tarefas</h1>
+          </div>
+          <div style={{padding:'22px 28px 32px'}}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20,flexWrap:'wrap',gap:12}}>
             <div style={{display:'flex',gap:6,alignItems:'center',flexWrap:'wrap'}}>
-              <span style={{fontSize:'.78rem',fontWeight:700,color:'#0f172a',marginRight:6}}>Filtrar:</span>
+              <span style={{fontSize:12,fontWeight:600,color:'#8B94A3',marginRight:6,textTransform:'uppercase',letterSpacing:'.5px'}}>Filtrar:</span>
               <PillBtn active={kanView==='todos'} onClick={()=>setKanView('todos')}>Todos</PillBtn>
               {usuarios.filter(u=>u.ativo).map(u => (
                 <PillBtn key={u.id} active={kanView===u.nome} onClick={()=>setKanView(u.nome)}>{u.nome.split(' ')[0]}</PillBtn>
               ))}
             </div>
-            <button onClick={()=>setShowNewTask(true)} style={{padding:'10px 22px',borderRadius:10,border:'none',background:'#059669',color:'#fff',fontFamily:'inherit',fontSize:'.82rem',fontWeight:700,cursor:'pointer',boxShadow:'0 2px 10px rgba(5,150,105,.25)',transition:'.15s'}}>
-              + Nova Tarefa
+            <button className="pmx-cta" onClick={()=>setShowNewTask(true)} style={{padding:'10px 18px',borderRadius:9,border:'none',background:'#00A650',color:'#fff',fontFamily:'inherit',fontSize:13,fontWeight:600,cursor:'pointer',boxShadow:'0 1px 2px rgba(0,166,80,.3),inset 0 1px 0 rgba(255,255,255,.15)',display:'inline-flex',alignItems:'center',gap:7}}>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Nova Tarefa
             </button>
           </div>
 
           {/* New Task Form */}
           {showNewTask && (
-            <div style={{background:'#fff',borderRadius:16,padding:24,marginBottom:20,border:'1px solid #e2e8f0',boxShadow:'0 4px 20px rgba(0,0,0,.04)'}}>
-              <div style={{fontSize:'.88rem',fontWeight:700,marginBottom:16,color:'#0f172a'}}>Nova Tarefa</div>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+            <div style={{background:'#fff',borderRadius:12,padding:22,marginBottom:20,border:'1px solid #E5E9EF',boxShadow:'0 4px 12px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.04)'}}>
+              <div style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:15,fontWeight:700,marginBottom:14,color:'#1A2332'}}>Nova Tarefa</div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
                 <div style={{gridColumn:'1/-1'}}><input placeholder="Título da tarefa *" value={newTask.titulo} onChange={e=>setNewTask({...newTask,titulo:e.target.value})} style={fieldStyle()} /></div>
                 <div style={{gridColumn:'1/-1'}}><textarea placeholder="Descrição (opcional)" value={newTask.descricao} onChange={e=>setNewTask({...newTask,descricao:e.target.value})} style={{...fieldStyle(),minHeight:60,resize:'vertical'}} /></div>
                 <select value={newTask.atribuido_para} onChange={e=>setNewTask({...newTask,atribuido_para:e.target.value})} style={fieldStyle()}>
@@ -1421,9 +1778,12 @@ export default function Home() {
                 <select value={newTask.status} onChange={e=>setNewTask({...newTask,status:e.target.value})} style={fieldStyle()}>
                   {KAN_COLS.map(c=><option key={c.k} value={c.k}>{c.l}</option>)}
                 </select>
-                <div style={{gridColumn:'1/-1',display:'flex',gap:10}}>
-                  <button onClick={addKanTask} style={{padding:'10px 24px',borderRadius:8,border:'none',background:'#059669',color:'#fff',fontFamily:'inherit',fontWeight:700,fontSize:'.82rem',cursor:'pointer'}}>Criar Tarefa</button>
-                  <button onClick={()=>setShowNewTask(false)} style={{padding:'10px 24px',borderRadius:8,border:'1px solid #e2e8f0',background:'#fff',fontFamily:'inherit',fontWeight:500,fontSize:'.82rem',cursor:'pointer',color:'#94a3b8'}}>Cancelar</button>
+                <div style={{gridColumn:'1/-1',display:'flex',gap:10,marginTop:4}}>
+                  <button onClick={addKanTask} className="pmx-cta" style={{padding:'10px 20px',borderRadius:9,border:'none',background:'#00A650',color:'#fff',fontFamily:'inherit',fontWeight:600,fontSize:13,cursor:'pointer',boxShadow:'0 1px 2px rgba(0,166,80,.3),inset 0 1px 0 rgba(255,255,255,.15)',display:'inline-flex',alignItems:'center',gap:7}}>
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                    Criar Tarefa
+                  </button>
+                  <button onClick={()=>setShowNewTask(false)} style={{padding:'10px 20px',borderRadius:9,border:'1px solid #E5E9EF',background:'#fff',fontFamily:'inherit',fontWeight:500,fontSize:13,cursor:'pointer',color:'#4F5868'}}>Cancelar</button>
                 </div>
               </div>
             </div>
@@ -1434,38 +1794,47 @@ export default function Home() {
             {KAN_COLS.map(col => {
               const tasks = kanFiltered.filter(t => t.status === col.k);
               return (
-                <div key={col.k} style={{background:'#f1f5f9',borderRadius:14,padding:10,minHeight:300}}>
-                  <div style={{fontSize:'.75rem',fontWeight:700,color:col.c,marginBottom:10,padding:'8px 10px',display:'flex',justifyContent:'space-between',alignItems:'center',textTransform:'uppercase',letterSpacing:'.3px'}}>
-                    <span>{col.l}</span>
-                    <span style={{background:col.c,color:'#fff',borderRadius:20,padding:'2px 9px',fontSize:'.65rem',fontWeight:700}}>{tasks.length}</span>
+                <div key={col.k} style={{background:'#fff',borderRadius:12,padding:10,minHeight:300,border:'1px solid #E5E9EF',boxShadow:'0 1px 2px rgba(16,24,40,.04)'}}>
+                  <div style={{padding:'4px 8px 12px 8px',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:'1px solid #E5E9EF',marginBottom:10}}>
+                    <div style={{display:'flex',alignItems:'center',gap:7}}>
+                      <span style={{width:8,height:8,borderRadius:'50%',background:col.c}} />
+                      <span style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:12,fontWeight:700,color:'#1A2332',textTransform:'uppercase',letterSpacing:'.5px'}}>{col.l}</span>
+                    </div>
+                    <span style={{background:'#F8F9FB',color:'#4F5868',borderRadius:20,padding:'2px 9px',fontSize:11,fontWeight:700,fontFamily:'Plus Jakarta Sans,sans-serif',border:'1px solid #E5E9EF'}}>{tasks.length}</span>
                   </div>
                   <div style={{display:'flex',flexDirection:'column',gap:8}}>
                     {tasks.map(t => {
                       const p = PRI[t.prioridade] || PRI.media;
                       const progress = calcProgress(t.checklist);
                       return (
-                        <div key={t.id} onClick={()=>setEditTask(t)} style={{background:'#fff',borderRadius:10,padding:'12px 14px',border:'1px solid #e2e8f0',cursor:'pointer',transition:'.15s'}}
-                          onMouseEnter={e=>e.currentTarget.style.boxShadow='0 4px 12px rgba(0,0,0,.06)'}
-                          onMouseLeave={e=>e.currentTarget.style.boxShadow='none'}>
+                        <div key={t.id} onClick={()=>setEditTask(t)} style={{background:'#fff',borderRadius:9,padding:'12px 14px',border:'1px solid #E5E9EF',cursor:'pointer',transition:'all .15s'}}
+                          onMouseEnter={e=>{e.currentTarget.style.borderColor='#00A650';e.currentTarget.style.boxShadow='0 4px 12px rgba(0,166,80,.1)';e.currentTarget.style.transform='translateY(-1px)';}}
+                          onMouseLeave={e=>{e.currentTarget.style.borderColor='#E5E9EF';e.currentTarget.style.boxShadow='none';e.currentTarget.style.transform='translateY(0)';}}>
                           <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:6}}>
-                            <div style={{fontSize:'.84rem',fontWeight:600,lineHeight:1.3,flex:1,color:'#0f172a'}}>{sanitize(t.titulo)}</div>
-                            <span style={{padding:'3px 8px',borderRadius:6,fontSize:'.62rem',fontWeight:700,background:p.bg,color:p.c,flexShrink:0}}>{p.l}</span>
+                            <div style={{fontSize:13,fontWeight:600,lineHeight:1.3,flex:1,color:'#1A2332'}}>{sanitize(t.titulo)}</div>
+                            <span style={{padding:'2px 7px',borderRadius:5,fontSize:9,fontWeight:700,background:p.bg,color:p.c,flexShrink:0,textTransform:'uppercase',letterSpacing:'.3px'}}>{p.l}</span>
                           </div>
-                          {t.descricao && <div style={{fontSize:'.74rem',color:'#94a3b8',marginTop:6,lineHeight:1.4}}>{sanitize(t.descricao.substring(0,80))}{t.descricao.length>80?'...':''}</div>}
+                          {t.descricao && <div style={{fontSize:11,color:'#8B94A3',marginTop:6,lineHeight:1.4}}>{sanitize(t.descricao.substring(0,80))}{t.descricao.length>80?'...':''}</div>}
                           {t.checklist && t.checklist.length > 0 && (
                             <div style={{marginTop:10}}>
-                              <div style={{display:'flex',justifyContent:'space-between',fontSize:'.65rem',color:'#94a3b8',marginBottom:4}}>
+                              <div style={{display:'flex',justifyContent:'space-between',fontSize:10,color:'#8B94A3',marginBottom:4,fontWeight:500}}>
                                 <span>{t.checklist.filter(i=>i.feito).length}/{t.checklist.length} itens</span>
-                                <span style={{fontWeight:700,color:progress===100?'#059669':'#94a3b8'}}>{progress}%</span>
+                                <span style={{fontWeight:700,color:progress===100?'#008C44':'#4F5868'}}>{progress}%</span>
                               </div>
-                              <div style={{height:4,background:'#e2e8f0',borderRadius:4,overflow:'hidden'}}>
-                                <div style={{height:'100%',width:`${progress}%`,background:progress===100?'#059669':'#2563EB',transition:'.3s',borderRadius:4}} />
+                              <div style={{height:4,background:'#E5E9EF',borderRadius:4,overflow:'hidden'}}>
+                                <div style={{height:'100%',width:`${progress}%`,background:progress===100?'#00A650':'#2563EB',transition:'.3s',borderRadius:4}} />
                               </div>
                             </div>
                           )}
-                          <div style={{display:'flex',justifyContent:'space-between',fontSize:'.68rem',color:'#94a3b8',marginTop:10}}>
-                            <span>👤 {(t.atribuido_para||'').split(' ')[0]}</span>
-                            {t.prazo && <span>📅 {fmtDateShort(t.prazo)}</span>}
+                          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',fontSize:11,color:'#8B94A3',marginTop:10}}>
+                            <div style={{display:'flex',alignItems:'center',gap:5}}>
+                              <div style={{width:18,height:18,borderRadius:'50%',background:'linear-gradient(135deg,#00A650,#008C44)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Plus Jakarta Sans,sans-serif',fontWeight:700,fontSize:8}}>{(t.atribuido_para||'??').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
+                              <span>{(t.atribuido_para||'').split(' ')[0]}</span>
+                            </div>
+                            {t.prazo && <span style={{display:'inline-flex',alignItems:'center',gap:4}}>
+                              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                              {fmtDateShort(t.prazo)}
+                            </span>}
                           </div>
                         </div>
                       );
@@ -1544,24 +1913,37 @@ export default function Home() {
               </div>
             </div>
           )}
+          </div>{/* end kanban content padding */}
         </div>
       )}
 
       {/* ══ PAGE: ADMIN ══ */}
       {page === 'admin' && isAdmin && (
-        <div style={{maxWidth:1440,margin:'0 auto',padding:'24px 28px'}}>
+        <div className="pmx-fade-in">
+          <div className="pmx-themed-bg" style={{background:T.surface,padding:'16px 28px',borderBottom:`1px solid ${T.border}`}}>
+            <div style={{fontSize:12,color:'#8B94A3',marginBottom:6,display:'flex',alignItems:'center',gap:6}}>
+              <span style={{cursor:'pointer'}}>Núcleo Fiscal</span>
+              <span>›</span>
+              <span style={{color:'#1A2332',fontWeight:500}}>Equipe</span>
+            </div>
+            <h1 style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:22,fontWeight:700,color:'#1A2332',letterSpacing:'-.4px',margin:0}}>Equipe</h1>
+          </div>
+          <div style={{padding:'22px 28px 32px'}}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
             <div>
-              <h2 style={{fontSize:'1.1rem',fontWeight:700,color:'#0f172a'}}>Gestão da Equipe</h2>
-              <p style={{fontSize:'.82rem',color:'#94a3b8',marginTop:4}}>Gerencie acessos, perfis e permissões</p>
+              <h2 style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:16,fontWeight:700,color:'#1A2332',margin:0}}>Gestão da Equipe</h2>
+              <p style={{fontSize:13,color:'#8B94A3',marginTop:2}}>Gerencie acessos, perfis e permissões</p>
             </div>
-            <button onClick={()=>setShowNewUser(true)} style={{padding:'10px 22px',borderRadius:10,border:'none',background:'#059669',color:'#fff',fontFamily:'inherit',fontSize:'.82rem',fontWeight:700,cursor:'pointer'}}>+ Novo Usuário</button>
+            <button className="pmx-cta" onClick={()=>setShowNewUser(true)} style={{padding:'10px 18px',borderRadius:9,border:'none',background:'#00A650',color:'#fff',fontFamily:'inherit',fontSize:13,fontWeight:600,cursor:'pointer',boxShadow:'0 1px 2px rgba(0,166,80,.3),inset 0 1px 0 rgba(255,255,255,.15)',display:'inline-flex',alignItems:'center',gap:7}}>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+              Novo Usuário
+            </button>
           </div>
 
           {showNewUser && (
-            <div style={{background:'#fff',borderRadius:16,padding:24,marginBottom:20,border:'1px solid #e2e8f0'}}>
-              <div style={{fontSize:'.88rem',fontWeight:700,marginBottom:16}}>Novo Usuário</div>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+            <div style={{background:'#fff',borderRadius:12,padding:22,marginBottom:20,border:'1px solid #E5E9EF',boxShadow:'0 4px 12px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.04)'}}>
+              <div style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:15,fontWeight:700,marginBottom:14,color:'#1A2332'}}>Novo Usuário</div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
                 <input placeholder="Nome completo *" value={newUser.nome} onChange={e=>setNewUser({...newUser,nome:e.target.value})} style={fieldStyle()} />
                 <input placeholder="E-mail *" type="email" value={newUser.email} onChange={e=>setNewUser({...newUser,email:e.target.value})} style={fieldStyle()} />
                 <input placeholder="Cargo" value={newUser.cargo} onChange={e=>setNewUser({...newUser,cargo:e.target.value})} style={fieldStyle()} />
@@ -1570,21 +1952,21 @@ export default function Home() {
                   <option value="user">Usuário</option><option value="subadmin">Sub-Admin</option><option value="admin">Admin</option>
                 </select>
                 <input placeholder="Senha inicial" value={newUser.senha_hash} onChange={e=>setNewUser({...newUser,senha_hash:e.target.value})} style={fieldStyle()} />
-                <div style={{gridColumn:'1/-1',display:'flex',gap:10}}>
-                  <button onClick={addUser} style={{padding:'10px 24px',borderRadius:8,border:'none',background:'#059669',color:'#fff',fontFamily:'inherit',fontWeight:700,cursor:'pointer'}}>Criar Usuário</button>
-                  <button onClick={()=>setShowNewUser(false)} style={{padding:'10px 24px',borderRadius:8,border:'1px solid #e2e8f0',background:'#fff',fontFamily:'inherit',fontWeight:500,cursor:'pointer',color:'#94a3b8'}}>Cancelar</button>
+                <div style={{gridColumn:'1/-1',display:'flex',gap:10,marginTop:4}}>
+                  <button onClick={addUser} className="pmx-cta" style={{padding:'10px 20px',borderRadius:9,border:'none',background:'#00A650',color:'#fff',fontFamily:'inherit',fontWeight:600,fontSize:13,cursor:'pointer',boxShadow:'0 1px 2px rgba(0,166,80,.3),inset 0 1px 0 rgba(255,255,255,.15)'}}>Criar Usuário</button>
+                  <button onClick={()=>setShowNewUser(false)} style={{padding:'10px 20px',borderRadius:9,border:'1px solid #E5E9EF',background:'#fff',fontFamily:'inherit',fontWeight:500,fontSize:13,cursor:'pointer',color:'#4F5868'}}>Cancelar</button>
                 </div>
               </div>
             </div>
           )}
 
           {/* Tabela Usuários */}
-          <div style={{background:'#fff',borderRadius:16,overflow:'hidden',border:'1px solid #e2e8f0'}}>
+          <div style={{background:'#fff',borderRadius:14,overflow:'hidden',border:'1px solid #E5E9EF'}}>
             <table style={{width:'100%',borderCollapse:'collapse'}}>
               <thead>
-                <tr style={{background:'#f8fafc'}}>
+                <tr>
                   {['Nome','E-mail','Cargo','Perfil','Status','Ações'].map(h => (
-                    <th key={h} style={{padding:'14px 18px',textAlign:'left',fontSize:'.72rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.5px',color:'#94a3b8',borderBottom:'1px solid #e2e8f0'}}>{h}</th>
+                    <th key={h} style={thS()}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -1592,25 +1974,31 @@ export default function Home() {
                 {usuarios.map(u => {
                   const editing = editUser?.id === u.id;
                   return (
-                    <tr key={u.id} style={{borderBottom:'1px solid #f1f5f9'}}>
-                      <td style={tdS()}>
+                    <tr key={u.id} className="pmx-row" style={{borderBottom:'1px solid #E5E9EF'}}>
+                      <td style={tdSnew()}>
                         {editing ? <input defaultValue={u.nome} id={`u-nome-${u.id}`} style={fieldStyle()} /> :
-                        <div><div style={{fontWeight:600,fontSize:'.84rem'}}>{u.nome}</div>{u.telefone && <div style={{fontSize:'.72rem',color:'#94a3b8'}}>{u.telefone}</div>}</div>}
+                        <div style={{display:'flex',alignItems:'center',gap:10}}>
+                          <div style={{width:32,height:32,borderRadius:'50%',background:'linear-gradient(135deg,#00A650,#008C44)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Plus Jakarta Sans,sans-serif',fontWeight:700,fontSize:11,flexShrink:0}}>{u.nome.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
+                          <div><div style={{fontWeight:600,fontSize:13,color:'#1A2332'}}>{u.nome}</div>{u.telefone && <div style={{fontSize:11,color:'#8B94A3'}}>{u.telefone}</div>}</div>
+                        </div>}
                       </td>
-                      <td style={tdS()}>{editing ? <input defaultValue={u.email} id={`u-email-${u.id}`} style={fieldStyle()} /> : <span style={{fontSize:'.82rem',color:'#64748b'}}>{u.email}</span>}</td>
-                      <td style={tdS()}>{editing ? <input defaultValue={u.cargo} id={`u-cargo-${u.id}`} style={fieldStyle()} /> : <span style={{fontSize:'.82rem'}}>{u.cargo}</span>}</td>
-                      <td style={tdS()}>
+                      <td style={tdSnew()}>{editing ? <input defaultValue={u.email} id={`u-email-${u.id}`} style={fieldStyle()} /> : <span style={{fontSize:12,color:'#4F5868'}}>{u.email}</span>}</td>
+                      <td style={tdSnew()}>{editing ? <input defaultValue={u.cargo} id={`u-cargo-${u.id}`} style={fieldStyle()} /> : <span style={{fontSize:13}}>{u.cargo}</span>}</td>
+                      <td style={tdSnew()}>
                         {editing ? <select defaultValue={u.role} id={`u-role-${u.id}`} style={fieldStyle()}><option value="user">Usuário</option><option value="subadmin">Sub-Admin</option><option value="admin">Admin</option></select>
-                        : <span style={{padding:'4px 10px',borderRadius:6,fontSize:'.68rem',fontWeight:700,background:u.role==='admin'?'#FEF2F2':u.role==='subadmin'?'#FFFBEB':'#EFF6FF',color:u.role==='admin'?'#DC2626':u.role==='subadmin'?'#D97706':'#2563EB'}}>{u.role==='admin'?'Admin':u.role==='subadmin'?'Sub-Admin':'Usuário'}</span>}
+                        : <span style={{padding:'3px 10px',borderRadius:5,fontSize:11,fontWeight:700,background:u.role==='admin'?'#FEE2E2':u.role==='subadmin'?'#FEF3C7':'#DBEAFE',color:u.role==='admin'?'#E63946':u.role==='subadmin'?'#B45309':'#2563EB',letterSpacing:'.3px',textTransform:'uppercase'}}>{u.role==='admin'?'Admin':u.role==='subadmin'?'Sub-Admin':'Usuário'}</span>}
                       </td>
-                      <td style={tdS()}>
-                        <span style={{padding:'4px 10px',borderRadius:6,fontSize:'.68rem',fontWeight:700,background:u.ativo?'#ECFDF5':'#FEF2F2',color:u.ativo?'#059669':'#DC2626'}}>{u.ativo?'Ativo':'Inativo'}</span>
+                      <td style={tdSnew()}>
+                        <span style={{display:'inline-flex',alignItems:'center',gap:5,padding:'3px 10px',borderRadius:20,fontSize:11,fontWeight:600,background:u.ativo?'#E6F7EE':'#FEE2E2',color:u.ativo?'#008C44':'#E63946'}}>
+                          <span style={{width:6,height:6,borderRadius:'50%',background:u.ativo?'#008C44':'#E63946'}} />
+                          {u.ativo?'Ativo':'Inativo'}
+                        </span>
                       </td>
-                      <td style={tdS()}>
+                      <td style={tdSnew()}>
                         {editing ? (
                           <div style={{display:'flex',gap:6}}>
-                            <button onClick={()=>updateUser(u.id,{nome:document.getElementById(`u-nome-${u.id}`).value,email:document.getElementById(`u-email-${u.id}`).value.toLowerCase(),cargo:document.getElementById(`u-cargo-${u.id}`).value,role:document.getElementById(`u-role-${u.id}`).value})} style={{padding:'6px 12px',borderRadius:6,border:'none',background:'#059669',color:'#fff',fontSize:'.72rem',fontWeight:700,cursor:'pointer'}}>Salvar</button>
-                            <button onClick={()=>setEditUser(null)} style={{padding:'6px 12px',borderRadius:6,border:'1px solid #e2e8f0',background:'#fff',fontSize:'.72rem',cursor:'pointer',color:'#94a3b8'}}>✕</button>
+                            <button onClick={()=>updateUser(u.id,{nome:document.getElementById(`u-nome-${u.id}`).value,email:document.getElementById(`u-email-${u.id}`).value.toLowerCase(),cargo:document.getElementById(`u-cargo-${u.id}`).value,role:document.getElementById(`u-role-${u.id}`).value})} style={{padding:'6px 12px',borderRadius:7,border:'none',background:'#00A650',color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer'}}>Salvar</button>
+                            <button onClick={()=>setEditUser(null)} style={{padding:'6px 12px',borderRadius:7,border:'1px solid #E5E9EF',background:'#fff',fontSize:11,cursor:'pointer',color:'#8B94A3'}}>Cancelar</button>
                           </div>
                         ) : (
                           <div style={{display:'flex',gap:4}}>
@@ -1650,6 +2038,207 @@ export default function Home() {
               })}
             </div>
           </div>
+          </div>{/* end admin content padding */}
+        </div>
+      )}
+
+      {/* ══ PAGE: APARÊNCIA — Temas, Cores, Wallpapers ══ */}
+      {page === 'aparencia' && (
+        <div className="pmx-fade-in">
+          <div className="pmx-themed-bg" style={{background:T.surface,padding:'16px 28px',borderBottom:`1px solid ${T.border}`}}>
+            <div style={{fontSize:12,color:'#8B94A3',marginBottom:6,display:'flex',alignItems:'center',gap:6}}>
+              <span style={{cursor:'pointer'}}>Núcleo Fiscal</span>
+              <span>›</span>
+              <span style={{color:'#1A2332',fontWeight:500}}>Temas & Cores</span>
+            </div>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <div>
+                <h1 style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:22,fontWeight:700,color:'#1A2332',letterSpacing:'-.4px',margin:0}}>Aparência</h1>
+                <p style={{fontSize:13,color:'#8B94A3',marginTop:2}}>Personalize a aparência do painel. Suas preferências são salvas e aplicadas em todos os dispositivos.</p>
+              </div>
+              {prefsLoaded && (
+                <button onClick={()=>savePrefs({})} className="pmx-cta" style={{padding:'10px 18px',borderRadius:9,border:'none',background:'#00A650',color:'#fff',fontFamily:'inherit',fontSize:13,fontWeight:600,cursor:'pointer',boxShadow:'0 1px 2px rgba(0,166,80,.3),inset 0 1px 0 rgba(255,255,255,.15)',display:'inline-flex',alignItems:'center',gap:7}}>
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                  Salvar preferências
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div style={{padding:'22px 28px 40px'}}>
+
+            {/* SEÇÃO 1: TEMAS */}
+            <section style={{marginBottom:32}}>
+              <h2 style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:15,fontWeight:700,color:'#1A2332',marginBottom:4}}>Tema</h2>
+              <p style={{fontSize:12,color:'#8B94A3',marginBottom:14}}>Escolha um conjunto de cores para o painel. As mudanças aparecem em tempo real.</p>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))',gap:12}}>
+                {Object.entries(TEMAS).map(([k, t]) => {
+                  const ativo = tema === k;
+                  return (
+                    <button key={k} onClick={()=>{setTema(k);savePrefs({tema:k});}} style={{
+                      textAlign:'left',padding:14,borderRadius:12,
+                      border: ativo ? '2px solid #00A650' : '2px solid transparent',
+                      background:'#fff',cursor:'pointer',fontFamily:'inherit',
+                      boxShadow: ativo ? '0 4px 12px rgba(0,166,80,.2)' : '0 1px 2px rgba(16,24,40,.04)',
+                      transition:'all .15s',position:'relative'
+                    }}>
+                      {/* Preview do tema */}
+                      <div style={{display:'flex',gap:0,height:60,borderRadius:8,overflow:'hidden',marginBottom:10,border:'1px solid '+t.border}}>
+                        <div style={{flex:'0 0 30%',background:t.surface,borderRight:'1px solid '+t.border,position:'relative'}}>
+                          <div style={{position:'absolute',top:6,left:6,right:6,height:4,background:t.primary,borderRadius:2}} />
+                          <div style={{position:'absolute',top:14,left:6,width:'70%',height:3,background:t.text2,borderRadius:2,opacity:.4}} />
+                          <div style={{position:'absolute',top:22,left:6,width:'50%',height:3,background:t.text2,borderRadius:2,opacity:.3}} />
+                        </div>
+                        <div style={{flex:1,background:t.bg,padding:6,display:'flex',gap:4,alignItems:'flex-start'}}>
+                          <div style={{flex:1,background:t.surface,borderRadius:4,padding:5}}>
+                            <div style={{height:3,background:t.primary,borderRadius:2,marginBottom:3,width:'40%'}} />
+                            <div style={{height:2,background:t.text2,borderRadius:2,opacity:.3}} />
+                          </div>
+                          <div style={{width:18,height:18,borderRadius:4,background:t.primary}} />
+                        </div>
+                      </div>
+                      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                        <div>
+                          <div style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:14,fontWeight:700,color:'#1A2332'}}>{t.nome}</div>
+                          <div style={{fontSize:11,color:'#8B94A3',marginTop:1}}>{t.descricao}</div>
+                        </div>
+                        {ativo && (
+                          <div style={{width:22,height:22,borderRadius:'50%',background:'#00A650',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* SEÇÃO 2: COR PRIMÁRIA */}
+            <section style={{marginBottom:32}}>
+              <h2 style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:15,fontWeight:700,color:'#1A2332',marginBottom:4}}>Cor primária</h2>
+              <p style={{fontSize:12,color:'#8B94A3',marginBottom:14}}>Cor de destaque usada em botões, links e elementos ativos.</p>
+              <div style={{background:'#fff',padding:18,borderRadius:12,border:'1px solid #E5E9EF',boxShadow:'0 1px 2px rgba(16,24,40,.04)'}}>
+                <div style={{display:'flex',flexWrap:'wrap',gap:10,marginBottom:16}}>
+                  {CORES_SUGERIDAS.map(cor => (
+                    <button key={cor} onClick={()=>{setCorPrimaria(cor);savePrefs({cor_primaria:cor});}} title={cor} style={{
+                      width:38,height:38,borderRadius:10,border: corPrimaria===cor ? '3px solid #1A2332' : '2px solid #E5E9EF',
+                      background:cor,cursor:'pointer',padding:0,transition:'all .15s',
+                      boxShadow: corPrimaria===cor ? `0 4px 12px ${cor}66` : '0 1px 2px rgba(16,24,40,.06)',
+                      transform: corPrimaria===cor ? 'scale(1.1)' : 'scale(1)'
+                    }} />
+                  ))}
+                </div>
+                <div style={{display:'flex',alignItems:'center',gap:12}}>
+                  <label style={{fontSize:12,fontWeight:600,color:'#4F5868',textTransform:'uppercase',letterSpacing:'.5px'}}>Personalizada:</label>
+                  <input type="color" value={corPrimaria} onChange={e=>setCorPrimaria(e.target.value)} onBlur={()=>savePrefs({})} style={{width:50,height:36,padding:2,border:'1px solid #E5E9EF',borderRadius:8,cursor:'pointer'}} />
+                  <input type="text" value={corPrimaria} onChange={e=>setCorPrimaria(e.target.value)} onBlur={()=>savePrefs({})} placeholder="#00A650" style={{padding:'9px 12px',borderRadius:8,border:'1px solid #E5E9EF',fontSize:13,fontFamily:'JetBrains Mono,monospace',color:'#1A2332',outline:'none',width:120,background:'#F8F9FB'}} />
+                  <div style={{flex:1}} />
+                  {/* Preview do botão */}
+                  <button style={{padding:'9px 18px',borderRadius:8,border:'none',background:corPrimaria,color:'#fff',fontFamily:'inherit',fontSize:13,fontWeight:600,cursor:'pointer',boxShadow:`0 1px 2px ${corPrimaria}66, inset 0 1px 0 rgba(255,255,255,.15)`}}>Botão exemplo</button>
+                </div>
+              </div>
+            </section>
+
+            {/* SEÇÃO 3: WALLPAPER */}
+            <section style={{marginBottom:32}}>
+              <h2 style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:15,fontWeight:700,color:'#1A2332',marginBottom:4}}>Wallpaper</h2>
+              <p style={{fontSize:12,color:'#8B94A3',marginBottom:14}}>Imagem de fundo sutil. Use opacidade baixa para não distrair durante o trabalho.</p>
+              <div style={{background:'#fff',padding:18,borderRadius:12,border:'1px solid #E5E9EF',boxShadow:'0 1px 2px rgba(16,24,40,.04)'}}>
+
+                {/* Categorias */}
+                <div style={{display:'flex',gap:6,marginBottom:14,flexWrap:'wrap'}}>
+                  {['Agro','Natureza','Abstrato','Minimalista','Textura'].map(c => (
+                    <button key={c} onClick={()=>setApCat(c)} style={{
+                      padding:'6px 14px',borderRadius:20,border:'1px solid '+ (apCat===c ? '#00A650' : '#E5E9EF'),
+                      background: apCat===c ? '#E6F7EE' : '#fff',
+                      color: apCat===c ? '#008C44' : '#4F5868',
+                      fontFamily:'inherit',fontSize:12,fontWeight:600,cursor:'pointer',transition:'all .15s'
+                    }}>{c}</button>
+                  ))}
+                </div>
+
+                {/* Grade de wallpapers */}
+                <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))',gap:10,marginBottom:18}}>
+                  {/* Opção "Sem wallpaper" */}
+                  <button onClick={()=>{setWallpaper(null);savePrefs({wallpaper:null});}} style={{
+                    aspectRatio:'3/2',borderRadius:10,
+                    border: !wallpaper ? '3px solid #00A650' : '1px solid #E5E9EF',
+                    background:'linear-gradient(135deg,#F8F9FB 0%,#EEF1F5 100%)',cursor:'pointer',padding:0,
+                    display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:6,
+                    transition:'all .15s',position:'relative'
+                  }}>
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#8B94A3" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                    <span style={{fontSize:11,color:'#4F5868',fontWeight:600}}>Sem wallpaper</span>
+                    {!wallpaper && <div style={{position:'absolute',top:6,right:6,width:20,height:20,borderRadius:'50%',background:'#00A650',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center'}}><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>}
+                  </button>
+
+                  {WALLPAPERS.filter(w=>w.cat===apCat).map(w => {
+                    const ativo = wallpaper === w.url;
+                    return (
+                      <button key={w.id} onClick={()=>{setWallpaper(w.url);savePrefs({wallpaper:w.url});}} title={`Foto por ${w.autor} no Unsplash`} style={{
+                        aspectRatio:'3/2',borderRadius:10,
+                        border: ativo ? '3px solid #00A650' : '1px solid #E5E9EF',
+                        background:`url(${w.url}) center/cover no-repeat,#F8F9FB`,
+                        cursor:'pointer',padding:0,transition:'all .15s',position:'relative',overflow:'hidden'
+                      }}>
+                        {ativo && <div style={{position:'absolute',top:6,right:6,width:22,height:22,borderRadius:'50%',background:'#00A650',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 2px 6px rgba(0,0,0,.3)'}}><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>}
+                        <div style={{position:'absolute',bottom:0,left:0,right:0,padding:'4px 8px',background:'linear-gradient(180deg,transparent,rgba(0,0,0,.6))',color:'#fff',fontSize:9,fontWeight:500,opacity:.9,textAlign:'left'}}>📷 {w.autor}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Opacidade do wallpaper */}
+                {wallpaper && (
+                  <div style={{borderTop:'1px solid #E5E9EF',paddingTop:14}}>
+                    <label style={{fontSize:12,fontWeight:600,color:'#4F5868',marginBottom:6,display:'block'}}>Opacidade: <strong style={{color:'#00A650'}}>{wallpaperOpacidade}%</strong> <span style={{fontWeight:400,color:'#8B94A3'}}>· menor = mais sutil</span></label>
+                    <input type="range" min="3" max="40" step="1" value={wallpaperOpacidade} onChange={e=>setWallpaperOpacidade(parseInt(e.target.value))} onMouseUp={()=>savePrefs({})} onTouchEnd={()=>savePrefs({})} style={{width:'100%',accentColor:'#00A650',cursor:'pointer'}} />
+                  </div>
+                )}
+
+                {/* Upload próprio (placeholder) */}
+                <div style={{borderTop:'1px solid #E5E9EF',marginTop:14,paddingTop:14,fontSize:12,color:'#8B94A3',display:'flex',alignItems:'center',gap:8}}>
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  <span>Upload de imagem própria — disponível em breve (precisamos configurar o Storage do Supabase para isso).</span>
+                </div>
+              </div>
+            </section>
+
+            {/* SEÇÃO 4: DENSIDADE */}
+            <section style={{marginBottom:32}}>
+              <h2 style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:15,fontWeight:700,color:'#1A2332',marginBottom:4}}>Densidade</h2>
+              <p style={{fontSize:12,color:'#8B94A3',marginBottom:14}}>Ajuste o espaçamento entre elementos.</p>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10}}>
+                {[
+                  { k:'compacto',     l:'Compacto',     d:'Mais informação na tela' },
+                  { k:'normal',       l:'Normal',       d:'Equilíbrio padrão' },
+                  { k:'confortavel',  l:'Confortável',  d:'Mais respiração visual' },
+                ].map(d => {
+                  const ativo = densidade === d.k;
+                  return (
+                    <button key={d.k} onClick={()=>{setDensidade(d.k);savePrefs({densidade:d.k});}} style={{
+                      textAlign:'left',padding:'14px 16px',borderRadius:10,
+                      border: ativo ? '2px solid #00A650' : '1px solid #E5E9EF',
+                      background: ativo ? '#E6F7EE' : '#fff',
+                      cursor:'pointer',fontFamily:'inherit',transition:'all .15s'
+                    }}>
+                      <div style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:13,fontWeight:700,color: ativo ? '#008C44' : '#1A2332',marginBottom:2}}>{d.l}</div>
+                      <div style={{fontSize:11,color:'#8B94A3'}}>{d.d}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* Disclaimer/créditos */}
+            <div style={{background:'#fff',padding:14,borderRadius:10,border:'1px solid #E5E9EF',fontSize:12,color:'#8B94A3',display:'flex',alignItems:'flex-start',gap:10}}>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#00A650" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:1}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              <div>
+                <strong style={{color:'#1A2332'}}>Sobre as imagens:</strong> wallpapers cortesia do <a href="https://unsplash.com" target="_blank" rel="noopener noreferrer" style={{color:'#00A650',fontWeight:600,textDecoration:'none'}}>Unsplash</a>, fotografias profissionais de uso livre. Os créditos aparecem em cada miniatura.
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1660,6 +2249,7 @@ export default function Home() {
       `}</style>
         </div>{/* end main */}
       </div>{/* end grid */}
+      </div>{/* end z-index wrapper */}
     </div>
   );
 }
@@ -1752,6 +2342,25 @@ function menuItem() {
 function tdS() {
   return { padding:'14px 18px',fontSize:'.84rem',verticalAlign:'middle' };
 }
+function thS() {
+  return { textAlign:'left',padding:'11px 16px',fontSize:11,fontWeight:600,color:'#8B94A3',textTransform:'uppercase',letterSpacing:'.4px',background:'#F8F9FB',borderBottom:'1px solid #E5E9EF' };
+}
+function tdSnew() {
+  return { padding:'14px 16px',fontSize:13,color:'#1A2332',verticalAlign:'middle' };
+}
 function btnAction(color, bg) {
   return { padding:'7px 12px',borderRadius:8,border:`1px solid ${color}33`,background:bg,color,fontFamily:'inherit',fontSize:'.74rem',fontWeight:600,cursor:'pointer',whiteSpace:'nowrap',transition:'.15s' };
+}
+function actBtn(variant) {
+  const base = { width:30,height:30,borderRadius:7,border:'1px solid #E5E9EF',background:'#F8F9FB',color:'#4F5868',cursor:'pointer',display:'inline-flex',alignItems:'center',justifyContent:'center',transition:'all .15s' };
+  if (variant === 'primary') return {...base,background:'#E6F7EE',borderColor:'rgba(0,166,80,.3)',color:'#008C44'};
+  if (variant === 'danger')  return {...base,background:'#FEE2E2',borderColor:'rgba(230,57,70,.3)',color:'#E63946'};
+  return base;
+}
+function modalActBtn(variant) {
+  const base = { display:'inline-flex',alignItems:'center',gap:7,padding:'9px 16px',borderRadius:9,fontFamily:'inherit',fontSize:13,fontWeight:600,cursor:'pointer',transition:'all .15s',border:'1px solid' };
+  if (variant === 'primary') return {...base,background:'#00A650',borderColor:'#00A650',color:'#fff',boxShadow:'0 1px 2px rgba(0,166,80,.3),inset 0 1px 0 rgba(255,255,255,.15)'};
+  if (variant === 'danger')  return {...base,background:'#fff',borderColor:'#FECACA',color:'#E63946'};
+  if (variant === 'info')    return {...base,background:'#fff',borderColor:'#BFDBFE',color:'#2563EB'};
+  return {...base,background:'#fff',borderColor:'#E5E9EF',color:'#4F5868'};
 }
