@@ -24,9 +24,64 @@ const KAN_COLS = [
 ];
 
 const DEV_MOTIVOS = [
-  'Dados bancários de terceiros','CNPJ divergente','Contrato Social ilegível',
-  'IE inválida ou faltante','Comprovante bancário faltante','Documentos ilegíveis','Dados incompletos'
+  'Conta bancária divergente dos dados do cadastro',
+  'Conta bancária de terceiros (não é PJ/PF do cadastro)',
+  'Dados bancários incompletos ou ilegíveis',
+  'CNPJ divergente da Razão Social',
+  'Contrato Social ilegível ou desatualizado',
+  'IE inválida, vencida ou faltante',
+  'Comprovante bancário faltante ou ilegível',
+  'Documento de identidade ilegível',
+  'CPF/CNPJ do titular não confere',
+  'Dados cadastrais incompletos',
+  'Endereço incompleto ou inválido',
+  'Foto/CNH do motorista ilegível',
+  'ANTT/RNTRC inválido ou expirado',
+  'E-mail ou telefone inválido',
+  'Outros (descrever no campo abaixo)',
 ];
+
+/* Mapeamento de motivo → campos do formulário que precisam ser corrigidos.
+   Quando o analista escolhe o motivo, esses campos vêm marcados por padrão. */
+const MOTIVO_CAMPOS = {
+  'Conta bancária divergente dos dados do cadastro': ['banco','agencia','conta','titular_conta','cpf_cnpj_titular','comprovante_bancario'],
+  'Conta bancária de terceiros (não é PJ/PF do cadastro)': ['titular_conta','cpf_cnpj_titular','comprovante_bancario'],
+  'Dados bancários incompletos ou ilegíveis': ['banco','agencia','conta','titular_conta','comprovante_bancario'],
+  'CNPJ divergente da Razão Social': ['cnpj','razao_social','comprovante_cnpj'],
+  'Contrato Social ilegível ou desatualizado': ['contrato_social'],
+  'IE inválida, vencida ou faltante': ['inscricao_estadual','comprovante_ie'],
+  'Comprovante bancário faltante ou ilegível': ['comprovante_bancario'],
+  'Documento de identidade ilegível': ['documento_identidade'],
+  'CPF/CNPJ do titular não confere': ['cpf_cnpj_titular','titular_conta'],
+  'Dados cadastrais incompletos': [],  // analista marca manualmente
+  'Endereço incompleto ou inválido': ['cep','logradouro','numero','bairro','cidade','estado'],
+  'Foto/CNH do motorista ilegível': ['documento_identidade_mot','comprovante_endereco_mot'],
+  'ANTT/RNTRC inválido ou expirado': ['antt'],
+  'E-mail ou telefone inválido': ['email','celular','telefone'],
+  'Outros (descrever no campo abaixo)': [],
+};
+
+/* Labels amigáveis dos campos (para exibir no e-mail e no link de correção) */
+const CAMPO_LABELS = {
+  razao_social:'Razão Social', nome_fantasia:'Nome Fantasia', cnpj:'CNPJ',
+  inscricao_estadual:'Inscrição Estadual', nome_completo:'Nome Completo',
+  cpf:'CPF', rg:'RG', data_nascimento:'Data de Nascimento',
+  nome_completo_mot:'Nome do Motorista', cpf_mot:'CPF do Motorista',
+  rg_mot:'RG do Motorista', data_nascimento_mot:'Data Nasc. Motorista',
+  cnh_categoria:'CNH Categoria', antt:'ANTT/RNTRC',
+  responsavel_nome:'Responsável', responsavel_cargo:'Cargo',
+  telefone:'Telefone', celular:'Celular', email:'E-mail', website:'Website',
+  cep:'CEP', logradouro:'Logradouro', numero:'Número', complemento:'Complemento',
+  bairro:'Bairro', cidade:'Cidade', estado:'UF',
+  banco:'Banco', tipo_conta:'Tipo de Conta', agencia:'Agência',
+  conta:'Conta', titular_conta:'Titular da Conta',
+  cpf_cnpj_titular:'CPF/CNPJ do Titular', pix:'PIX',
+  comprovante_cnpj:'Cartão CNPJ', contrato_social:'Contrato Social',
+  comprovante_bancario:'Comprovante Bancário', documento_identidade:'Doc. com Foto',
+  documento_identidade_mot:'CNH/Documento Motorista',
+  comprovante_endereco_mot:'Comprovante Endereço Motorista',
+  comprovante_ie:'Comprovante IE',
+};
 
 /* ── Sanitização (Segurança: XSS Prevention) ────── */
 const sanitize = (str) => {
@@ -63,8 +118,10 @@ export default function Home() {
   const [filterAssign, setFilterAssign] = useState('todos');
   const [saving, setSav] = useState(false);
   const [showDev, setShowDev] = useState(false);
+  const [devMotivoSel, setDevMotivoSel] = useState('');
   const [devMsg, setDevMsg] = useState('');
   const [devCampos, setDevCampos] = useState([]); // campos selecionados para correção
+  const [devSending, setDevSending] = useState(false);
   const [showAssign, setShowAssign] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
   const [toast, setToast] = useState('');
@@ -194,29 +251,102 @@ export default function Home() {
     if (s === 'aprovado') { u.finalizado_por = user.nome; u.data_finalizacao = new Date().toISOString(); }
     await supabase.from('fornecedores').update(u).eq('id', id);
     if (sel?.id === id) setSel({ ...sel, ...u });
-    await fetchAll(); setSav(false);
+    logAcao('mudou_status', 'fornecedor', id, { para: s });
+    setSav(false);
   };
 
-  /* ── Concluir cadastro + enviar e-mail via EmailJS ── */
+  /* ── EmailJS — configs ────────────────────────── */
   const EMAILJS_SERVICE  = 'service_w7xzoya';
-  const EMAILJS_TEMPLATE = 'template_9r33gy7';
   const EMAILJS_PUBLIC   = 'A5igXA6RKwkf84zyR';
+
+  // Você terá UM template no EmailJS com várias variáveis genéricas.
+  // O conteúdo do e-mail muda conforme as variáveis preenchidas.
+  // (Ver LEIA-PRIMEIRO sobre como configurar este template único.)
+  const EMAILJS_TEMPLATE_APROVADO   = 'template_9r33gy7';   // existente: cadastro aprovado
+  const EMAILJS_TEMPLATE_DEVOLVIDO  = 'template_devolvido'; // novo: criar no EmailJS
+  const EMAILJS_TEMPLATE_DESBLOQ    = 'template_desbloqueado'; // novo: criar no EmailJS
+
+  /* ── Envia um e-mail genérico via EmailJS ── */
+  const sendEmail = async (templateId, params) => {
+    try {
+      const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          service_id: EMAILJS_SERVICE,
+          template_id: templateId,
+          user_id: EMAILJS_PUBLIC,
+          template_params: params,
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.text();
+        console.error('[sendEmail] EmailJS falhou:', res.status, body);
+        return { ok: false, error: `${res.status} — ${body.slice(0,80)}` };
+      }
+      return { ok: true };
+    } catch (err) {
+      console.error('[sendEmail] Exceção:', err);
+      return { ok: false, error: err.message || 'desconhecido' };
+    }
+  };
+
+  /* ── Registra ação no log de auditoria ──
+     Falha silenciosa: se a auditoria falhar, a operação principal continua.
+     Não usa await intencionalmente — fire-and-forget pra não travar UI. */
+  const logAcao = (acao, tipoCadastro, cadastroId, detalhes = null) => {
+    try {
+      supabase.from('auditoria').insert({
+        ator_nome: user?.nome || 'desconhecido',
+        ator_email: user?.email || null,
+        acao,
+        tipo_cadastro: tipoCadastro,
+        cadastro_id: cadastroId,
+        detalhes,
+      }).then(({ error }) => {
+        if (error) console.warn('[logAcao] falhou (não crítico):', error.message);
+      });
+    } catch (e) {
+      console.warn('[logAcao] exceção (não crítico):', e);
+    }
+  };
+
+  /* ── Gera token único de correção e devolve a URL pública ──
+     URL: https://formulario-fornecedor-nine.vercel.app/corrigir?token=XYZ
+     O token só vale uma vez e expira em 30 dias (validado pelo formulário). */
+  const FORM_URL_BASE = 'https://formulario-fornecedor-nine.vercel.app';
+  const gerarTokenCorrecao = async (tipoCadastro, cadastroId, motivo, camposACorrigir) => {
+    const { data, error } = await supabase
+      .from('tokens_correcao')
+      .insert({
+        tipo_cadastro: tipoCadastro,
+        cadastro_id: cadastroId,
+        gerado_por: user.nome,
+        motivo,
+        campos_a_corrigir: camposACorrigir,
+      })
+      .select('token')
+      .single();
+    if (error || !data?.token) {
+      console.error('[gerarTokenCorrecao] erro:', error);
+      return null;
+    }
+    return `${FORM_URL_BASE}/corrigir?token=${data.token}`;
+  };
 
   const concluirCadastro = async () => {
     if (!concluirData.codigo.trim()) { showToast('Informe o código do fornecedor'); return; }
 
-    // Lê dados do solicitante diretamente do cadastro (vindos do formulário)
     const emailSolic = (sel?.email_solicitante || '').trim();
     const nomeSolic  = (sel?.nome_solicitante || '').trim();
 
     if (!emailSolic) {
-      showToast('Este cadastro não tem e-mail do solicitante. Cadastro antigo, antes da atualização do formulário.');
+      showToast('Este cadastro não tem e-mail do solicitante (cadastro antigo).');
       return;
     }
 
     setSendingEmail(true);
 
-    // 1. Atualiza o status no Supabase (com checagem de erro)
     const upd = {
       status: 'aprovado',
       finalizado_por: user.nome,
@@ -237,59 +367,142 @@ export default function Home() {
       return;
     }
     if (!updRes || updRes.length === 0) {
-      console.error('[concluirCadastro] UPDATE retornou 0 linhas — provável RLS', { id: sel.id, upd });
       showToast('Cadastro não foi alterado (verifique permissões RLS).');
       setSendingEmail(false);
       return;
     }
 
-    // 2. Envia e-mail via EmailJS
-    const templateParams = {
+    // Envia e-mail (não bloqueia o sucesso do cadastro se falhar)
+    const r = await sendEmail(EMAILJS_TEMPLATE_APROVADO, {
       to_name: nomeSolic || 'Solicitante',
       to_email: emailSolic,
       codigo_fornecedor: concluirData.codigo.trim(),
       fornecedor_nome: sel.razao_social || sel.nome_completo || 'N/A',
-    };
+    });
+    if (r.ok) showToast('Cadastro concluído e e-mail enviado!');
+    else showToast(`Cadastro concluído, mas e-mail falhou: ${r.error}`);
 
-    try {
-      const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          service_id: EMAILJS_SERVICE,
-          template_id: EMAILJS_TEMPLATE,
-          user_id: EMAILJS_PUBLIC,
-          template_params: templateParams,
-        }),
-      });
-      if (res.ok) {
-        showToast('Cadastro concluído e e-mail enviado!');
-      } else {
-        const body = await res.text();
-        console.error('[concluirCadastro] EmailJS falhou:', res.status, body);
-        showToast(`Cadastro concluído, mas e-mail falhou: ${res.status} — ${body.slice(0,80)}`);
-      }
-    } catch (err) {
-      console.error('[concluirCadastro] Exceção no envio EmailJS:', err);
-      showToast(`Cadastro concluído, mas erro ao enviar e-mail: ${err.message || 'desconhecido'}`);
-    }
+    // Auditoria (fire-and-forget)
+    logAcao('aprovou', 'fornecedor', sel.id, {
+      codigo: concluirData.codigo.trim(),
+      email_enviado: r.ok,
+    });
 
     if (sel) setSel({ ...sel, ...upd });
     setShowConcluir(false);
     setConcluirData({ codigo:'' });
     setSendingEmail(false);
-    await fetchAll();
+    // Não precisa fetchAll() — realtime atualiza a lista automaticamente
   };
+
+  /* ──────────────────────────────────────────────────────────────
+     AÇÕES — PRODUTOS
+     ────────────────────────────────────────────────────────────── */
+
+  const pegarProduto = async (id) => {
+    await supabase.from('produtos').update({ atribuido_para: user.nome, status:'em_analise' }).eq('id', id);
+    logAcao('atribuiu', 'produto', id, { para: user.nome });
+  };
+
+  const excluirProduto = async (id) => {
+    if (!confirm('Excluir este cadastro de produto?')) return;
+    await supabase.from('produtos').delete().eq('id', id);
+    logAcao('excluiu', 'produto', id);
+  };
+
+  const concluirProduto = async (produto, codigoProtheus) => {
+    if (!codigoProtheus || !codigoProtheus.trim()) {
+      showToast('Informe o código Protheus do produto');
+      return;
+    }
+    const upd = {
+      status: 'aprovado',
+      codigo_protheus: codigoProtheus.trim(),
+      finalizado_por: user.nome,
+      data_finalizacao: new Date().toISOString(),
+    };
+    const { error } = await supabase.from('produtos').update(upd).eq('id', produto.id).select();
+    if (error) { showToast(`Erro: ${error.message}`); return; }
+
+    const r = await sendEmail(EMAILJS_TEMPLATE_APROVADO, {
+      to_name: produto.nome_solicitante,
+      to_email: produto.email_solicitante,
+      codigo_fornecedor: codigoProtheus.trim(),   // reaproveita o mesmo template
+      fornecedor_nome: (produto.descricao || '').slice(0,80),
+    });
+    if (r.ok) showToast('Produto cadastrado e e-mail enviado!');
+    else showToast(`Produto cadastrado, mas e-mail falhou: ${r.error}`);
+
+    logAcao('aprovou', 'produto', produto.id, { codigo_protheus: codigoProtheus.trim(), email_enviado: r.ok });
+  };
+
+  /* ──────────────────────────────────────────────────────────────
+     AÇÕES — DESBLOQUEIOS
+     ────────────────────────────────────────────────────────────── */
+
+  const pegarDesbloqueio = async (id) => {
+    await supabase.from('desbloqueios').update({ atribuido_para: user.nome, status:'em_analise' }).eq('id', id);
+    logAcao('atribuiu', 'desbloqueio', id, { para: user.nome });
+  };
+
+  const excluirDesbloqueio = async (id) => {
+    if (!confirm('Excluir este pedido de desbloqueio?')) return;
+    await supabase.from('desbloqueios').delete().eq('id', id);
+    logAcao('excluiu', 'desbloqueio', id);
+  };
+
+  const concluirDesbloqueio = async (d) => {
+    const upd = {
+      status: 'desbloqueado',
+      finalizado_por: user.nome,
+      data_finalizacao: new Date().toISOString(),
+    };
+    const { error } = await supabase.from('desbloqueios').update(upd).eq('id', d.id).select();
+    if (error) { showToast(`Erro: ${error.message}`); return; }
+
+    const r = await sendEmail(EMAILJS_TEMPLATE_DESBLOQ, {
+      to_name: d.nome_solicitante,
+      to_email: d.email_solicitante,
+      codigo_produto: d.codigo_produto,
+      nome_produto: d.nome_produto,
+    });
+    if (r.ok) showToast('Produto desbloqueado e e-mail enviado!');
+    else showToast(`Desbloqueado, mas e-mail falhou: ${r.error}`);
+
+    logAcao('desbloqueou', 'desbloqueio', d.id, {
+      codigo: d.codigo_produto,
+      email_enviado: r.ok,
+    });
+  };
+
+  const rejeitarDesbloqueio = async (d, motivo) => {
+    if (!motivo || !motivo.trim()) { showToast('Informe o motivo da rejeição'); return; }
+    const upd = {
+      status: 'rejeitado',
+      motivo_rejeicao: motivo.trim(),
+      finalizado_por: user.nome,
+      data_finalizacao: new Date().toISOString(),
+    };
+    const { error } = await supabase.from('desbloqueios').update(upd).eq('id', d.id);
+    if (error) { showToast(`Erro: ${error.message}`); return; }
+    showToast('Desbloqueio rejeitado');
+    logAcao('rejeitou', 'desbloqueio', d.id, { motivo: motivo.trim() });
+  };
+
   const assignTo = async (id, nome) => {
     setSav(true);
     await supabase.from('fornecedores').update({ atribuido_para: nome, status:'em_analise' }).eq('id', id);
     if (sel?.id === id) setSel({ ...sel, atribuido_para: nome, status:'em_analise' });
-    setShowAssign(false); await fetchAll(); setSav(false);
+    logAcao('atribuiu', 'fornecedor', id, { para: nome });
+    setShowAssign(false);
+    setSav(false);
   };
   const deleteForn = async (id) => {
     if (!confirm('Tem certeza que deseja excluir este cadastro?')) return;
     await supabase.from('fornecedores').delete().eq('id', id);
-    setSel(null); setShowModal(false); await fetchAll();
+    logAcao('excluiu', 'fornecedor', id);
+    setSel(null);
+    setShowModal(false);
   };
   const saveObs = async (id) => {
     if (!obsRef.current) return;
@@ -297,14 +510,98 @@ export default function Home() {
     showToast('Observação salva');
   };
 
-  const sendDevolutiva = () => {
-    if (!sel || !devMsg.trim()) return;
-    const subj = encodeURIComponent('Premix — Correção necessária no seu cadastro de fornecedor');
-    const body = encodeURIComponent(`Prezado(a),\n\nIdentificamos uma pendência no seu cadastro de fornecedor enviado à Premix:\n\n➤ MOTIVO DA DEVOLUÇÃO:\n${devMsg}\n\nPor favor, acesse o link abaixo e envie um novo cadastro com as informações corrigidas:\nhttps://formulario-fornecedor-nine.vercel.app\n\nEm caso de dúvidas, entre em contato com o Núcleo Fiscal.\n\nAtenciosamente,\n${user.nome}\nNúcleo Fiscal — Premix`);
-    window.open(`mailto:${sel.email}?subject=${subj}&body=${body}`, '_blank');
-    supabase.from('fornecedores').update({ status:'rejeitado', motivo_devolucao: devMsg, finalizado_por: user.nome, data_finalizacao: new Date().toISOString() }).eq('id', sel.id).then(() => fetchAll());
-    setSel({ ...sel, status:'rejeitado', motivo_devolucao: devMsg });
-    setShowDev(false); setDevMsg('');
+  /* ── Devolução com motivo + token de correção + e-mail automático ──
+     Fluxo:
+     1. Valida que motivo e campos foram informados
+     2. Gera token único na tabela tokens_correcao (vincula ao cadastro)
+     3. Marca cadastro como 'rejeitado' no banco + grava motivo e campos
+     4. Envia e-mail com motivo + link único de correção via EmailJS
+     5. Registra na auditoria
+  */
+  const sendDevolutiva = async () => {
+    if (!sel) return;
+
+    // Validações
+    const motivoFinal = (devMotivoSel === 'Outros (descrever no campo abaixo)' || !devMotivoSel)
+      ? devMsg.trim()
+      : (devMotivoSel + (devMsg.trim() ? `\n\nObservação adicional: ${devMsg.trim()}` : ''));
+    if (!motivoFinal) {
+      showToast('Selecione um motivo ou descreva o problema');
+      return;
+    }
+    if (devCampos.length === 0 && devMotivoSel !== 'Dados cadastrais incompletos' && devMotivoSel !== 'Outros (descrever no campo abaixo)') {
+      if (!confirm('Você não marcou nenhum campo para correção. Deseja continuar mesmo assim?')) return;
+    }
+
+    const emailDest = (sel.email_solicitante || sel.email || '').trim();
+    if (!emailDest) {
+      showToast('Cadastro sem e-mail do solicitante. Não é possível enviar devolutiva automática.');
+      return;
+    }
+
+    setDevSending(true);
+
+    // 1. Gera token de correção
+    const linkCorrecao = await gerarTokenCorrecao('fornecedor', sel.id, motivoFinal, devCampos);
+    if (!linkCorrecao) {
+      showToast('Erro ao gerar link de correção. Tente novamente.');
+      setDevSending(false);
+      return;
+    }
+
+    // 2. Atualiza cadastro
+    const upd = {
+      status: 'rejeitado',
+      motivo_devolucao: motivoFinal,
+      campos_a_corrigir: devCampos,
+      devolvido_em: new Date().toISOString(),
+      devolvido_por: user.nome,
+      finalizado_por: user.nome,
+      data_finalizacao: new Date().toISOString(),
+    };
+    const { error: updErr } = await supabase
+      .from('fornecedores')
+      .update(upd)
+      .eq('id', sel.id);
+
+    if (updErr) {
+      console.error('[sendDevolutiva] Erro update:', updErr);
+      showToast(`Erro ao devolver: ${updErr.message}`);
+      setDevSending(false);
+      return;
+    }
+
+    // 3. Monta lista legível de campos a corrigir
+    const camposLegiveis = devCampos
+      .map(c => CAMPO_LABELS[c] || c)
+      .join(', ') || '(nenhum campo específico — revise o cadastro completo)';
+
+    // 4. Envia e-mail
+    const r = await sendEmail(EMAILJS_TEMPLATE_DEVOLVIDO, {
+      to_name:         (sel.nome_solicitante || 'Solicitante').trim(),
+      to_email:        emailDest,
+      fornecedor_nome: sel.razao_social || sel.nome_completo || 'Cadastro',
+      motivo:          motivoFinal,
+      campos_corrigir: camposLegiveis,
+      link_correcao:   linkCorrecao,
+      analista_nome:   user.nome,
+    });
+    if (r.ok) showToast('Devolutiva enviada — e-mail despachado ao solicitante');
+    else showToast(`Cadastro devolvido, mas e-mail falhou: ${r.error}`);
+
+    // 5. Auditoria
+    logAcao('devolveu', 'fornecedor', sel.id, {
+      motivo: motivoFinal,
+      campos_a_corrigir: devCampos,
+      email_enviado: r.ok,
+    });
+
+    setSel({ ...sel, ...upd });
+    setShowDev(false);
+    setDevMotivoSel('');
+    setDevMsg('');
+    setDevCampos([]);
+    setDevSending(false);
   };
 
   /* ── Kanban ──────────────────────────────────── */
@@ -533,75 +830,149 @@ export default function Home() {
             ))}
           </div>
 
-          {/* ── Sub-aba: PRODUTOS (placeholder por enquanto) ── */}
+          {/* ── Sub-aba: PRODUTOS ── */}
           {subTab === 'produtos' && (
-            <div style={{background:'#fff',padding:40,borderRadius:16,border:'1px solid #e2e8f0',textAlign:'center',color:'#64748b'}}>
-              <div style={{fontSize:'3rem',marginBottom:16}}>📦</div>
-              <div style={{fontSize:'1.1rem',fontWeight:700,color:'#0f172a',marginBottom:8}}>Cadastros de Produtos</div>
-              <div style={{fontSize:'.85rem',marginBottom:20}}>
-                {produtos.length === 0
-                  ? 'Nenhum produto cadastrado ainda. Em breve o formulário interno estará disponível.'
-                  : `${produtos.length} cadastro(s) de produto recebido(s).`}
+            <div>
+              {/* Stats */}
+              <div style={{display:'grid',gridTemplateColumns:'repeat(4, 1fr)',gap:12,marginBottom:20}}>
+                {[
+                  { n: produtos.filter(p=>p.status==='pendente').length,   l:'Pendentes',  c:'#D97706', bg:'#FFFBEB' },
+                  { n: produtos.filter(p=>p.status==='em_analise').length, l:'Em Análise', c:'#2563EB', bg:'#EFF6FF' },
+                  { n: produtos.filter(p=>p.status==='aprovado').length,   l:'Aprovados',  c:'#059669', bg:'#ECFDF5' },
+                  { n: produtos.filter(p=>p.status==='rejeitado').length,  l:'Devolvidos', c:'#DC2626', bg:'#FEF2F2' },
+                ].map((s,i)=>(
+                  <div key={i} style={{padding:'16px 18px',borderRadius:12,background:s.bg,border:'1px solid rgba(0,0,0,.04)'}}>
+                    <div style={{fontSize:'.7rem',color:s.c,fontWeight:600,letterSpacing:'.3px',textTransform:'uppercase'}}>{s.l}</div>
+                    <div style={{fontSize:'1.7rem',fontWeight:800,color:s.c,marginTop:2}}>{s.n}</div>
+                  </div>
+                ))}
               </div>
-              {produtos.length > 0 && (
-                <div style={{maxWidth:800,margin:'0 auto',display:'grid',gap:8}}>
-                  {produtos.slice(0, 20).map(p => {
-                    const st = ST[p.status] || ST.pendente;
-                    return (
-                      <div key={p.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'12px 16px',background:'#f8fafc',borderRadius:10,border:'1px solid #e2e8f0'}}>
-                        <div style={{textAlign:'left'}}>
-                          <div style={{fontWeight:600,color:'#0f172a',fontSize:'.88rem'}}>{(p.descricao || '').slice(0, 60)}{p.descricao && p.descricao.length > 60 ? '...' : ''}</div>
-                          <div style={{fontSize:'.72rem',color:'#94a3b8',marginTop:2}}>
-                            {p.email_solicitante} · {new Date(p.created_at).toLocaleDateString('pt-BR')}
-                          </div>
-                        </div>
-                        <div style={{background:st.bg,color:st.c,padding:'4px 12px',borderRadius:20,fontSize:'.7rem',fontWeight:700}}>{st.l}</div>
-                      </div>
-                    );
-                  })}
+
+              {/* Lista */}
+              <div style={{background:'#fff',borderRadius:16,border:'1px solid #e2e8f0',padding:18}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
+                  <h2 style={{fontSize:'.95rem',fontWeight:700,color:'#0f172a'}}>Cadastros de Produtos</h2>
+                  <span style={{fontSize:'.72rem',color:'#94a3b8'}}>{produtos.length} total</span>
                 </div>
-              )}
-              <div style={{marginTop:24,fontSize:'.75rem',color:'#94a3b8',fontStyle:'italic'}}>
-                🚧 Tela completa de gerenciamento de produtos será entregue na próxima atualização.
+
+                {produtos.length === 0 ? (
+                  <div style={{textAlign:'center',padding:60,color:'#94a3b8'}}>
+                    <div style={{fontSize:'2.5rem',marginBottom:12}}>📦</div>
+                    <div style={{fontWeight:600}}>Nenhum cadastro de produto ainda</div>
+                    <div style={{fontSize:'.78rem',marginTop:4}}>Os cadastros aparecem aqui quando enviados pelo formulário interno</div>
+                  </div>
+                ) : (
+                  <div style={{display:'grid',gap:8}}>
+                    {produtos.map(p => {
+                      const st = ST[p.status] || ST.pendente;
+                      const isFinal = p.status === 'aprovado' || p.status === 'rejeitado';
+                      return (
+                        <div key={p.id} style={{display:'flex',alignItems:'flex-start',gap:14,padding:'14px 16px',borderRadius:10,border:'1px solid #e2e8f0',background:'#fff'}}>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4,flexWrap:'wrap'}}>
+                              <span style={{background:st.bg,color:st.c,padding:'2px 10px',borderRadius:20,fontSize:'.68rem',fontWeight:700}}>{st.l}</span>
+                              {p.codigo_protheus && <span style={{fontFamily:'monospace',background:'#ECFDF5',color:'#059669',padding:'2px 8px',borderRadius:5,fontSize:'.72rem',fontWeight:700}}>{p.codigo_protheus}</span>}
+                              {p.ncm && <span style={{fontSize:'.7rem',color:'#64748b'}}>NCM: <strong>{p.ncm}</strong></span>}
+                              {p.unidade_medida && <span style={{fontSize:'.7rem',color:'#64748b'}}>UN: <strong>{p.unidade_medida}</strong></span>}
+                            </div>
+                            <div style={{fontWeight:600,color:'#0f172a',fontSize:'.88rem',marginBottom:2,lineHeight:1.3}}>{(p.descricao||'').slice(0,140)}{p.descricao && p.descricao.length > 140 ? '…' : ''}</div>
+                            {p.finalidade && <div style={{fontSize:'.74rem',color:'#475569',marginBottom:4}}><strong>Finalidade:</strong> {p.finalidade}</div>}
+                            <div style={{fontSize:'.72rem',color:'#94a3b8'}}>
+                              {p.nome_solicitante} ({p.email_solicitante}) · {new Date(p.created_at).toLocaleDateString('pt-BR')}
+                              {p.atribuido_para && <span> · Em análise: <strong style={{color:'#475569'}}>{p.atribuido_para}</strong></span>}
+                            </div>
+                            {p.motivo_devolucao && <div style={{color:'#DC2626',marginTop:4,fontSize:'.72rem'}}>Motivo: {p.motivo_devolucao}</div>}
+                          </div>
+                          {!isFinal && (
+                            <div style={{display:'flex',gap:6,flexShrink:0,flexWrap:'wrap',justifyContent:'flex-end'}}>
+                              {p.status === 'pendente' && (
+                                <button onClick={()=>pegarProduto(p.id)} style={btnAction('#2563EB','#EFF6FF')}>📌 Pegar</button>
+                              )}
+                              <button onClick={()=>{
+                                const cod = prompt('Código do produto no Protheus:');
+                                if (cod) concluirProduto(p, cod);
+                              }} style={btnAction('#059669','#ECFDF5')}>✓ Concluir</button>
+                              {isAdmin && <button onClick={()=>excluirProduto(p.id)} style={btnAction('#94a3b8','#F8FAFC')}>🗑</button>}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          {/* ── Sub-aba: DESBLOQUEIOS (placeholder por enquanto) ── */}
+          {/* ── Sub-aba: DESBLOQUEIOS ── */}
           {subTab === 'desbloqueios' && (
-            <div style={{background:'#fff',padding:40,borderRadius:16,border:'1px solid #e2e8f0',textAlign:'center',color:'#64748b'}}>
-              <div style={{fontSize:'3rem',marginBottom:16}}>🔓</div>
-              <div style={{fontSize:'1.1rem',fontWeight:700,color:'#0f172a',marginBottom:8}}>Pedidos de Desbloqueio</div>
-              <div style={{fontSize:'.85rem',marginBottom:20}}>
-                {desbloqueios.length === 0
-                  ? 'Nenhum pedido de desbloqueio ainda. Em breve o formulário estará disponível.'
-                  : `${desbloqueios.length} pedido(s) de desbloqueio recebido(s).`}
+            <div>
+              {/* Stats */}
+              <div style={{display:'grid',gridTemplateColumns:'repeat(4, 1fr)',gap:12,marginBottom:20}}>
+                {[
+                  { n: desbloqueios.filter(d=>d.status==='pendente').length,     l:'Pendentes',     c:'#D97706', bg:'#FFFBEB' },
+                  { n: desbloqueios.filter(d=>d.status==='em_analise').length,   l:'Em Análise',    c:'#2563EB', bg:'#EFF6FF' },
+                  { n: desbloqueios.filter(d=>d.status==='desbloqueado').length, l:'Desbloqueados', c:'#059669', bg:'#ECFDF5' },
+                  { n: desbloqueios.filter(d=>d.status==='rejeitado').length,    l:'Rejeitados',    c:'#DC2626', bg:'#FEF2F2' },
+                ].map((s,i)=>(
+                  <div key={i} style={{padding:'16px 18px',borderRadius:12,background:s.bg,border:'1px solid rgba(0,0,0,.04)'}}>
+                    <div style={{fontSize:'.7rem',color:s.c,fontWeight:600,letterSpacing:'.3px',textTransform:'uppercase'}}>{s.l}</div>
+                    <div style={{fontSize:'1.7rem',fontWeight:800,color:s.c,marginTop:2}}>{s.n}</div>
+                  </div>
+                ))}
               </div>
-              {desbloqueios.length > 0 && (
-                <div style={{maxWidth:800,margin:'0 auto',display:'grid',gap:8}}>
-                  {desbloqueios.slice(0, 20).map(d => {
-                    const st = ST[d.status === 'desbloqueado' ? 'aprovado' : d.status] || ST.pendente;
-                    return (
-                      <div key={d.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'12px 16px',background:'#f8fafc',borderRadius:10,border:'1px solid #e2e8f0'}}>
-                        <div style={{textAlign:'left'}}>
-                          <div style={{fontWeight:600,color:'#0f172a',fontSize:'.88rem'}}>
-                            <span style={{fontFamily:'monospace',background:'#fef3c7',color:'#92400e',padding:'1px 6px',borderRadius:4,fontSize:'.78rem',marginRight:6}}>{d.codigo_produto}</span>
-                            {d.nome_produto}
-                          </div>
-                          <div style={{fontSize:'.72rem',color:'#94a3b8',marginTop:2}}>
-                            {d.email_solicitante} · {new Date(d.created_at).toLocaleDateString('pt-BR')}
-                          </div>
-                        </div>
-                        <div style={{background:st.bg,color:st.c,padding:'4px 12px',borderRadius:20,fontSize:'.7rem',fontWeight:700}}>
-                          {d.status === 'desbloqueado' ? 'Desbloqueado' : st.l}
-                        </div>
-                      </div>
-                    );
-                  })}
+
+              {/* Lista */}
+              <div style={{background:'#fff',borderRadius:16,border:'1px solid #e2e8f0',padding:18}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
+                  <h2 style={{fontSize:'.95rem',fontWeight:700,color:'#0f172a'}}>Pedidos de Desbloqueio</h2>
+                  <span style={{fontSize:'.72rem',color:'#94a3b8'}}>{desbloqueios.length} total</span>
                 </div>
-              )}
-              <div style={{marginTop:24,fontSize:'.75rem',color:'#94a3b8',fontStyle:'italic'}}>
-                🚧 Tela completa de gerenciamento de desbloqueios será entregue na próxima atualização.
+
+                {desbloqueios.length === 0 ? (
+                  <div style={{textAlign:'center',padding:60,color:'#94a3b8'}}>
+                    <div style={{fontSize:'2.5rem',marginBottom:12}}>🔓</div>
+                    <div style={{fontWeight:600}}>Nenhum pedido de desbloqueio ainda</div>
+                    <div style={{fontSize:'.78rem',marginTop:4}}>Os pedidos aparecem aqui quando enviados pelo formulário interno</div>
+                  </div>
+                ) : (
+                  <div style={{display:'grid',gap:8}}>
+                    {desbloqueios.map(d => {
+                      const st = ST[d.status === 'desbloqueado' ? 'aprovado' : d.status] || ST.pendente;
+                      const statusLabel = d.status === 'desbloqueado' ? 'Desbloqueado' : st.l;
+                      const isFinal = d.status === 'desbloqueado' || d.status === 'rejeitado';
+                      return (
+                        <div key={d.id} style={{display:'flex',alignItems:'center',gap:14,padding:'14px 16px',borderRadius:10,border:'1px solid #e2e8f0',background:'#fff'}}>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4,flexWrap:'wrap'}}>
+                              <span style={{fontFamily:'monospace',background:'#fef3c7',color:'#92400e',padding:'2px 8px',borderRadius:5,fontSize:'.78rem',fontWeight:700}}>{d.codigo_produto}</span>
+                              <span style={{fontWeight:600,color:'#0f172a',fontSize:'.9rem'}}>{d.nome_produto}</span>
+                              <span style={{background:st.bg,color:st.c,padding:'2px 10px',borderRadius:20,fontSize:'.68rem',fontWeight:700}}>{statusLabel}</span>
+                            </div>
+                            <div style={{fontSize:'.72rem',color:'#94a3b8'}}>
+                              {d.nome_solicitante} ({d.email_solicitante}) · {new Date(d.created_at).toLocaleDateString('pt-BR')}
+                              {d.atribuido_para && <span> · Em análise: <strong style={{color:'#475569'}}>{d.atribuido_para}</strong></span>}
+                              {d.motivo_rejeicao && <div style={{color:'#DC2626',marginTop:4,fontSize:'.72rem'}}>Motivo da rejeição: {d.motivo_rejeicao}</div>}
+                            </div>
+                          </div>
+                          {!isFinal && (
+                            <div style={{display:'flex',gap:6,flexShrink:0}}>
+                              {d.status === 'pendente' && (
+                                <button onClick={()=>pegarDesbloqueio(d.id)} style={btnAction('#2563EB','#EFF6FF')}>📌 Pegar</button>
+                              )}
+                              <button onClick={()=>concluirDesbloqueio(d)} style={btnAction('#059669','#ECFDF5')}>✓ Desbloquear</button>
+                              <button onClick={()=>{
+                                const m = prompt('Motivo da rejeição:');
+                                if (m) rejeitarDesbloqueio(d, m);
+                              }} style={btnAction('#DC2626','#FEF2F2')}>↩ Rejeitar</button>
+                              {isAdmin && <button onClick={()=>excluirDesbloqueio(d.id)} style={btnAction('#94a3b8','#F8FAFC')}>🗑</button>}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -756,20 +1127,80 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Devolutiva */}
+              {/* Devolutiva — motivo + campos a corrigir + link único */}
               {showDev && (
-                <div style={{padding:16,background:'#FEF2F2',borderRadius:12,marginBottom:16,border:'1px solid #FECACA'}}>
-                  <div style={{fontSize:'.78rem',fontWeight:700,color:'#DC2626',marginBottom:4}}>Devolutiva por e-mail</div>
-                  <div style={{fontSize:'.72rem',color:'#94a3b8',marginBottom:10}}>Para: <strong>{sel.email}</strong></div>
-                  <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:10}}>
-                    {DEV_MOTIVOS.map(m => (
-                      <button key={m} onClick={()=>setDevMsg(prev=>prev?prev+'; '+m:m)} style={{padding:'6px 12px',borderRadius:20,border:'1px solid #FECACA',background:'#fff',color:'#DC2626',fontSize:'.72rem',cursor:'pointer',fontFamily:'inherit',fontWeight:500,transition:'.15s'}}>{m}</button>
-                    ))}
+                <div style={{padding:18,background:'#FEF2F2',borderRadius:14,marginBottom:16,border:'1px solid #FECACA'}}>
+                  <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+                    <div style={{width:32,height:32,borderRadius:8,background:'#DC2626',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'.9rem',color:'#fff'}}>↩</div>
+                    <div style={{fontSize:'.88rem',fontWeight:700,color:'#DC2626'}}>Devolver para Correção</div>
                   </div>
-                  <textarea value={devMsg} onChange={e=>setDevMsg(e.target.value)} placeholder="Descreva o que precisa ser corrigido..." style={{width:'100%',padding:'10px 14px',borderRadius:8,border:'1px solid #FECACA',fontSize:'.84rem',minHeight:70,resize:'vertical',outline:'none',fontFamily:'inherit',background:'#fff'}} />
-                  <div style={{display:'flex',gap:8,marginTop:10}}>
-                    <button onClick={sendDevolutiva} style={{padding:'10px 18px',borderRadius:8,border:'none',background:'#DC2626',color:'#fff',fontFamily:'inherit',fontSize:'.78rem',fontWeight:700,cursor:'pointer'}}>📧 Enviar Devolutiva</button>
-                    <button onClick={()=>{setShowDev(false);setDevMsg('')}} style={{padding:'10px 18px',borderRadius:8,border:'1px solid #e2e8f0',background:'#fff',fontFamily:'inherit',fontSize:'.78rem',fontWeight:500,cursor:'pointer',color:'#94a3b8'}}>Cancelar</button>
+                  <div style={{fontSize:'.72rem',color:'#64748b',marginBottom:14}}>
+                    Para: <strong style={{color:'#0f172a'}}>{sel.email_solicitante || sel.email || '(sem e-mail)'}</strong>
+                    {!sel.email_solicitante && sel.email && (
+                      <span style={{marginLeft:8,padding:'1px 6px',background:'#fef3c7',color:'#92400e',borderRadius:4,fontSize:'.65rem',fontWeight:600}}>⚠ Cadastro antigo — usando e-mail da empresa</span>
+                    )}
+                  </div>
+
+                  {/* 1. Motivo pré-definido */}
+                  <div style={{marginBottom:14}}>
+                    <label style={{fontSize:'.7rem',fontWeight:700,color:'#991B1B',textTransform:'uppercase',letterSpacing:'.3px',marginBottom:6,display:'block'}}>1. Motivo da devolução *</label>
+                    <select value={devMotivoSel} onChange={e => {
+                      const m = e.target.value;
+                      setDevMotivoSel(m);
+                      // Auto-preenche campos a corrigir com base no motivo
+                      setDevCampos(MOTIVO_CAMPOS[m] || []);
+                    }} style={{width:'100%',padding:'10px 14px',borderRadius:8,border:'1px solid #FECACA',fontSize:'.84rem',outline:'none',fontFamily:'inherit',background:'#fff',color:'#0f172a'}}>
+                      <option value="">— Selecione um motivo —</option>
+                      {DEV_MOTIVOS.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  </div>
+
+                  {/* 2. Campos a corrigir (checkboxes) */}
+                  <div style={{marginBottom:14}}>
+                    <label style={{fontSize:'.7rem',fontWeight:700,color:'#991B1B',textTransform:'uppercase',letterSpacing:'.3px',marginBottom:6,display:'block'}}>2. Campos que precisam ser corrigidos</label>
+                    <div style={{fontSize:'.7rem',color:'#94a3b8',marginBottom:8}}>Marque os campos. O link enviado ao solicitante mostrará apenas estes campos para correção.</div>
+                    <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill, minmax(180px, 1fr))',gap:6,background:'#fff',padding:10,borderRadius:8,border:'1px solid #FECACA',maxHeight:200,overflowY:'auto'}}>
+                      {Object.entries(CAMPO_LABELS).map(([key, label]) => {
+                        const checked = devCampos.includes(key);
+                        return (
+                          <label key={key} style={{display:'flex',alignItems:'center',gap:6,padding:'4px 6px',borderRadius:6,cursor:'pointer',background:checked?'#FEF2F2':'transparent',fontSize:'.75rem',color:checked?'#991B1B':'#475569'}}>
+                            <input type="checkbox" checked={checked} onChange={() => {
+                              setDevCampos(prev => checked ? prev.filter(c => c !== key) : [...prev, key]);
+                            }} style={{accentColor:'#DC2626',cursor:'pointer'}} />
+                            {label}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 3. Observação adicional */}
+                  <div style={{marginBottom:14}}>
+                    <label style={{fontSize:'.7rem',fontWeight:700,color:'#991B1B',textTransform:'uppercase',letterSpacing:'.3px',marginBottom:6,display:'block'}}>3. Observação adicional (opcional)</label>
+                    <textarea value={devMsg} onChange={e=>setDevMsg(e.target.value)} placeholder="Detalhes específicos sobre o problema..." style={{width:'100%',padding:'10px 14px',borderRadius:8,border:'1px solid #FECACA',fontSize:'.84rem',minHeight:60,resize:'vertical',outline:'none',fontFamily:'inherit',background:'#fff'}} />
+                  </div>
+
+                  {/* Preview rápido */}
+                  {(devMotivoSel || devMsg) && (
+                    <div style={{background:'#fff',padding:12,borderRadius:8,border:'1px dashed #FECACA',marginBottom:14,fontSize:'.78rem',color:'#475569'}}>
+                      <div style={{fontSize:'.65rem',fontWeight:700,color:'#94a3b8',textTransform:'uppercase',letterSpacing:'.3px',marginBottom:4}}>Preview do que o solicitante verá</div>
+                      <div><strong>Motivo:</strong> {devMotivoSel || '(sem motivo)'}</div>
+                      {devMsg && <div style={{marginTop:4}}><strong>Observação:</strong> {devMsg}</div>}
+                      <div style={{marginTop:4}}><strong>Campos a corrigir:</strong> {devCampos.length > 0 ? devCampos.map(c => CAMPO_LABELS[c] || c).join(', ') : '(nenhum específico)'}</div>
+                    </div>
+                  )}
+
+                  <div style={{display:'flex',gap:8}}>
+                    <button onClick={sendDevolutiva} disabled={devSending || !devMotivoSel && !devMsg.trim()} style={{
+                      flex:1,padding:'12px',borderRadius:10,border:'none',
+                      background: (devSending || (!devMotivoSel && !devMsg.trim())) ? '#94a3b8' : '#DC2626',
+                      color:'#fff',fontFamily:'inherit',fontSize:'.82rem',fontWeight:700,
+                      cursor: (devSending || (!devMotivoSel && !devMsg.trim())) ? 'not-allowed' : 'pointer',
+                      transition:'.15s'
+                    }}>
+                      {devSending ? '⏳ Enviando...' : '↩ Devolver e Enviar E-mail'}
+                    </button>
+                    <button onClick={()=>{setShowDev(false);setDevMotivoSel('');setDevMsg('');setDevCampos([])}} style={{padding:'12px 20px',borderRadius:10,border:'1px solid #FECACA',background:'#fff',fontFamily:'inherit',fontSize:'.82rem',fontWeight:500,cursor:'pointer',color:'#94a3b8'}}>Cancelar</button>
                   </div>
                 </div>
               )}
@@ -1229,4 +1660,7 @@ function menuItem() {
 }
 function tdS() {
   return { padding:'14px 18px',fontSize:'.84rem',verticalAlign:'middle' };
+}
+function btnAction(color, bg) {
+  return { padding:'7px 12px',borderRadius:8,border:`1px solid ${color}33`,background:bg,color,fontFamily:'inherit',fontSize:'.74rem',fontWeight:600,cursor:'pointer',whiteSpace:'nowrap',transition:'.15s' };
 }
