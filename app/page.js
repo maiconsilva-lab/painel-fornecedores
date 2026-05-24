@@ -196,14 +196,46 @@ export default function Home() {
   const [concluirData, setConcluirData] = useState({ codigo:'' });
   const [sendingEmail, setSendingEmail] = useState(false);
 
-  /* ── Aparência: tema, wallpaper, cor, densidade ── */
-  const [tema, setTema] = useState('premix_claro');
-  const [corPrimaria, setCorPrimaria] = useState('#00A650');
-  const [wallpaper, setWallpaper] = useState(null);
-  const [wallpaperOpacidade, setWallpaperOpacidade] = useState(8);
-  const [densidade, setDensidade] = useState('normal');
+  /* ── Aparência: tema, wallpaper, cor, densidade ──
+     IMPORTANTE: inicialização lazy a partir do localStorage para evitar FOUC.
+     Só fazemos isso no client (typeof window !== 'undefined') pra não quebrar SSR. */
+  const readLS = (k, fallback) => {
+    if (typeof window === 'undefined') return fallback;
+    try { const v = window.localStorage.getItem('pmx_'+k); return v !== null ? JSON.parse(v) : fallback; }
+    catch { return fallback; }
+  };
+  const writeLS = (k, v) => {
+    if (typeof window === 'undefined') return;
+    try { window.localStorage.setItem('pmx_'+k, JSON.stringify(v)); } catch {}
+  };
+
+  const [tema, setTema] = useState(() => readLS('tema', 'premix_claro'));
+  const [corPrimaria, setCorPrimaria] = useState(() => readLS('corPrimaria', '#00A650'));
+  const [wallpaper, setWallpaper] = useState(() => readLS('wallpaper', null));
+  const [wallpaperOpacidade, setWallpaperOpacidade] = useState(() => readLS('wallpaperOpacidade', 8));
+  const [densidade, setDensidade] = useState(() => readLS('densidade', 'normal'));
   const [prefsLoaded, setPrefsLoaded] = useState(false);
   const [apCat, setApCat] = useState('Agro'); // categoria selecionada na galeria
+  const [sidebarCol, setSidebarCol] = useState(() => readLS('sidebarCol', false));
+  const [searchGlobal, setSearchGlobal] = useState(''); // busca global da topbar
+  const [searchGlobalDeb, setSearchGlobalDeb] = useState(''); // versão "debounced" (250ms)
+
+
+  /* Persistir cada mudança no localStorage (mirror do Supabase, latência zero) */
+  useEffect(() => { writeLS('tema', tema); }, [tema]);
+  useEffect(() => { writeLS('corPrimaria', corPrimaria); }, [corPrimaria]);
+  useEffect(() => { writeLS('wallpaper', wallpaper); }, [wallpaper]);
+  useEffect(() => { writeLS('wallpaperOpacidade', wallpaperOpacidade); }, [wallpaperOpacidade]);
+  useEffect(() => { writeLS('densidade', densidade); }, [densidade]);
+  useEffect(() => { writeLS('sidebarCol', sidebarCol); }, [sidebarCol]);
+
+  /* Debounce da busca global — atrasa 250ms o filtro para evitar engasgo em bases grandes */
+  useEffect(() => {
+    const t = setTimeout(() => setSearchGlobalDeb(searchGlobal), 250);
+    return () => clearTimeout(t);
+  }, [searchGlobal]);
+
+
 
   /* ── Kanban State ────────────────────────────── */
   const [kanView, setKanView] = useState('todos');
@@ -260,17 +292,38 @@ export default function Home() {
 
   useEffect(() => { const s = localStorage.getItem('premix_user'); if (s) try { setUser(JSON.parse(s)); } catch {} }, []);
 
+  /* ESC fecha modais e dropdowns abertos (acessibilidade) */
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key !== 'Escape') return;
+      if (searchGlobal) { setSearchGlobal(''); return; }
+      if (showModal) { closeDetail(); return; }
+      if (showNewTask) { setShowNewTask(false); return; }
+      if (showNewUser) { setShowNewUser(false); return; }
+      if (showLogout) { setShowLogout(false); return; }
+      if (editTask) { setEditTask(null); return; }
+      if (editUser) { setEditUser(null); return; }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  });
+
+  /* Limite inicial de registros carregados por tabela.
+     Aumentar conforme necessário. Para paginação real, usar .range(start, end)
+     com state de página — deixe pra implementar quando passar de ~500 registros. */
+  const PAGE_LIMIT = 100;
+
   const fetchAll = useCallback(async () => {
     if (!user) return;
     const [
       { data: f }, { data: u }, { data: k },
       { data: p }, { data: d }
     ] = await Promise.all([
-      supabase.from('fornecedores').select('*').order('created_at', { ascending: false }),
+      supabase.from('fornecedores').select('*').order('created_at', { ascending: false }).limit(PAGE_LIMIT),
       supabase.from('usuarios_painel').select('*').order('nome'),
-      supabase.from('kanban_tarefas').select('*').order('ordem', { ascending: true }),
-      supabase.from('produtos').select('*').order('created_at', { ascending: false }),
-      supabase.from('desbloqueios').select('*').order('created_at', { ascending: false }),
+      supabase.from('kanban_tarefas').select('*').order('ordem', { ascending: true }).limit(PAGE_LIMIT),
+      supabase.from('produtos').select('*').order('created_at', { ascending: false }).limit(PAGE_LIMIT),
+      supabase.from('desbloqueios').select('*').order('created_at', { ascending: false }).limit(PAGE_LIMIT),
     ]);
     if (f) setForn(f);
     if (u) setUsu(u);
@@ -388,16 +441,20 @@ export default function Home() {
     setSav(false);
   };
 
-  /* ── EmailJS — configs ────────────────────────── */
-  const EMAILJS_SERVICE  = 'service_w7xzoya';
-  const EMAILJS_PUBLIC   = 'A5igXA6RKwkf84zyR';
-
-  // Você terá UM template no EmailJS com várias variáveis genéricas.
-  // O conteúdo do e-mail muda conforme as variáveis preenchidas.
-  // (Ver LEIA-PRIMEIRO sobre como configurar este template único.)
-  const EMAILJS_TEMPLATE_APROVADO   = 'template_9r33gy7';   // existente: cadastro aprovado
-  const EMAILJS_TEMPLATE_DEVOLVIDO  = 'template_devolvido'; // novo: criar no EmailJS
-  const EMAILJS_TEMPLATE_DESBLOQ    = 'template_desbloqueado'; // novo: criar no EmailJS
+  /* ── EmailJS — configs ──────────────────────────
+     Vars de ambiente (.env.local na raiz do projeto):
+       NEXT_PUBLIC_EMAILJS_SERVICE=service_w7xzoya
+       NEXT_PUBLIC_EMAILJS_PUBLIC=A5igXA6RKwkf84zyR
+       NEXT_PUBLIC_EMAILJS_TEMPLATE_APROVADO=template_9r33gy7
+       NEXT_PUBLIC_EMAILJS_TEMPLATE_DEVOLVIDO=template_devolvido
+       NEXT_PUBLIC_EMAILJS_TEMPLATE_DESBLOQ=template_desbloqueado
+     Não esqueça de configurar no Vercel também (Settings → Environment Variables).
+     Fallbacks abaixo são os valores antigos hardcoded — funcionam mesmo sem .env. */
+  const EMAILJS_SERVICE  = process.env.NEXT_PUBLIC_EMAILJS_SERVICE  || 'service_w7xzoya';
+  const EMAILJS_PUBLIC   = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC   || 'A5igXA6RKwkf84zyR';
+  const EMAILJS_TEMPLATE_APROVADO   = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_APROVADO  || 'template_9r33gy7';
+  const EMAILJS_TEMPLATE_DEVOLVIDO  = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_DEVOLVIDO || 'template_devolvido';
+  const EMAILJS_TEMPLATE_DESBLOQ    = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_DESBLOQ   || 'template_desbloqueado';
 
   /* ── Envia um e-mail genérico via EmailJS ── */
   const sendEmail = async (templateId, params) => {
@@ -740,11 +797,13 @@ export default function Home() {
   /* ── Kanban ──────────────────────────────────── */
   const addKanTask = async (e) => {
     e.preventDefault();
-    if (!newTask.titulo.trim() || !newTask.atribuido_para) { alert('Preencha título e atribua a alguém'); return; }
+    if (!newTask.titulo.trim()) { showToast('Informe o título da tarefa'); return; }
+    if (!newTask.atribuido_para) { showToast('Atribua a tarefa a alguém'); return; }
     const dt = { ...newTask, criado_por: user.nome, checklist: [], comentarios: [] };
     if (!dt.prazo) delete dt.prazo;
     const { error } = await supabase.from('kanban_tarefas').insert(dt);
-    if (error) { alert('Erro: ' + error.message); return; }
+    if (error) { showToast('Erro ao criar: ' + error.message); return; }
+    showToast('Tarefa criada!');
     setShowNewTask(false);
     setNewTask({ titulo:'',descricao:'',atribuido_para:'',prioridade:'media',prazo:'',status:'backlog' });
     await fetchAll();
@@ -773,16 +832,20 @@ export default function Home() {
   /* ── Usuarios (admin) ────────────────────────── */
   const addUser = async (e) => {
     e.preventDefault();
-    if (!newUser.nome.trim() || !newUser.email.trim()) return;
+    if (!newUser.nome.trim()) { showToast('Informe o nome do usuário'); return; }
+    if (!newUser.email.trim()) { showToast('Informe o e-mail'); return; }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(newUser.email.trim())) { showToast('E-mail inválido'); return; }
     const { error } = await supabase.from('usuarios_painel').insert({ ...newUser, email: newUser.email.toLowerCase(), ativo: true, primeiro_login: true });
-    if (error) { alert('Erro: ' + error.message); return; }
+    if (error) { showToast('Erro ao criar: ' + error.message); return; }
+    showToast('Usuário criado!');
     setShowNewUser(false);
     setNewUser({ nome:'',email:'',senha_hash:'premix2024',cargo:'Analista',role:'user',telefone:'' });
     await fetchAll();
   };
   const updateUser = async (id, data) => {
     const { error } = await supabase.from('usuarios_painel').update(data).eq('id', id);
-    if (error) { alert('Erro: ' + error.message); return; }
+    if (error) { showToast('Erro ao atualizar: ' + error.message); return; }
+    showToast('Usuário atualizado');
     setEditUser(null); await fetchAll();
   };
   const deleteUser = async (id, nome) => {
@@ -854,8 +917,8 @@ export default function Home() {
       <div style={{background:'#fff',borderRadius:16,padding:'48px 40px',maxWidth:420,width:'100%',textAlign:'center',position:'relative',overflow:'hidden',boxShadow:'0 12px 32px rgba(16,24,40,.08),0 4px 8px rgba(16,24,40,.04)',border:'1px solid #E5E9EF',animation:'loginFadeIn .35s cubic-bezier(.16,1,.3,1)'}}>
         <div style={{position:'absolute',top:0,left:0,right:0,height:3,background:'linear-gradient(90deg,#00A650 0%,#00A650 30%,#C8A951 50%,#E63946 70%,#E63946 100%)',backgroundSize:'200% 100%',animation:'premixShimmer 8s linear infinite'}} />
         <img src="https://premix.com.br/wp-content/uploads/2023/06/Logotipo_Premix_Positivo_Com-Bandeira.png" alt="Premix" style={{height:44,marginBottom:28}} />
-        <h2 style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:20,fontWeight:700,letterSpacing:'-.4px',marginBottom:6,color:'#1A2332'}}>Painel de Fornecedores</h2>
-        <p style={{fontSize:13,color:'#8B94A3',marginBottom:32}}>Núcleo Fiscal — Acesso restrito</p>
+        <h2 style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:20,fontWeight:700,letterSpacing:'-.4px',marginBottom:6,color:'#1A2332'}}>Núcleo Fiscal</h2>
+        <p style={{fontSize:13,color:'#8B94A3',marginBottom:32}}>Gestão de fornecedores, produtos e desbloqueios</p>
         <form onSubmit={doLogin} style={{display:'flex',flexDirection:'column',gap:12}}>
           <input className="login-input" placeholder="E-mail corporativo" type="email" value={loginForm.email} onChange={e=>setLF({...loginForm,email:e.target.value})} disabled={loginLocked} style={{width:'100%',padding:'12px 14px',background:'#F8F9FB',border:'1px solid #E5E9EF',borderRadius:10,fontSize:14,fontFamily:'inherit',color:'#1A2332',outline:'none'}} />
           <input className="login-input" placeholder="Senha" type="password" value={loginForm.senha} onChange={e=>setLF({...loginForm,senha:e.target.value})} disabled={loginLocked} style={{width:'100%',padding:'12px 14px',background:'#F8F9FB',border:'1px solid #E5E9EF',borderRadius:10,fontSize:14,fontFamily:'inherit',color:'#1A2332',outline:'none'}} />
@@ -943,6 +1006,30 @@ export default function Home() {
         .pmx-search-input { transition: all .15s; }
         .pmx-fade-in { animation: fadeIn .25s ease; }
 
+        /* Scrollbars finas (Chromium/Webkit) */
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: ${T.bg}; }
+        ::-webkit-scrollbar-thumb { background: ${T.border}; border-radius: 10px; border: 2px solid ${T.bg}; }
+        ::-webkit-scrollbar-thumb:hover { background: ${T.text3}; }
+        /* Firefox */
+        * { scrollbar-width: thin; scrollbar-color: ${T.border} ${T.bg}; }
+
+        /* Focus states acessíveis */
+        button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+          outline: 2px solid ${T.primary} !important;
+          outline-offset: 2px !important;
+          border-radius: 6px;
+        }
+
+        /* Responsivo: tablet e mobile */
+        @media (max-width: 1024px) {
+          .pmx-stats-5 { grid-template-columns: repeat(3, 1fr) !important; }
+          .pmx-stats-4 { grid-template-columns: repeat(2, 1fr) !important; }
+        }
+        @media (max-width: 640px) {
+          .pmx-stats-5, .pmx-stats-4 { grid-template-columns: 1fr !important; }
+        }
+
         /* Theme overrides para sidebar, topbar, page-head — só os elementos com classe pmx-themed */
         .pmx-themed-bg { background: ${T.surface} !important; border-color: ${T.border} !important; }
         .pmx-themed-text { color: ${T.text1} !important; }
@@ -957,71 +1044,84 @@ export default function Home() {
       {toast && <div style={{position:'fixed',bottom:28,left:'50%',transform:'translateX(-50%)',background:'#1A2332',color:'#fff',padding:'12px 24px',borderRadius:10,fontSize:'.84rem',fontWeight:600,zIndex:9999,boxShadow:'0 12px 32px rgba(16,24,40,.18)',animation:'slideUp .3s cubic-bezier(.16,1,.3,1)'}}>{toast}</div>}
 
       {/* ══ APP LAYOUT: SIDEBAR + MAIN ══ */}
-      <div style={{display:'grid',gridTemplateColumns:'240px 1fr',minHeight:'100vh'}}>
+      <div style={{display:'grid',gridTemplateColumns: sidebarCol ? '64px 1fr' : '240px 1fr',minHeight:'100vh',transition:'grid-template-columns .2s ease'}}>
 
         {/* ── SIDEBAR ── */}
         <aside className="pmx-themed-bg" style={{background:T.surface,borderRight:`1px solid ${T.border}`,display:'flex',flexDirection:'column',position:'sticky',top:0,height:'100vh',zIndex:50}}>
-          {/* Brand */}
-          <div style={{padding:'18px 20px 16px',display:'flex',alignItems:'center',gap:12,borderBottom:'1px solid #E5E9EF'}}>
-            <img src="https://premix.com.br/wp-content/uploads/2023/06/Logotipo_Premix_Positivo_Com-Bandeira.png" alt="Premix" style={{height:30}} />
+          {/* Brand + Toggle */}
+          <div style={{padding: sidebarCol ? '18px 12px 16px' : '18px 16px 16px',display:'flex',alignItems:'center',gap:8,borderBottom:`1px solid ${T.border}`,justifyContent: sidebarCol ? 'center' : 'space-between'}}>
+            {!sidebarCol && <img src="https://premix.com.br/wp-content/uploads/2023/06/Logotipo_Premix_Positivo_Com-Bandeira.png" alt="Premix" style={{height:30}} />}
+            <button onClick={()=>setSidebarCol(!sidebarCol)} title={sidebarCol ? 'Expandir menu' : 'Recolher menu'} style={{
+              width:32,height:32,borderRadius:8,border:'1px solid '+T.border,background:T.surface2,
+              color:T.text2,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'all .15s',flexShrink:0
+            }}
+              onMouseEnter={e=>{e.currentTarget.style.background='#F0F7FF';e.currentTarget.style.color='#2563EB';e.currentTarget.style.borderColor='#BFDBFE';}}
+              onMouseLeave={e=>{e.currentTarget.style.background=T.surface2;e.currentTarget.style.color=T.text2;e.currentTarget.style.borderColor=T.border;}}>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{transform: sidebarCol ? 'rotate(180deg)' : 'rotate(0deg)',transition:'transform .2s'}}>
+                <polyline points="15 18 9 12 15 6"/>
+              </svg>
+            </button>
           </div>
 
           {/* Nav */}
           <nav style={{padding:'12px 12px 0',flex:1,overflowY:'auto'}}>
-            <div style={{fontSize:10,fontWeight:600,textTransform:'uppercase',letterSpacing:'.8px',color:'#B5BCC6',padding:'14px 12px 6px'}}>Geral</div>
+            {!sidebarCol && <div style={{fontSize:10,fontWeight:600,textTransform:'uppercase',letterSpacing:'.8px',color:'#B5BCC6',padding:'14px 12px 6px'}}>Geral</div>}
             {[
               { k:'cadastros', l:'Cadastros',         icon:<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg>, count: forn.length + produtos.length + desbloqueios.length },
               { k:'kanban',    l:'Gestão de Tarefas', icon:<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>, count: kanban.filter(k=>k.status!=='concluido').length, alert: true },
             ].map(n => {
               const active = page === n.k;
               return (
-                <a key={n.k} onClick={()=>{ setPage(n.k); setSel(null); setShowModal(false); }} className={'sb-link' + (active ? ' active' : '')} style={{
-                  display:'flex',alignItems:'center',gap:11,padding:'9px 12px',borderRadius:8,
+                <a key={n.k} onClick={()=>{ setPage(n.k); setSel(null); setShowModal(false); }} title={sidebarCol ? n.l : ''} className={'sb-link' + (active ? ' active' : '')} style={{
+                  display:'flex',alignItems:'center',gap:11,padding: sidebarCol ? '10px 11px' : '9px 12px',borderRadius:8,
                   fontSize:13,fontWeight: active ? 600 : 500,
                   color: active ? '#008C44' : '#4F5868',
                   background: active ? '#E6F7EE' : 'transparent',
-                  textDecoration:'none',cursor:'pointer',position:'relative',marginBottom:1
+                  textDecoration:'none',cursor:'pointer',position:'relative',marginBottom:1,
+                  justifyContent: sidebarCol ? 'center' : 'flex-start'
                 }}>
                   {n.icon}
-                  <span style={{flex:1}}>{n.l}</span>
-                  {n.count > 0 && <span style={{fontWeight:700,fontSize:10,padding:'2px 7px',background: active ? '#00A650' : (n.alert ? '#E63946' : '#EEF1F5'),color: (active || n.alert) ? '#fff' : '#4F5868',borderRadius:20,minWidth:22,textAlign:'center',fontFamily:'Plus Jakarta Sans,sans-serif'}}>{n.count}</span>}
+                  {!sidebarCol && <span style={{flex:1}}>{n.l}</span>}
+                  {n.count > 0 && !sidebarCol && <span style={{fontWeight:700,fontSize:10,padding:'2px 7px',background: active ? '#00A650' : (n.alert ? '#E63946' : '#EEF1F5'),color: (active || n.alert) ? '#fff' : '#4F5868',borderRadius:20,minWidth:22,textAlign:'center',fontFamily:'Plus Jakarta Sans,sans-serif'}}>{n.count}</span>}
+                  {n.count > 0 && sidebarCol && <span style={{position:'absolute',top:4,right:4,minWidth:16,height:16,padding:'0 4px',background: n.alert ? '#E63946' : '#00A650',color:'#fff',borderRadius:20,fontSize:9,fontWeight:700,fontFamily:'Plus Jakarta Sans,sans-serif',display:'flex',alignItems:'center',justifyContent:'center'}}>{n.count}</span>}
                 </a>
               );
             })}
 
             {isAdmin && (<>
-              <div style={{fontSize:10,fontWeight:600,textTransform:'uppercase',letterSpacing:'.8px',color:'#B5BCC6',padding:'14px 12px 6px'}}>Administração</div>
-              <a onClick={()=>{ setPage('admin'); setSel(null); setShowModal(false); }} className={'sb-link' + (page==='admin' ? ' active' : '')} style={{
-                display:'flex',alignItems:'center',gap:11,padding:'9px 12px',borderRadius:8,fontSize:13,
+              {!sidebarCol && <div style={{fontSize:10,fontWeight:600,textTransform:'uppercase',letterSpacing:'.8px',color:'#B5BCC6',padding:'14px 12px 6px'}}>Administração</div>}
+              <a onClick={()=>{ setPage('admin'); setSel(null); setShowModal(false); }} title={sidebarCol ? 'Equipe' : ''} className={'sb-link' + (page==='admin' ? ' active' : '')} style={{
+                display:'flex',alignItems:'center',gap:11,padding: sidebarCol ? '10px 11px' : '9px 12px',borderRadius:8,fontSize:13,
                 fontWeight: page==='admin' ? 600 : 500,
                 color: page==='admin' ? '#008C44' : '#4F5868',
                 background: page==='admin' ? '#E6F7EE' : 'transparent',
-                textDecoration:'none',cursor:'pointer',position:'relative',marginBottom:1
+                textDecoration:'none',cursor:'pointer',position:'relative',marginBottom:1,
+                justifyContent: sidebarCol ? 'center' : 'flex-start'
               }}>
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                <span style={{flex:1}}>Equipe</span>
-                {usuarios.length > 0 && <span style={{fontWeight:700,fontSize:10,padding:'2px 7px',background: page==='admin' ? '#00A650' : '#EEF1F5',color: page==='admin' ? '#fff' : '#4F5868',borderRadius:20,minWidth:22,textAlign:'center',fontFamily:'Plus Jakarta Sans,sans-serif'}}>{usuarios.length}</span>}
+                {!sidebarCol && <span style={{flex:1}}>Equipe</span>}
+                {usuarios.length > 0 && !sidebarCol && <span style={{fontWeight:700,fontSize:10,padding:'2px 7px',background: page==='admin' ? '#00A650' : '#EEF1F5',color: page==='admin' ? '#fff' : '#4F5868',borderRadius:20,minWidth:22,textAlign:'center',fontFamily:'Plus Jakarta Sans,sans-serif'}}>{usuarios.length}</span>}
               </a>
             </>)}
 
-            <div style={{fontSize:10,fontWeight:600,textTransform:'uppercase',letterSpacing:'.8px',color:'#B5BCC6',padding:'18px 12px 6px'}}>Aparência</div>
-            <a onClick={()=>{ setPage('aparencia'); setSel(null); setShowModal(false); }} className={'sb-link' + (page==='aparencia' ? ' active' : '')} style={{display:'flex',alignItems:'center',gap:11,padding:'9px 12px',borderRadius:8,fontSize:13,fontWeight: page==='aparencia' ? 600 : 500,color: page==='aparencia' ? '#008C44' : '#4F5868',background: page==='aparencia' ? '#E6F7EE' : 'transparent',textDecoration:'none',cursor:'pointer',position:'relative',marginBottom:1}}>
+            {!sidebarCol && <div style={{fontSize:10,fontWeight:600,textTransform:'uppercase',letterSpacing:'.8px',color:'#B5BCC6',padding:'18px 12px 6px'}}>Aparência</div>}
+            <a onClick={()=>{ setPage('aparencia'); setSel(null); setShowModal(false); }} title={sidebarCol ? 'Temas & Cores' : ''} className={'sb-link' + (page==='aparencia' ? ' active' : '')} style={{display:'flex',alignItems:'center',gap:11,padding: sidebarCol ? '10px 11px' : '9px 12px',borderRadius:8,fontSize:13,fontWeight: page==='aparencia' ? 600 : 500,color: page==='aparencia' ? '#008C44' : '#4F5868',background: page==='aparencia' ? '#E6F7EE' : 'transparent',textDecoration:'none',cursor:'pointer',position:'relative',marginBottom:1,justifyContent: sidebarCol ? 'center' : 'flex-start'}}>
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
-              <span style={{flex:1}}>Temas & Cores</span>
-              <span style={{fontSize:9,fontWeight:700,padding:'1px 6px',background:'#E6F7EE',color:'#008C44',borderRadius:4,letterSpacing:'.3px'}}>NOVO</span>
+              {!sidebarCol && <span style={{flex:1}}>Temas & Cores</span>}
+              {!sidebarCol && <span style={{fontSize:9,fontWeight:700,padding:'1px 6px',background:'#E6F7EE',color:'#008C44',borderRadius:4,letterSpacing:'.3px'}}>NOVO</span>}
             </a>
           </nav>
 
           {/* Footer user */}
-          <div style={{padding:14,borderTop:'1px solid #E5E9EF',display:'flex',alignItems:'center',gap:11,cursor:'pointer',position:'relative'}} onClick={()=>setShowLogout(!showLogout)}>
+          <div style={{padding: sidebarCol ? '12px 8px' : 14,borderTop:`1px solid ${T.border}`,display:'flex',alignItems:'center',gap:11,cursor:'pointer',position:'relative',justifyContent: sidebarCol ? 'center' : 'flex-start'}} onClick={()=>setShowLogout(!showLogout)} title={sidebarCol ? user.nome : ''}>
             <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(135deg,#00A650 0%,#008C44 100%)',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Plus Jakarta Sans,sans-serif',fontWeight:700,fontSize:12,color:'#fff',boxShadow:'0 4px 12px rgba(0,166,80,.25), inset 0 1px 0 rgba(255,255,255,.2)',flexShrink:0}}>{user.nome.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
-            <div style={{flex:1,minWidth:0}}>
+            {!sidebarCol && <div style={{flex:1,minWidth:0}}>
               <div style={{fontSize:13,fontWeight:600,color:'#1A2332',lineHeight:1.2,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{user.nome.split(' ').slice(0,2).join(' ')}</div>
               <div style={{fontSize:11,color:'#8B94A3'}}>{user.cargo}</div>
-            </div>
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#8B94A3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{transform: showLogout ? 'rotate(180deg)' : 'rotate(0)',transition:'.15s'}}><polyline points="6 9 12 15 18 9"/></svg>
+            </div>}
+            {!sidebarCol && <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#8B94A3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{transform: showLogout ? 'rotate(180deg)' : 'rotate(0)',transition:'.15s'}}><polyline points="6 9 12 15 18 9"/></svg>}
             {showLogout && (
-              <div style={{position:'absolute',bottom:'calc(100% + 6px)',left:14,right:14,background:'#fff',borderRadius:10,boxShadow:'0 12px 32px rgba(16,24,40,.12),0 4px 8px rgba(16,24,40,.06)',border:'1px solid #E5E9EF',overflow:'hidden',zIndex:200}}>
+              <div style={{position:'absolute',bottom:'calc(100% + 6px)',left: sidebarCol ? 8 : 14, right: sidebarCol ? -160 : 14,background:'#fff',borderRadius:10,boxShadow:'0 12px 32px rgba(16,24,40,.12),0 4px 8px rgba(16,24,40,.06)',border:'1px solid #E5E9EF',overflow:'hidden',zIndex:200, minWidth: sidebarCol ? 180 : 'auto'}}>
                 <button onClick={(e)=>{e.stopPropagation();setCP(true);setShowLogout(false)}} style={menuItem()}>🔑 Trocar senha</button>
                 <div style={{height:1,background:'#EEF1F5'}} />
                 <button onClick={(e)=>{e.stopPropagation();localStorage.removeItem('premix_user');setUser(null)}} style={{...menuItem(),color:'#E63946'}}>↪ Sair</button>
@@ -1037,9 +1137,92 @@ export default function Home() {
           <header className="pmx-themed-bg" style={{background:T.surface,borderBottom:`1px solid ${T.border}`,padding:'12px 28px',display:'flex',alignItems:'center',gap:20,position:'sticky',top:0,zIndex:10}}>
             <div style={{height:2,background:'linear-gradient(90deg,#00A650 0%,#00A650 30%,#C8A951 50%,#E63946 70%,#E63946 100%)',backgroundSize:'200% 100%',animation:'premixShimmer 8s linear infinite',position:'absolute',top:0,left:0,right:0}} />
 
-            <div style={{flex:1,maxWidth:480,position:'relative'}}>
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#8B94A3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)'}}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-              <input className="pmx-search-input" type="text" placeholder="Buscar fornecedor, produto, CNPJ, e-mail..." value={search} onChange={e=>setSearch(e.target.value)} style={{width:'100%',padding:'10px 14px 10px 38px',background:'#F8F9FB',border:'1px solid transparent',borderRadius:8,fontFamily:'inherit',fontSize:13,color:'#1A2332',outline:'none'}} />
+            <div style={{flex:1,maxWidth:520,position:'relative'}}>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#8B94A3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',pointerEvents:'none',zIndex:1}}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <input className="pmx-search-input" type="text" placeholder="Buscar fornecedor, produto, código, CNPJ, e-mail..." value={searchGlobal} onChange={e=>setSearchGlobal(e.target.value)} onKeyDown={e=>{ if(e.key==='Escape') setSearchGlobal(''); }} style={{width:'100%',padding:'10px 14px 10px 38px',background:T.surface2,border:'1px solid transparent',borderRadius:8,fontFamily:'inherit',fontSize:13,color:T.text1,outline:'none'}} />
+              {searchGlobal && (
+                <button onClick={()=>setSearchGlobal('')} title="Limpar (Esc)" style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',width:22,height:22,borderRadius:'50%',background:'#E5E9EF',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',color:'#4F5868'}}>
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              )}
+              {/* Dropdown de resultados */}
+              {searchGlobal && searchGlobalDeb.length >= 2 && (() => {
+                const q = searchGlobalDeb.toLowerCase();
+                const hitsForn = forn.filter(f => (f.razao_social||f.nome_completo||'').toLowerCase().includes(q) || (f.cnpj||f.cpf||'').includes(q) || (f.email||'').toLowerCase().includes(q) || (f.codigo_fornecedor||'').toLowerCase().includes(q)).slice(0,5);
+                const hitsProd = produtos.filter(p => (p.descricao||'').toLowerCase().includes(q) || (p.codigo_protheus||'').toLowerCase().includes(q) || (p.ncm||'').includes(q)).slice(0,5);
+                const hitsDesb = desbloqueios.filter(d => (d.nome_produto||'').toLowerCase().includes(q) || (d.codigo_produto||'').toLowerCase().includes(q)).slice(0,5);
+                const total = hitsForn.length + hitsProd.length + hitsDesb.length;
+                return (
+                  <div style={{position:'absolute',top:'calc(100% + 6px)',left:0,right:0,background:'#fff',borderRadius:10,boxShadow:'0 12px 32px rgba(16,24,40,.12),0 4px 8px rgba(16,24,40,.06)',border:'1px solid #E5E9EF',overflow:'hidden',zIndex:300,maxHeight:480,overflowY:'auto'}}>
+                    {total === 0 ? (
+                      <div style={{padding:'24px 18px',textAlign:'center',color:'#8B94A3',fontSize:13}}>
+                        Nada encontrado para "<strong style={{color:'#4F5868'}}>{searchGlobal}</strong>"
+                      </div>
+                    ) : (
+                      <>
+                        {hitsForn.length > 0 && (
+                          <div>
+                            <div style={{padding:'8px 14px',background:'#F8F9FB',fontSize:10,fontWeight:700,color:'#8B94A3',textTransform:'uppercase',letterSpacing:'.5px',borderBottom:'1px solid #E5E9EF'}}>Fornecedores ({hitsForn.length})</div>
+                            {hitsForn.map(f => (
+                              <button key={f.id} onClick={()=>{setSearchGlobal('');setPage('cadastros');setSubTab('fornecedores');openDetail(f);}} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',width:'100%',border:'none',background:'#fff',cursor:'pointer',textAlign:'left',borderBottom:'1px solid #F4F6F8'}}
+                                onMouseEnter={e=>e.currentTarget.style.background='#F8F9FB'} onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
+                                <div style={{width:32,height:32,borderRadius:8,background: f.tipo_cadastro==='pf'?'#EDE9FE':f.tipo_cadastro==='motorista'?'#FEE2E2':'#DBEAFE',color: f.tipo_cadastro==='pf'?'#7C3AED':f.tipo_cadastro==='motorista'?'#E63946':'#2563EB',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                                  {f.tipo_cadastro==='pf' ? <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>
+                                  : f.tipo_cadastro==='motorista' ? <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                                  : <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/></svg>}
+                                </div>
+                                <div style={{minWidth:0,flex:1}}>
+                                  <div style={{fontSize:13,fontWeight:600,color:'#1A2332',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{f.razao_social || f.nome_completo}</div>
+                                  <div style={{fontSize:11,color:'#8B94A3'}}>{f.cnpj || f.cpf} · {TL[f.tipo_cadastro] || 'PJ'}</div>
+                                </div>
+                                <span style={{padding:'2px 8px',borderRadius:20,fontSize:10,fontWeight:600,color: f.status==='aprovado'?'#008C44':f.status==='rejeitado'?'#E63946':f.status==='em_analise'?'#2563EB':'#D97706',background: f.status==='aprovado'?'#E6F7EE':f.status==='rejeitado'?'#FEE2E2':f.status==='em_analise'?'#DBEAFE':'#FEF3C7'}}>{ST[f.status]?.l || 'Pendente'}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {hitsProd.length > 0 && (
+                          <div>
+                            <div style={{padding:'8px 14px',background:'#F8F9FB',fontSize:10,fontWeight:700,color:'#8B94A3',textTransform:'uppercase',letterSpacing:'.5px',borderBottom:'1px solid #E5E9EF'}}>Produtos ({hitsProd.length})</div>
+                            {hitsProd.map(p => (
+                              <button key={p.id} onClick={()=>{setSearchGlobal('');setPage('cadastros');setSubTab('produtos');}} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',width:'100%',border:'none',background:'#fff',cursor:'pointer',textAlign:'left',borderBottom:'1px solid #F4F6F8'}}
+                                onMouseEnter={e=>e.currentTarget.style.background='#F8F9FB'} onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
+                                <div style={{width:32,height:32,borderRadius:8,background:'#FEF6E0',color:'#B8941F',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+                                </div>
+                                <div style={{minWidth:0,flex:1}}>
+                                  <div style={{fontSize:13,fontWeight:600,color:'#1A2332',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{p.descricao || '(sem descrição)'}</div>
+                                  <div style={{fontSize:11,color:'#8B94A3'}}>{p.codigo_protheus && `Cód ${p.codigo_protheus} · `}NCM {p.ncm || '—'}</div>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {hitsDesb.length > 0 && (
+                          <div>
+                            <div style={{padding:'8px 14px',background:'#F8F9FB',fontSize:10,fontWeight:700,color:'#8B94A3',textTransform:'uppercase',letterSpacing:'.5px',borderBottom:'1px solid #E5E9EF'}}>Desbloqueios ({hitsDesb.length})</div>
+                            {hitsDesb.map(d => (
+                              <button key={d.id} onClick={()=>{setSearchGlobal('');setPage('cadastros');setSubTab('desbloqueios');}} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',width:'100%',border:'none',background:'#fff',cursor:'pointer',textAlign:'left',borderBottom:'1px solid #F4F6F8'}}
+                                onMouseEnter={e=>e.currentTarget.style.background='#F8F9FB'} onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
+                                <div style={{width:32,height:32,borderRadius:8,background:'#FEF3C7',color:'#B45309',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+                                </div>
+                                <div style={{minWidth:0,flex:1}}>
+                                  <div style={{fontSize:13,fontWeight:600,color:'#1A2332',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{d.nome_produto}</div>
+                                  <div style={{fontSize:11,color:'#8B94A3'}}>Código {d.codigo_produto}</div>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        <div style={{padding:'8px 14px',fontSize:11,color:'#8B94A3',background:'#F8F9FB',borderTop:'1px solid #E5E9EF',display:'flex',justifyContent:'space-between'}}>
+                          <span>{total} resultado{total!==1?'s':''}</span>
+                          <span><kbd style={{padding:'1px 5px',background:'#fff',border:'1px solid #E5E9EF',borderRadius:3,fontSize:10,fontFamily:'monospace'}}>Esc</kbd> para fechar</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             <div style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:6}}>
@@ -1103,7 +1286,7 @@ export default function Home() {
           {subTab === 'produtos' && (
             <div>
               {/* Stats Produtos */}
-              <div style={{display:'grid',gridTemplateColumns:'repeat(4, 1fr)',gap:14,marginBottom:22}}>
+              <div className="pmx-stats-4" style={{display:'grid',gridTemplateColumns:'repeat(4, 1fr)',gap:14,marginBottom:22}}>
                 {[
                   { n: produtos.filter(p=>p.status==='pendente').length,   l:'Pendentes',  c:'#D97706', bg:'#FEF3C7', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
                   { n: produtos.filter(p=>p.status==='em_analise').length, l:'Em análise', c:'#2563EB', bg:'#DBEAFE', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg> },
@@ -1214,7 +1397,7 @@ export default function Home() {
           {subTab === 'desbloqueios' && (
             <div>
               {/* Stats Desbloqueios */}
-              <div style={{display:'grid',gridTemplateColumns:'repeat(4, 1fr)',gap:14,marginBottom:22}}>
+              <div className="pmx-stats-4" style={{display:'grid',gridTemplateColumns:'repeat(4, 1fr)',gap:14,marginBottom:22}}>
                 {[
                   { n: desbloqueios.filter(d=>d.status==='pendente').length,     l:'Pendentes',     c:'#D97706', bg:'#FEF3C7', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
                   { n: desbloqueios.filter(d=>d.status==='em_analise').length,   l:'Em análise',    c:'#2563EB', bg:'#DBEAFE', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg> },
@@ -1321,7 +1504,7 @@ export default function Home() {
           {/* ── Sub-aba: FORNECEDORES (conteúdo existente) ── */}
           {subTab === 'fornecedores' && (<>
           {/* Stats — estilo Bitrix denso */}
-          <div style={{display:'grid',gridTemplateColumns:'repeat(5, 1fr)',gap:14,marginBottom:22}}>
+          <div className="pmx-stats-5" style={{display:'grid',gridTemplateColumns:'repeat(5, 1fr)',gap:14,marginBottom:22}}>
             {[
               { n: pend.filter(f=>f.status==='pendente').length,   l:'Pendentes',  c:'#D97706', bg:'#FEF3C7', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
               { n: pend.filter(f=>f.status==='em_analise').length, l:'Em análise', c:'#2563EB', bg:'#DBEAFE', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg> },
