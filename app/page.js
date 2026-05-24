@@ -2054,13 +2054,13 @@ export default function Home() {
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
               <div>
                 <h1 style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:22,fontWeight:700,color:'#1A2332',letterSpacing:'-.4px',margin:0}}>Aparência</h1>
-                <p style={{fontSize:13,color:'#8B94A3',marginTop:2}}>Personalize a aparência do painel. Suas preferências são salvas e aplicadas em todos os dispositivos.</p>
+                <p style={{fontSize:13,color:'#8B94A3',marginTop:2}}>Personalize a aparência do painel. Mudanças são salvas automaticamente.</p>
               </div>
               {prefsLoaded && (
-                <button onClick={()=>savePrefs({})} className="pmx-cta" style={{padding:'10px 18px',borderRadius:9,border:'none',background:'#00A650',color:'#fff',fontFamily:'inherit',fontSize:13,fontWeight:600,cursor:'pointer',boxShadow:'0 1px 2px rgba(0,166,80,.3),inset 0 1px 0 rgba(255,255,255,.15)',display:'inline-flex',alignItems:'center',gap:7}}>
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                  Salvar preferências
-                </button>
+                <div style={{display:'inline-flex',alignItems:'center',gap:7,padding:'8px 14px',background:'#E6F7EE',color:'#008C44',borderRadius:20,fontSize:12,fontWeight:600}}>
+                  <span style={{width:8,height:8,borderRadius:'50%',background:'#00A650',boxShadow:'0 0 0 3px rgba(0,166,80,.2)'}} />
+                  Salvando automaticamente
+                </div>
               )}
             </div>
           </div>
@@ -2129,13 +2129,15 @@ export default function Home() {
                     }} />
                   ))}
                 </div>
-                <div style={{display:'flex',alignItems:'center',gap:12}}>
-                  <label style={{fontSize:12,fontWeight:600,color:'#4F5868',textTransform:'uppercase',letterSpacing:'.5px'}}>Personalizada:</label>
-                  <input type="color" value={corPrimaria} onChange={e=>setCorPrimaria(e.target.value)} onBlur={()=>savePrefs({})} style={{width:50,height:36,padding:2,border:'1px solid #E5E9EF',borderRadius:8,cursor:'pointer'}} />
-                  <input type="text" value={corPrimaria} onChange={e=>setCorPrimaria(e.target.value)} onBlur={()=>savePrefs({})} placeholder="#00A650" style={{padding:'9px 12px',borderRadius:8,border:'1px solid #E5E9EF',fontSize:13,fontFamily:'JetBrains Mono,monospace',color:'#1A2332',outline:'none',width:120,background:'#F8F9FB'}} />
-                  <div style={{flex:1}} />
-                  {/* Preview do botão */}
-                  <button style={{padding:'9px 18px',borderRadius:8,border:'none',background:corPrimaria,color:'#fff',fontFamily:'inherit',fontSize:13,fontWeight:600,cursor:'pointer',boxShadow:`0 1px 2px ${corPrimaria}66, inset 0 1px 0 rgba(255,255,255,.15)`}}>Botão exemplo</button>
+                <div style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap',borderTop:'1px solid #E5E9EF',paddingTop:14}}>
+                  <label style={{fontSize:11,fontWeight:600,color:'#8B94A3',textTransform:'uppercase',letterSpacing:'.5px'}}>Personalizada:</label>
+                  <input type="color" value={corPrimaria} onChange={e=>setCorPrimaria(e.target.value)} onBlur={()=>savePrefs({})} style={{width:42,height:36,padding:2,border:'1px solid #E5E9EF',borderRadius:8,cursor:'pointer'}} />
+                  <input type="text" value={corPrimaria} onChange={e=>setCorPrimaria(e.target.value)} onBlur={()=>savePrefs({})} placeholder="#00A650" style={{padding:'9px 12px',borderRadius:8,border:'1px solid #E5E9EF',fontSize:13,fontFamily:'JetBrains Mono,monospace',color:'#1A2332',outline:'none',width:110,background:'#F8F9FB'}} />
+                  {/* Preview do botão (próximo do input) */}
+                  <div style={{display:'inline-flex',alignItems:'center',gap:8,padding:'4px 10px 4px 14px',background:'#F8F9FB',borderRadius:20,border:'1px solid #E5E9EF'}}>
+                    <span style={{fontSize:11,color:'#8B94A3',fontWeight:600}}>Preview:</span>
+                    <button style={{padding:'7px 14px',borderRadius:7,border:'none',background:corPrimaria,color:'#fff',fontFamily:'inherit',fontSize:12,fontWeight:600,cursor:'default',boxShadow:`0 1px 2px ${corPrimaria}66, inset 0 1px 0 rgba(255,255,255,.15)`}}>Botão</button>
+                  </div>
                 </div>
               </div>
             </section>
