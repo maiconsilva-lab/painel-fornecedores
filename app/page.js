@@ -191,6 +191,11 @@ export default function Home() {
   const [devSending, setDevSending] = useState(false);
   const [showAssign, setShowAssign] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
+  /* Modal de confirmação customizado (substitui window.confirm que pode ser bloqueado) */
+  const [confirmModal, setConfirmModal] = useState(null);
+  // confirmModal = { title, message, danger, onConfirm }
+  const askConfirm = (title, message, onConfirm, danger = true) => setConfirmModal({ title, message, onConfirm, danger });
+
   const [toast, setToast] = useState('');
   const [showConcluir, setShowConcluir] = useState(false);
   const [concluirData, setConcluirData] = useState({ codigo:'' });
@@ -594,10 +599,13 @@ export default function Home() {
     logAcao('atribuiu', 'produto', id, { para: user.nome });
   };
 
-  const excluirProduto = async (id) => {
-    if (!confirm('Excluir este cadastro de produto?')) return;
-    await supabase.from('produtos').delete().eq('id', id);
-    logAcao('excluiu', 'produto', id);
+  const excluirProduto = (id) => {
+    askConfirm('Excluir produto?', 'Esta ação não pode ser desfeita.', async () => {
+      const { error } = await supabase.from('produtos').delete().eq('id', id);
+      if (error) { showToast('Erro ao excluir: ' + error.message); return; }
+      showToast('Produto excluído');
+      logAcao('excluiu', 'produto', id);
+    });
   };
 
   const concluirProduto = async (produto, codigoProtheus) => {
@@ -635,10 +643,13 @@ export default function Home() {
     logAcao('atribuiu', 'desbloqueio', id, { para: user.nome });
   };
 
-  const excluirDesbloqueio = async (id) => {
-    if (!confirm('Excluir este pedido de desbloqueio?')) return;
-    await supabase.from('desbloqueios').delete().eq('id', id);
-    logAcao('excluiu', 'desbloqueio', id);
+  const excluirDesbloqueio = (id) => {
+    askConfirm('Excluir pedido?', 'Esta ação não pode ser desfeita.', async () => {
+      const { error } = await supabase.from('desbloqueios').delete().eq('id', id);
+      if (error) { showToast('Erro ao excluir: ' + error.message); return; }
+      showToast('Pedido excluído');
+      logAcao('excluiu', 'desbloqueio', id);
+    });
   };
 
   const concluirDesbloqueio = async (d) => {
@@ -687,12 +698,19 @@ export default function Home() {
     setShowAssign(false);
     setSav(false);
   };
-  const deleteForn = async (id) => {
-    if (!confirm('Tem certeza que deseja excluir este cadastro?')) return;
-    await supabase.from('fornecedores').delete().eq('id', id);
-    logAcao('excluiu', 'fornecedor', id);
-    setSel(null);
-    setShowModal(false);
+  const deleteForn = (id) => {
+    askConfirm(
+      'Excluir cadastro?',
+      'Esta ação não pode ser desfeita. O cadastro do fornecedor será removido permanentemente.',
+      async () => {
+        const { error } = await supabase.from('fornecedores').delete().eq('id', id);
+        if (error) { showToast('Erro ao excluir: ' + error.message); console.error('[deleteForn]', error); return; }
+        showToast('Cadastro excluído');
+        logAcao('excluiu', 'fornecedor', id);
+        setSel(null);
+        setShowModal(false);
+      }
+    );
   };
   const saveObs = async (id) => {
     if (!obsRef.current) return;
@@ -720,7 +738,8 @@ export default function Home() {
       return;
     }
     if (devCampos.length === 0 && devMotivoSel !== 'Dados cadastrais incompletos' && devMotivoSel !== 'Outros (descrever no campo abaixo)') {
-      if (!confirm('Você não marcou nenhum campo para correção. Deseja continuar mesmo assim?')) return;
+      // Aviso suave — não bloqueia. O usuário ainda pode prosseguir clicando no botão de novo se quiser.
+      showToast('Aviso: nenhum campo foi marcado para correção');
     }
 
     const emailDest = (sel.email_solicitante || sel.email || '').trim();
@@ -809,7 +828,15 @@ export default function Home() {
     await fetchAll();
   };
   const moveKanTask = async (id, newStatus) => { await supabase.from('kanban_tarefas').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', id); await fetchAll(); };
-  const deleteKanTask = async (id) => { if (!confirm('Excluir esta tarefa?')) return; await supabase.from('kanban_tarefas').delete().eq('id', id); if (editTask?.id === id) setEditTask(null); await fetchAll(); };
+  const deleteKanTask = (id) => {
+    askConfirm('Excluir tarefa?', 'Esta tarefa será removida permanentemente.', async () => {
+      const { error } = await supabase.from('kanban_tarefas').delete().eq('id', id);
+      if (error) { showToast('Erro ao excluir: ' + error.message); return; }
+      showToast('Tarefa excluída');
+      if (editTask?.id === id) setEditTask(null);
+      await fetchAll();
+    });
+  };
   const updateKanTask = async (id, data) => { await supabase.from('kanban_tarefas').update({ ...data, updated_at: new Date().toISOString() }).eq('id', id); if (editTask?.id === id) { const { data: nt } = await supabase.from('kanban_tarefas').select('*').eq('id', id).single(); if (nt) setEditTask(nt); } await fetchAll(); };
 
   const addChkItem = async () => {
@@ -848,20 +875,25 @@ export default function Home() {
     showToast('Usuário atualizado');
     setEditUser(null); await fetchAll();
   };
-  const deleteUser = async (id, nome) => {
-    if (!confirm(`Excluir o usuário ${nome}?`)) return;
-    await supabase.from('usuarios_painel').delete().eq('id', id);
-    await fetchAll();
+  const deleteUser = (id, nome) => {
+    askConfirm('Excluir usuário?', `${nome} perderá acesso ao painel. Esta ação não pode ser desfeita.`, async () => {
+      const { error } = await supabase.from('usuarios_painel').delete().eq('id', id);
+      if (error) { showToast('Erro ao excluir: ' + error.message); return; }
+      showToast('Usuário excluído');
+      await fetchAll();
+    });
   };
   const toggleUserActive = async (u) => {
     await supabase.from('usuarios_painel').update({ ativo: !u.ativo }).eq('id', u.id);
     await fetchAll();
   };
-  const resetUserPw = async (id, nome) => {
-    if (!confirm(`Resetar senha de ${nome} para "premix2024"?`)) return;
-    await supabase.from('usuarios_painel').update({ senha_hash:'premix2024', primeiro_login: true }).eq('id', id);
-    showToast('Senha resetada');
-    await fetchAll();
+  const resetUserPw = (id, nome) => {
+    askConfirm('Resetar senha?', `A senha de ${nome} será redefinida para "premix2024" e o usuário precisará alterá-la no próximo login.`, async () => {
+      const { error } = await supabase.from('usuarios_painel').update({ senha_hash:'premix2024', primeiro_login: true }).eq('id', id);
+      if (error) { showToast('Erro: ' + error.message); return; }
+      showToast('Senha resetada');
+      await fetchAll();
+    }, false);
   };
 
   /* ── Helpers ─────────────────────────────────── */
@@ -900,9 +932,9 @@ export default function Home() {
      RENDER — LOGIN
      ═══════════════════════════════════════════════ */
   if (!user) return (
-    <div style={{minHeight:'100vh',background:'#F5F7FA',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'Inter','Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif",padding:20,position:'relative',overflow:'hidden'}}>
+    <div style={{minHeight:'100vh',background:'#F5F7FA',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'Geist',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif",padding:20,position:'relative',overflow:'hidden'}}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap');
         @keyframes premixShimmer { from { background-position:0% 0 } to { background-position:200% 0 } }
         @keyframes loginFadeIn { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:translateY(0) } }
         .login-input:focus { background:#fff !important; border-color:#00A650 !important; box-shadow:0 0 0 3px #E6F7EE !important; }
@@ -917,7 +949,7 @@ export default function Home() {
       <div style={{background:'#fff',borderRadius:16,padding:'48px 40px',maxWidth:420,width:'100%',textAlign:'center',position:'relative',overflow:'hidden',boxShadow:'0 12px 32px rgba(16,24,40,.08),0 4px 8px rgba(16,24,40,.04)',border:'1px solid #E5E9EF',animation:'loginFadeIn .35s cubic-bezier(.16,1,.3,1)'}}>
         <div style={{position:'absolute',top:0,left:0,right:0,height:3,background:'linear-gradient(90deg,#00A650 0%,#00A650 30%,#C8A951 50%,#E63946 70%,#E63946 100%)',backgroundSize:'200% 100%',animation:'premixShimmer 8s linear infinite'}} />
         <img src="https://premix.com.br/wp-content/uploads/2023/06/Logotipo_Premix_Positivo_Com-Bandeira.png" alt="Premix" style={{height:44,marginBottom:28}} />
-        <h2 style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:20,fontWeight:700,letterSpacing:'-.4px',marginBottom:6,color:'#1A2332'}}>Núcleo Fiscal</h2>
+        <h2 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:20,fontWeight:700,letterSpacing:'-.4px',marginBottom:6,color:'#1A2332'}}>Núcleo Fiscal</h2>
         <p style={{fontSize:13,color:'#8B94A3',marginBottom:32}}>Gestão de fornecedores, produtos e desbloqueios</p>
         <form onSubmit={doLogin} style={{display:'flex',flexDirection:'column',gap:12}}>
           <input className="login-input" placeholder="E-mail corporativo" type="email" value={loginForm.email} onChange={e=>setLF({...loginForm,email:e.target.value})} disabled={loginLocked} style={{width:'100%',padding:'12px 14px',background:'#F8F9FB',border:'1px solid #E5E9EF',borderRadius:10,fontSize:14,fontFamily:'inherit',color:'#1A2332',outline:'none'}} />
@@ -935,9 +967,9 @@ export default function Home() {
      RENDER — TROCAR SENHA
      ═══════════════════════════════════════════════ */
   if (changePw) return (
-    <div style={{minHeight:'100vh',background:'#F5F7FA',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'Inter','Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif",padding:20,position:'relative',overflow:'hidden'}}>
+    <div style={{minHeight:'100vh',background:'#F5F7FA',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'Geist',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif",padding:20,position:'relative',overflow:'hidden'}}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap');
         @keyframes premixShimmer { from { background-position:0% 0 } to { background-position:200% 0 } }
         @keyframes loginFadeIn { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:translateY(0) } }
         .cp-input:focus { background:#fff !important; border-color:#00A650 !important; box-shadow:0 0 0 3px #E6F7EE !important; }
@@ -953,7 +985,7 @@ export default function Home() {
         <div style={{width:56,height:56,borderRadius:14,background:'#E6F7EE',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 20px',color:'#00A650'}}>
           <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         </div>
-        <h2 style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:20,fontWeight:700,letterSpacing:'-.4px',marginBottom:6,color:'#1A2332'}}>Alterar Senha</h2>
+        <h2 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:20,fontWeight:700,letterSpacing:'-.4px',marginBottom:6,color:'#1A2332'}}>Alterar Senha</h2>
         <p style={{fontSize:13,color:'#8B94A3',marginBottom:28}}>{user.primeiro_login ? 'Primeiro acesso — crie uma nova senha' : 'Trocar senha atual'}</p>
         <form onSubmit={doChangePw} style={{display:'flex',flexDirection:'column',gap:12}}>
           <input className="cp-input" placeholder="Nova senha (mín. 8 caracteres, maiúscula + número)" type="password" value={newPw.nova} onChange={e=>setNP({...newPw,nova:e.target.value})} style={{width:'100%',padding:'12px 14px',background:'#F8F9FB',border:'1px solid #E5E9EF',borderRadius:10,fontSize:14,fontFamily:'inherit',color:'#1A2332',outline:'none'}} />
@@ -970,7 +1002,7 @@ export default function Home() {
      RENDER — MAIN APP
      ═══════════════════════════════════════════════ */
   return (
-    <div style={{minHeight:'100vh',background:T.bg,fontFamily:"'Inter','Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif",color:T.text1,fontSize:14,lineHeight:1.5,WebkitFontSmoothing:'antialiased',position:'relative'}}>
+    <div style={{minHeight:'100vh',background:T.bg,fontFamily:"'Geist',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif",color:T.text1,fontSize:14,lineHeight:1.5,WebkitFontSmoothing:'antialiased',position:'relative'}}>
       {/* Wallpaper background (sutil, atrás de tudo) */}
       {wallpaper && (
         <div aria-hidden="true" style={{
@@ -981,7 +1013,7 @@ export default function Home() {
       )}
       <div style={{position:'relative',zIndex:1}}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap');
         @keyframes slideUp { from { opacity:0; transform:translate(-50%,12px) } to { opacity:1; transform:translate(-50%,0) } }
         @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
         @keyframes slideInRight { from { opacity:0; transform:translateX(20px) } to { opacity:1; transform:translateX(0) } }
@@ -1082,8 +1114,8 @@ export default function Home() {
                 }}>
                   {n.icon}
                   {!sidebarCol && <span style={{flex:1}}>{n.l}</span>}
-                  {n.count > 0 && !sidebarCol && <span style={{fontWeight:700,fontSize:10,padding:'2px 7px',background: active ? '#00A650' : (n.alert ? '#E63946' : '#EEF1F5'),color: (active || n.alert) ? '#fff' : '#4F5868',borderRadius:20,minWidth:22,textAlign:'center',fontFamily:'Plus Jakarta Sans,sans-serif'}}>{n.count}</span>}
-                  {n.count > 0 && sidebarCol && <span style={{position:'absolute',top:4,right:4,minWidth:16,height:16,padding:'0 4px',background: n.alert ? '#E63946' : '#00A650',color:'#fff',borderRadius:20,fontSize:9,fontWeight:700,fontFamily:'Plus Jakarta Sans,sans-serif',display:'flex',alignItems:'center',justifyContent:'center'}}>{n.count}</span>}
+                  {n.count > 0 && !sidebarCol && <span style={{fontWeight:700,fontSize:10,padding:'2px 7px',background: active ? '#00A650' : (n.alert ? '#E63946' : '#EEF1F5'),color: (active || n.alert) ? '#fff' : '#4F5868',borderRadius:20,minWidth:22,textAlign:'center',fontFamily:'Geist,-apple-system,sans-serif'}}>{n.count}</span>}
+                  {n.count > 0 && sidebarCol && <span style={{position:'absolute',top:4,right:4,minWidth:16,height:16,padding:'0 4px',background: n.alert ? '#E63946' : '#00A650',color:'#fff',borderRadius:20,fontSize:9,fontWeight:700,fontFamily:'Geist,-apple-system,sans-serif',display:'flex',alignItems:'center',justifyContent:'center'}}>{n.count}</span>}
                 </a>
               );
             })}
@@ -1100,7 +1132,7 @@ export default function Home() {
               }}>
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 {!sidebarCol && <span style={{flex:1}}>Equipe</span>}
-                {usuarios.length > 0 && !sidebarCol && <span style={{fontWeight:700,fontSize:10,padding:'2px 7px',background: page==='admin' ? '#00A650' : '#EEF1F5',color: page==='admin' ? '#fff' : '#4F5868',borderRadius:20,minWidth:22,textAlign:'center',fontFamily:'Plus Jakarta Sans,sans-serif'}}>{usuarios.length}</span>}
+                {usuarios.length > 0 && !sidebarCol && <span style={{fontWeight:700,fontSize:10,padding:'2px 7px',background: page==='admin' ? '#00A650' : '#EEF1F5',color: page==='admin' ? '#fff' : '#4F5868',borderRadius:20,minWidth:22,textAlign:'center',fontFamily:'Geist,-apple-system,sans-serif'}}>{usuarios.length}</span>}
               </a>
             </>)}
 
@@ -1114,7 +1146,7 @@ export default function Home() {
 
           {/* Footer user */}
           <div style={{padding: sidebarCol ? '12px 8px' : 14,borderTop:`1px solid ${T.border}`,display:'flex',alignItems:'center',gap:11,cursor:'pointer',position:'relative',justifyContent: sidebarCol ? 'center' : 'flex-start'}} onClick={()=>setShowLogout(!showLogout)} title={sidebarCol ? user.nome : ''}>
-            <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(135deg,#00A650 0%,#008C44 100%)',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Plus Jakarta Sans,sans-serif',fontWeight:700,fontSize:12,color:'#fff',boxShadow:'0 4px 12px rgba(0,166,80,.25), inset 0 1px 0 rgba(255,255,255,.2)',flexShrink:0}}>{user.nome.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
+            <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(135deg,#00A650 0%,#008C44 100%)',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Geist,-apple-system,sans-serif',fontWeight:700,fontSize:12,color:'#fff',boxShadow:'0 4px 12px rgba(0,166,80,.25), inset 0 1px 0 rgba(255,255,255,.2)',flexShrink:0}}>{user.nome.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
             {!sidebarCol && <div style={{flex:1,minWidth:0}}>
               <div style={{fontSize:13,fontWeight:600,color:'#1A2332',lineHeight:1.2,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{user.nome.split(' ').slice(0,2).join(' ')}</div>
               <div style={{fontSize:11,color:'#8B94A3'}}>{user.cargo}</div>
@@ -1216,7 +1248,7 @@ export default function Home() {
                         )}
                         <div style={{padding:'8px 14px',fontSize:11,color:'#8B94A3',background:'#F8F9FB',borderTop:'1px solid #E5E9EF',display:'flex',justifyContent:'space-between'}}>
                           <span>{total} resultado{total!==1?'s':''}</span>
-                          <span><kbd style={{padding:'1px 5px',background:'#fff',border:'1px solid #E5E9EF',borderRadius:3,fontSize:10,fontFamily:'monospace'}}>Esc</kbd> para fechar</span>
+                          <span><kbd style={{padding:'1px 5px',background:'#fff',border:'1px solid #E5E9EF',borderRadius:3,fontSize:10,fontFamily:'Geist Mono,monospace'}}>Esc</kbd> para fechar</span>
                         </div>
                       </>
                     )}
@@ -1247,7 +1279,7 @@ export default function Home() {
               <span style={{color:'#1A2332',fontWeight:500}}>Cadastros</span>
             </div>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-              <h1 style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:22,fontWeight:700,color:'#1A2332',letterSpacing:'-.4px',margin:0}}>Cadastros</h1>
+              <h1 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:22,fontWeight:700,color:'#1A2332',letterSpacing:'-.4px',margin:0}}>Cadastros</h1>
               <div style={{display:'flex',gap:8}}>
                 <span style={{fontSize:12,color:'#8B94A3'}}>Atualizado em tempo real</span>
                 <span style={{width:8,height:8,borderRadius:'50%',background:'#00A650',boxShadow:'0 0 0 4px rgba(0,166,80,.15)',alignSelf:'center'}} />
@@ -1272,7 +1304,7 @@ export default function Home() {
                 }}>
                   {s.icon}
                   <span>{s.l}</span>
-                  <span style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontWeight:700,fontSize:10,padding:'1px 7px',background: active ? '#E6F7EE' : '#EEF1F5',color: active ? '#008C44' : '#4F5868',borderRadius:20,minWidth:20,textAlign:'center'}}>{s.n}</span>
+                  <span style={{fontFamily:'Geist,-apple-system,sans-serif',fontWeight:700,fontSize:10,padding:'1px 7px',background: active ? '#E6F7EE' : '#EEF1F5',color: active ? '#008C44' : '#4F5868',borderRadius:20,minWidth:20,textAlign:'center'}}>{s.n}</span>
                   {active && <span style={{position:'absolute',bottom:-1,left:12,right:12,height:2,background:'#00A650',borderRadius:'2px 2px 0 0'}} />}
                 </button>
               );
@@ -1298,7 +1330,7 @@ export default function Home() {
                       <div style={{width:32,height:32,borderRadius:8,background:s.bg,color:s.c,display:'flex',alignItems:'center',justifyContent:'center'}}>{s.icon}</div>
                       <div style={{fontSize:11,fontWeight:600,color:'#8B94A3',textTransform:'uppercase',letterSpacing:'.5px'}}>{s.l}</div>
                     </div>
-                    <div style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:28,fontWeight:700,color:'#1A2332',lineHeight:1.1,letterSpacing:'-.8px'}}>{s.n}</div>
+                    <div style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:28,fontWeight:700,color:'#1A2332',lineHeight:1.1,letterSpacing:'-.8px'}}>{s.n}</div>
                   </div>
                 ))}
               </div>
@@ -1306,7 +1338,7 @@ export default function Home() {
               {/* Painel Produtos */}
               <div style={{background:'#fff',borderRadius:14,border:'1px solid #E5E9EF',overflow:'hidden'}}>
                 <div style={{padding:'14px 20px',borderBottom:'1px solid #E5E9EF',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                  <h2 style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:15,fontWeight:700,color:'#1A2332',margin:0}}>Cadastros de Produtos</h2>
+                  <h2 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:15,fontWeight:700,color:'#1A2332',margin:0}}>Cadastros de Produtos</h2>
                   <span style={{fontSize:12,color:'#8B94A3'}}>{produtos.length} total</span>
                 </div>
 
@@ -1354,7 +1386,7 @@ export default function Home() {
                               </div>
                             </td>
                             <td style={tdSnew()}>
-                              {p.codigo_protheus ? <span style={{fontFamily:'JetBrains Mono,monospace',fontSize:11,fontWeight:700,padding:'2px 8px',background:'#E6F7EE',color:'#008C44',borderRadius:5,letterSpacing:'.5px'}}>{p.codigo_protheus}</span> : <span style={{color:'#B5BCC6',fontSize:12}}>—</span>}
+                              {p.codigo_protheus ? <span style={{fontFamily:'Geist Mono,monospace',fontSize:11,fontWeight:700,padding:'2px 8px',background:'#E6F7EE',color:'#008C44',borderRadius:5,letterSpacing:'.5px'}}>{p.codigo_protheus}</span> : <span style={{color:'#B5BCC6',fontSize:12}}>—</span>}
                             </td>
                             <td style={{...tdSnew(),fontSize:12,color:'#4F5868'}}>
                               {p.nome_solicitante}
@@ -1409,7 +1441,7 @@ export default function Home() {
                       <div style={{width:32,height:32,borderRadius:8,background:s.bg,color:s.c,display:'flex',alignItems:'center',justifyContent:'center'}}>{s.icon}</div>
                       <div style={{fontSize:11,fontWeight:600,color:'#8B94A3',textTransform:'uppercase',letterSpacing:'.5px'}}>{s.l}</div>
                     </div>
-                    <div style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:28,fontWeight:700,color:'#1A2332',lineHeight:1.1,letterSpacing:'-.8px'}}>{s.n}</div>
+                    <div style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:28,fontWeight:700,color:'#1A2332',lineHeight:1.1,letterSpacing:'-.8px'}}>{s.n}</div>
                   </div>
                 ))}
               </div>
@@ -1417,7 +1449,7 @@ export default function Home() {
               {/* Painel Desbloqueios */}
               <div style={{background:'#fff',borderRadius:14,border:'1px solid #E5E9EF',overflow:'hidden'}}>
                 <div style={{padding:'14px 20px',borderBottom:'1px solid #E5E9EF',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                  <h2 style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:15,fontWeight:700,color:'#1A2332',margin:0}}>Pedidos de Desbloqueio</h2>
+                  <h2 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:15,fontWeight:700,color:'#1A2332',margin:0}}>Pedidos de Desbloqueio</h2>
                   <span style={{fontSize:12,color:'#8B94A3'}}>{desbloqueios.length} total</span>
                 </div>
 
@@ -1454,7 +1486,7 @@ export default function Home() {
                                 </div>
                                 <div style={{minWidth:0}}>
                                   <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:2,flexWrap:'wrap'}}>
-                                    <span style={{fontFamily:'JetBrains Mono,monospace',background:'#FEF3C7',color:'#B45309',padding:'2px 8px',borderRadius:5,fontSize:11,fontWeight:700}}>{d.codigo_produto}</span>
+                                    <span style={{fontFamily:'Geist Mono,monospace',background:'#FEF3C7',color:'#B45309',padding:'2px 8px',borderRadius:5,fontSize:11,fontWeight:700}}>{d.codigo_produto}</span>
                                   </div>
                                   <div style={{fontWeight:600,color:'#1A2332',fontSize:13}}>{d.nome_produto}</div>
                                   {d.motivo_rejeicao && <div style={{color:'#E63946',marginTop:3,fontSize:11}}>↩ {d.motivo_rejeicao.slice(0,80)}</div>}
@@ -1517,7 +1549,7 @@ export default function Home() {
                   <div style={{width:32,height:32,borderRadius:8,background:s.bg,color:s.c,display:'flex',alignItems:'center',justifyContent:'center'}}>{s.icon}</div>
                   <div style={{fontSize:11,fontWeight:600,color:'#8B94A3',textTransform:'uppercase',letterSpacing:'.5px'}}>{s.l}</div>
                 </div>
-                <div style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:28,fontWeight:700,color:'#1A2332',lineHeight:1.1,letterSpacing:'-.8px'}}>{s.n}</div>
+                <div style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:28,fontWeight:700,color:'#1A2332',lineHeight:1.1,letterSpacing:'-.8px'}}>{s.n}</div>
               </div>
             ))}
           </div>
@@ -1538,7 +1570,7 @@ export default function Home() {
                     cursor:'pointer',display:'inline-flex',alignItems:'center',gap:7
                   }}>
                     {t.l}
-                    <span style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontWeight:700,fontSize:10,padding:'1px 7px',background: active ? '#E6F7EE' : '#EEF1F5',color: active ? '#008C44' : '#4F5868',borderRadius:20}}>{t.n}</span>
+                    <span style={{fontFamily:'Geist,-apple-system,sans-serif',fontWeight:700,fontSize:10,padding:'1px 7px',background: active ? '#E6F7EE' : '#EEF1F5',color: active ? '#008C44' : '#4F5868',borderRadius:20}}>{t.n}</span>
                     {active && <span style={{position:'absolute',bottom:-1,left:12,right:12,height:2,background:'#00A650'}} />}
                   </button>
                 );
@@ -1612,7 +1644,7 @@ export default function Home() {
                             </div>
                           </div>
                         </td>
-                        <td style={{...tdSnew(),fontFamily:'JetBrains Mono,SF Mono,Consolas,monospace',fontSize:12,color:'#4F5868'}}>{f.cnpj || f.cpf || '-'}</td>
+                        <td style={{...tdSnew(),fontFamily:'Geist Mono,SF Mono,Consolas,monospace',fontSize:12,color:'#4F5868'}}>{f.cnpj || f.cpf || '-'}</td>
                         <td style={{...tdSnew(),color:'#4F5868',fontSize:12,whiteSpace:'nowrap'}}>{fmtDate(f.created_at)}</td>
                         <td style={tdSnew()}>
                           <span style={{display:'inline-flex',alignItems:'center',gap:5,padding:'3px 10px',borderRadius:20,fontSize:11,fontWeight:600,color:stColor,background:stBg}}>
@@ -1623,7 +1655,7 @@ export default function Home() {
                         <td style={tdSnew()}>
                           {f.atribuido_para ? (
                             <div style={{display:'flex',alignItems:'center',gap:7}}>
-                              <div style={{width:24,height:24,borderRadius:'50%',background:'linear-gradient(135deg,#00A650,#008C44)',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Plus Jakarta Sans,sans-serif',fontWeight:700,fontSize:10,color:'#fff'}}>{f.atribuido_para.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
+                              <div style={{width:24,height:24,borderRadius:'50%',background:'linear-gradient(135deg,#00A650,#008C44)',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Geist,-apple-system,sans-serif',fontWeight:700,fontSize:10,color:'#fff'}}>{f.atribuido_para.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
                               <span style={{fontSize:12,color:'#4F5868'}}>{f.atribuido_para.split(' ')[0]}</span>
                             </div>
                           ) : (
@@ -1661,7 +1693,7 @@ export default function Home() {
                     : <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/></svg>}
                 </div>
                 <div>
-                  <h2 style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:16,fontWeight:700,color:'#1A2332',margin:0,letterSpacing:'-.3px'}}>{sanitize(sel.razao_social || sel.nome_completo)}</h2>
+                  <h2 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:16,fontWeight:700,color:'#1A2332',margin:0,letterSpacing:'-.3px'}}>{sanitize(sel.razao_social || sel.nome_completo)}</h2>
                   <span style={{fontSize:12,color:'#8B94A3'}}>{TL[sel.tipo_cadastro]||'PJ'} · {fmtDate(sel.created_at)}</span>
                 </div>
               </div>
@@ -1710,7 +1742,7 @@ export default function Home() {
                     {usuarios.filter(u=>u.ativo).map(u => (
                       <button key={u.id} onClick={()=>assignTo(sel.id,u.nome)} style={{padding:'10px 14px',borderRadius:8,border:'1px solid #E5E9EF',background:'#fff',cursor:'pointer',textAlign:'left',fontSize:13,fontFamily:'inherit',transition:'.15s',display:'flex',alignItems:'center',gap:10}}
                         onMouseEnter={e=>e.currentTarget.style.background='#F0F7FF'} onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
-                        <div style={{width:28,height:28,borderRadius:'50%',background:'linear-gradient(135deg,#3B82F6,#2563EB)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Plus Jakarta Sans,sans-serif',fontWeight:700,fontSize:11}}>{u.nome.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
+                        <div style={{width:28,height:28,borderRadius:'50%',background:'linear-gradient(135deg,#3B82F6,#2563EB)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Geist,-apple-system,sans-serif',fontWeight:700,fontSize:11}}>{u.nome.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
                         <div style={{flex:1}}><strong style={{color:'#1A2332'}}>{u.nome}</strong> <span style={{color:'#8B94A3',fontSize:12}}>— {u.cargo}</span></div>
                       </button>
                     ))}
@@ -1804,14 +1836,14 @@ export default function Home() {
                     <div style={{width:32,height:32,borderRadius:8,background:'#00A650',display:'flex',alignItems:'center',justifyContent:'center',color:'#fff'}}>
                       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
                     </div>
-                    <div style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:15,fontWeight:700,color:'#1A2332'}}>Concluir Cadastro</div>
+                    <div style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:15,fontWeight:700,color:'#1A2332'}}>Concluir Cadastro</div>
                   </div>
                   <div style={{fontSize:12,color:'#8B94A3',marginBottom:16,paddingLeft:42}}>Informe o código gerado pelo sistema. O e-mail será enviado para o solicitante automaticamente.</div>
 
                   <div style={{display:'grid',gap:12}}>
                     <div>
                       <label style={{fontSize:11,fontWeight:700,color:'#008C44',textTransform:'uppercase',letterSpacing:'.4px',marginBottom:5,display:'block'}}>Código do Fornecedor *</label>
-                      <input value={concluirData.codigo} onChange={e=>setConcluirData({...concluirData,codigo:e.target.value})} placeholder="Ex: FORN-00451" style={{width:'100%',padding:'12px 14px',borderRadius:9,border:'1px solid #A7F3D0',fontSize:14,fontWeight:600,outline:'none',fontFamily:'JetBrains Mono,SF Mono,Consolas,monospace',background:'#F0FDF4',letterSpacing:'.5px',color:'#1A2332'}} autoFocus />
+                      <input value={concluirData.codigo} onChange={e=>setConcluirData({...concluirData,codigo:e.target.value})} placeholder="Ex: FORN-00451" style={{width:'100%',padding:'12px 14px',borderRadius:9,border:'1px solid #A7F3D0',fontSize:14,fontWeight:600,outline:'none',fontFamily:'Geist Mono,SF Mono,Consolas,monospace',background:'#F0FDF4',letterSpacing:'.5px',color:'#1A2332'}} autoFocus />
                     </div>
 
                     {/* Dados do solicitante (vindos do cadastro) */}
@@ -1819,7 +1851,7 @@ export default function Home() {
                       <div style={{fontSize:10,color:'#8B94A3',fontWeight:700,textTransform:'uppercase',letterSpacing:'.5px',marginBottom:6}}>Será enviado para</div>
                       {(sel?.email_solicitante) ? (
                         <div style={{fontSize:13,color:'#1A2332',display:'flex',alignItems:'center',gap:10}}>
-                          <div style={{width:32,height:32,borderRadius:'50%',background:'linear-gradient(135deg,#00A650,#008C44)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Plus Jakarta Sans,sans-serif',fontWeight:700,fontSize:12}}>{(sel.nome_solicitante || 'S').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
+                          <div style={{width:32,height:32,borderRadius:'50%',background:'linear-gradient(135deg,#00A650,#008C44)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Geist,-apple-system,sans-serif',fontWeight:700,fontSize:12}}>{(sel.nome_solicitante || 'S').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
                           <div>
                             <div style={{fontWeight:600}}>{sel.nome_solicitante || 'Solicitante'}</div>
                             <div style={{color:'#8B94A3',fontSize:12,marginTop:1}}>{sel.email_solicitante}</div>
@@ -1841,7 +1873,7 @@ export default function Home() {
                         <p style={{marginTop:6}}>O cadastro de fornecedor que você solicitou foi concluído com sucesso!</p>
                         <div style={{margin:'12px 0',padding:'14px 18px',background:'linear-gradient(135deg,#F0FDF4 0%,#DCFCE7 100%)',borderRadius:9,border:'1.5px solid #86EFAC',textAlign:'center'}}>
                           <div style={{fontSize:10,color:'#008C44',fontWeight:700,textTransform:'uppercase',letterSpacing:'1px',marginBottom:4}}>Código de Fornecedor Premix</div>
-                          <div style={{fontFamily:'JetBrains Mono,monospace',fontSize:20,fontWeight:800,color:'#008C44',letterSpacing:'1.5px'}}>{concluirData.codigo || '—'}</div>
+                          <div style={{fontFamily:'Geist Mono,monospace',fontSize:20,fontWeight:800,color:'#008C44',letterSpacing:'1.5px'}}>{concluirData.codigo || '—'}</div>
                         </div>
                         <p style={{fontSize:12,color:'#8B94A3',marginTop:8}}>Em caso de dúvidas, entre em contato com o Núcleo Fiscal.</p>
                       </div>
@@ -1864,7 +1896,7 @@ export default function Home() {
               {/* Info Badges */}
               {sel.atribuido_para && (
                 <div style={{padding:'10px 14px',background:'#fff',border:'1px solid #BFDBFE',borderRadius:9,fontSize:13,marginBottom:12,display:'flex',alignItems:'center',gap:10}}>
-                  <div style={{width:24,height:24,borderRadius:'50%',background:'linear-gradient(135deg,#3B82F6,#2563EB)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Plus Jakarta Sans,sans-serif',fontWeight:700,fontSize:10,flexShrink:0}}>{sel.atribuido_para.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
+                  <div style={{width:24,height:24,borderRadius:'50%',background:'linear-gradient(135deg,#3B82F6,#2563EB)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Geist,-apple-system,sans-serif',fontWeight:700,fontSize:10,flexShrink:0}}>{sel.atribuido_para.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
                   <span style={{color:'#4F5868'}}>Responsável: <strong style={{color:'#1A2332'}}>{sel.atribuido_para}</strong>{sel.finalizado_por && <span style={{color:'#8B94A3'}}> · Finalizado por: <strong style={{color:'#008C44'}}>{sel.finalizado_por}</strong></span>}</span>
                 </div>
               )}
@@ -1887,7 +1919,7 @@ export default function Home() {
 
               {/* Documentos */}
               <div style={{marginBottom:20}}>
-                <div style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:13,fontWeight:700,color:'#1A2332',marginBottom:10,display:'flex',alignItems:'center',gap:8}}>
+                <div style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:13,fontWeight:700,color:'#1A2332',marginBottom:10,display:'flex',alignItems:'center',gap:8}}>
                   <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#00A650" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
                   Documentos anexados
                 </div>
@@ -1906,7 +1938,7 @@ export default function Home() {
 
               {/* Observações */}
               <div>
-                <div style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:13,fontWeight:700,color:'#1A2332',marginBottom:8,display:'flex',alignItems:'center',gap:8}}>
+                <div style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:13,fontWeight:700,color:'#1A2332',marginBottom:8,display:'flex',alignItems:'center',gap:8}}>
                   <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#00A650" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                   Observações internas
                 </div>
@@ -1926,7 +1958,7 @@ export default function Home() {
               <span>›</span>
               <span style={{color:'#1A2332',fontWeight:500}}>Gestão de Tarefas</span>
             </div>
-            <h1 style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:22,fontWeight:700,color:'#1A2332',letterSpacing:'-.4px',margin:0}}>Gestão de Tarefas</h1>
+            <h1 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:22,fontWeight:700,color:'#1A2332',letterSpacing:'-.4px',margin:0}}>Gestão de Tarefas</h1>
           </div>
           <div style={{padding:'22px 28px 32px'}}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20,flexWrap:'wrap',gap:12}}>
@@ -1946,7 +1978,7 @@ export default function Home() {
           {/* New Task Form */}
           {showNewTask && (
             <div style={{background:'#fff',borderRadius:12,padding:22,marginBottom:20,border:'1px solid #E5E9EF',boxShadow:'0 4px 12px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.04)'}}>
-              <div style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:15,fontWeight:700,marginBottom:14,color:'#1A2332'}}>Nova Tarefa</div>
+              <div style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:15,fontWeight:700,marginBottom:14,color:'#1A2332'}}>Nova Tarefa</div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
                 <div style={{gridColumn:'1/-1'}}><input placeholder="Título da tarefa *" value={newTask.titulo} onChange={e=>setNewTask({...newTask,titulo:e.target.value})} style={fieldStyle()} /></div>
                 <div style={{gridColumn:'1/-1'}}><textarea placeholder="Descrição (opcional)" value={newTask.descricao} onChange={e=>setNewTask({...newTask,descricao:e.target.value})} style={{...fieldStyle(),minHeight:60,resize:'vertical'}} /></div>
@@ -1981,9 +2013,9 @@ export default function Home() {
                   <div style={{padding:'4px 8px 12px 8px',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:'1px solid #E5E9EF',marginBottom:10}}>
                     <div style={{display:'flex',alignItems:'center',gap:7}}>
                       <span style={{width:8,height:8,borderRadius:'50%',background:col.c}} />
-                      <span style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:12,fontWeight:700,color:'#1A2332',textTransform:'uppercase',letterSpacing:'.5px'}}>{col.l}</span>
+                      <span style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:12,fontWeight:700,color:'#1A2332',textTransform:'uppercase',letterSpacing:'.5px'}}>{col.l}</span>
                     </div>
-                    <span style={{background:'#F8F9FB',color:'#4F5868',borderRadius:20,padding:'2px 9px',fontSize:11,fontWeight:700,fontFamily:'Plus Jakarta Sans,sans-serif',border:'1px solid #E5E9EF'}}>{tasks.length}</span>
+                    <span style={{background:'#F8F9FB',color:'#4F5868',borderRadius:20,padding:'2px 9px',fontSize:11,fontWeight:700,fontFamily:'Geist,-apple-system,sans-serif',border:'1px solid #E5E9EF'}}>{tasks.length}</span>
                   </div>
                   <div style={{display:'flex',flexDirection:'column',gap:8}}>
                     {tasks.map(t => {
@@ -2011,7 +2043,7 @@ export default function Home() {
                           )}
                           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',fontSize:11,color:'#8B94A3',marginTop:10}}>
                             <div style={{display:'flex',alignItems:'center',gap:5}}>
-                              <div style={{width:18,height:18,borderRadius:'50%',background:'linear-gradient(135deg,#00A650,#008C44)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Plus Jakarta Sans,sans-serif',fontWeight:700,fontSize:8}}>{(t.atribuido_para||'??').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
+                              <div style={{width:18,height:18,borderRadius:'50%',background:'linear-gradient(135deg,#00A650,#008C44)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Geist,-apple-system,sans-serif',fontWeight:700,fontSize:8}}>{(t.atribuido_para||'??').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
                               <span>{(t.atribuido_para||'').split(' ')[0]}</span>
                             </div>
                             {t.prazo && <span style={{display:'inline-flex',alignItems:'center',gap:4}}>
@@ -2109,12 +2141,12 @@ export default function Home() {
               <span>›</span>
               <span style={{color:'#1A2332',fontWeight:500}}>Equipe</span>
             </div>
-            <h1 style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:22,fontWeight:700,color:'#1A2332',letterSpacing:'-.4px',margin:0}}>Equipe</h1>
+            <h1 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:22,fontWeight:700,color:'#1A2332',letterSpacing:'-.4px',margin:0}}>Equipe</h1>
           </div>
           <div style={{padding:'22px 28px 32px'}}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
             <div>
-              <h2 style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:16,fontWeight:700,color:'#1A2332',margin:0}}>Gestão da Equipe</h2>
+              <h2 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:16,fontWeight:700,color:'#1A2332',margin:0}}>Gestão da Equipe</h2>
               <p style={{fontSize:13,color:'#8B94A3',marginTop:2}}>Gerencie acessos, perfis e permissões</p>
             </div>
             <button className="pmx-cta" onClick={()=>setShowNewUser(true)} style={{padding:'10px 18px',borderRadius:9,border:'none',background:'#00A650',color:'#fff',fontFamily:'inherit',fontSize:13,fontWeight:600,cursor:'pointer',boxShadow:'0 1px 2px rgba(0,166,80,.3),inset 0 1px 0 rgba(255,255,255,.15)',display:'inline-flex',alignItems:'center',gap:7}}>
@@ -2125,7 +2157,7 @@ export default function Home() {
 
           {showNewUser && (
             <div style={{background:'#fff',borderRadius:12,padding:22,marginBottom:20,border:'1px solid #E5E9EF',boxShadow:'0 4px 12px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.04)'}}>
-              <div style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:15,fontWeight:700,marginBottom:14,color:'#1A2332'}}>Novo Usuário</div>
+              <div style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:15,fontWeight:700,marginBottom:14,color:'#1A2332'}}>Novo Usuário</div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
                 <input placeholder="Nome completo *" value={newUser.nome} onChange={e=>setNewUser({...newUser,nome:e.target.value})} style={fieldStyle()} />
                 <input placeholder="E-mail *" type="email" value={newUser.email} onChange={e=>setNewUser({...newUser,email:e.target.value})} style={fieldStyle()} />
@@ -2161,7 +2193,7 @@ export default function Home() {
                       <td style={tdSnew()}>
                         {editing ? <input defaultValue={u.nome} id={`u-nome-${u.id}`} style={fieldStyle()} /> :
                         <div style={{display:'flex',alignItems:'center',gap:10}}>
-                          <div style={{width:32,height:32,borderRadius:'50%',background:'linear-gradient(135deg,#00A650,#008C44)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Plus Jakarta Sans,sans-serif',fontWeight:700,fontSize:11,flexShrink:0}}>{u.nome.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
+                          <div style={{width:32,height:32,borderRadius:'50%',background:'linear-gradient(135deg,#00A650,#008C44)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Geist,-apple-system,sans-serif',fontWeight:700,fontSize:11,flexShrink:0}}>{u.nome.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
                           <div><div style={{fontWeight:600,fontSize:13,color:'#1A2332'}}>{u.nome}</div>{u.telefone && <div style={{fontSize:11,color:'#8B94A3'}}>{u.telefone}</div>}</div>
                         </div>}
                       </td>
@@ -2236,7 +2268,7 @@ export default function Home() {
             </div>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
               <div>
-                <h1 style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:22,fontWeight:700,color:'#1A2332',letterSpacing:'-.4px',margin:0}}>Aparência</h1>
+                <h1 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:22,fontWeight:700,color:'#1A2332',letterSpacing:'-.4px',margin:0}}>Aparência</h1>
                 <p style={{fontSize:13,color:'#8B94A3',marginTop:2}}>Personalize a aparência do painel. Mudanças são salvas automaticamente.</p>
               </div>
               {prefsLoaded && (
@@ -2252,7 +2284,7 @@ export default function Home() {
 
             {/* SEÇÃO 1: TEMAS */}
             <section style={{marginBottom:32}}>
-              <h2 style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:15,fontWeight:700,color:'#1A2332',marginBottom:4}}>Tema</h2>
+              <h2 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:15,fontWeight:700,color:'#1A2332',marginBottom:4}}>Tema</h2>
               <p style={{fontSize:12,color:'#8B94A3',marginBottom:14}}>Escolha um conjunto de cores para o painel. As mudanças aparecem em tempo real.</p>
               <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))',gap:12}}>
                 {Object.entries(TEMAS).map(([k, t]) => {
@@ -2282,7 +2314,7 @@ export default function Home() {
                       </div>
                       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
                         <div>
-                          <div style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:14,fontWeight:700,color:'#1A2332'}}>{t.nome}</div>
+                          <div style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:14,fontWeight:700,color:'#1A2332'}}>{t.nome}</div>
                           <div style={{fontSize:11,color:'#8B94A3',marginTop:1}}>{t.descricao}</div>
                         </div>
                         {ativo && (
@@ -2299,7 +2331,7 @@ export default function Home() {
 
             {/* SEÇÃO 2: COR PRIMÁRIA */}
             <section style={{marginBottom:32}}>
-              <h2 style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:15,fontWeight:700,color:'#1A2332',marginBottom:4}}>Cor primária</h2>
+              <h2 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:15,fontWeight:700,color:'#1A2332',marginBottom:4}}>Cor primária</h2>
               <p style={{fontSize:12,color:'#8B94A3',marginBottom:14}}>Cor de destaque usada em botões, links e elementos ativos.</p>
               <div style={{background:'#fff',padding:18,borderRadius:12,border:'1px solid #E5E9EF',boxShadow:'0 1px 2px rgba(16,24,40,.04)'}}>
                 <div style={{display:'flex',flexWrap:'wrap',gap:10,marginBottom:16}}>
@@ -2315,7 +2347,7 @@ export default function Home() {
                 <div style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap',borderTop:'1px solid #E5E9EF',paddingTop:14}}>
                   <label style={{fontSize:11,fontWeight:600,color:'#8B94A3',textTransform:'uppercase',letterSpacing:'.5px'}}>Personalizada:</label>
                   <input type="color" value={corPrimaria} onChange={e=>setCorPrimaria(e.target.value)} onBlur={()=>savePrefs({})} style={{width:42,height:36,padding:2,border:'1px solid #E5E9EF',borderRadius:8,cursor:'pointer'}} />
-                  <input type="text" value={corPrimaria} onChange={e=>setCorPrimaria(e.target.value)} onBlur={()=>savePrefs({})} placeholder="#00A650" style={{padding:'9px 12px',borderRadius:8,border:'1px solid #E5E9EF',fontSize:13,fontFamily:'JetBrains Mono,monospace',color:'#1A2332',outline:'none',width:110,background:'#F8F9FB'}} />
+                  <input type="text" value={corPrimaria} onChange={e=>setCorPrimaria(e.target.value)} onBlur={()=>savePrefs({})} placeholder="#00A650" style={{padding:'9px 12px',borderRadius:8,border:'1px solid #E5E9EF',fontSize:13,fontFamily:'Geist Mono,monospace',color:'#1A2332',outline:'none',width:110,background:'#F8F9FB'}} />
                   {/* Preview do botão (próximo do input) */}
                   <div style={{display:'inline-flex',alignItems:'center',gap:8,padding:'4px 10px 4px 14px',background:'#F8F9FB',borderRadius:20,border:'1px solid #E5E9EF'}}>
                     <span style={{fontSize:11,color:'#8B94A3',fontWeight:600}}>Preview:</span>
@@ -2327,7 +2359,7 @@ export default function Home() {
 
             {/* SEÇÃO 3: WALLPAPER */}
             <section style={{marginBottom:32}}>
-              <h2 style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:15,fontWeight:700,color:'#1A2332',marginBottom:4}}>Wallpaper</h2>
+              <h2 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:15,fontWeight:700,color:'#1A2332',marginBottom:4}}>Wallpaper</h2>
               <p style={{fontSize:12,color:'#8B94A3',marginBottom:14}}>Imagem de fundo sutil. Use opacidade baixa para não distrair durante o trabalho.</p>
               <div style={{background:'#fff',padding:18,borderRadius:12,border:'1px solid #E5E9EF',boxShadow:'0 1px 2px rgba(16,24,40,.04)'}}>
 
@@ -2392,7 +2424,7 @@ export default function Home() {
 
             {/* SEÇÃO 4: DENSIDADE */}
             <section style={{marginBottom:32}}>
-              <h2 style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:15,fontWeight:700,color:'#1A2332',marginBottom:4}}>Densidade</h2>
+              <h2 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:15,fontWeight:700,color:'#1A2332',marginBottom:4}}>Densidade</h2>
               <p style={{fontSize:12,color:'#8B94A3',marginBottom:14}}>Ajuste o espaçamento entre elementos.</p>
               <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10}}>
                 {[
@@ -2408,7 +2440,7 @@ export default function Home() {
                       background: ativo ? '#E6F7EE' : '#fff',
                       cursor:'pointer',fontFamily:'inherit',transition:'all .15s'
                     }}>
-                      <div style={{fontFamily:'Plus Jakarta Sans,sans-serif',fontSize:13,fontWeight:700,color: ativo ? '#008C44' : '#1A2332',marginBottom:2}}>{d.l}</div>
+                      <div style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:13,fontWeight:700,color: ativo ? '#008C44' : '#1A2332',marginBottom:2}}>{d.l}</div>
                       <div style={{fontSize:11,color:'#8B94A3'}}>{d.d}</div>
                     </button>
                   );
@@ -2435,6 +2467,33 @@ export default function Home() {
         </div>{/* end main */}
       </div>{/* end grid */}
       </div>{/* end z-index wrapper */}
+
+      {/* ══ MODAL DE CONFIRMAÇÃO CUSTOMIZADO ══ */}
+      {confirmModal && (
+        <div style={{position:'fixed',inset:0,background:'rgba(26,35,50,.55)',backdropFilter:'blur(6px)',WebkitBackdropFilter:'blur(6px)',zIndex:9000,display:'flex',alignItems:'center',justifyContent:'center',padding:20,animation:'fadeIn .15s ease'}} onClick={e=>{if(e.target===e.currentTarget) setConfirmModal(null)}}>
+          <div style={{background:'#fff',borderRadius:14,width:'100%',maxWidth:420,boxShadow:'0 24px 64px rgba(16,24,40,.18),0 8px 16px rgba(16,24,40,.08)',animation:'scaleIn .2s cubic-bezier(.16,1,.3,1)',border:'1px solid #E5E9EF',overflow:'hidden'}}>
+            <div style={{padding:'24px 24px 18px',display:'flex',gap:14,alignItems:'flex-start'}}>
+              <div style={{width:44,height:44,borderRadius:11,background: confirmModal.danger ? '#FEE2E2' : '#DBEAFE',color: confirmModal.danger ? '#E63946' : '#2563EB',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                {confirmModal.danger ? (
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                )}
+              </div>
+              <div style={{flex:1,minWidth:0}}>
+                <h3 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:17,fontWeight:700,color:'#1A2332',margin:'0 0 6px 0',letterSpacing:'-.3px'}}>{confirmModal.title}</h3>
+                <p style={{fontSize:13,color:'#4F5868',lineHeight:1.5,margin:0}}>{confirmModal.message}</p>
+              </div>
+            </div>
+            <div style={{padding:'14px 24px 18px',display:'flex',gap:10,justifyContent:'flex-end',background:'#F8F9FB',borderTop:'1px solid #E5E9EF'}}>
+              <button onClick={()=>setConfirmModal(null)} style={{padding:'10px 18px',borderRadius:9,border:'1px solid #E5E9EF',background:'#fff',fontFamily:'inherit',fontSize:13,fontWeight:500,cursor:'pointer',color:'#4F5868'}}>Cancelar</button>
+              <button onClick={async ()=>{ const fn = confirmModal.onConfirm; setConfirmModal(null); try { await fn(); } catch(e) { console.error('[confirmModal]', e); showToast('Erro inesperado'); } }} autoFocus style={{padding:'10px 18px',borderRadius:9,border:'none',background: confirmModal.danger ? '#E63946' : '#00A650',color:'#fff',fontFamily:'inherit',fontSize:13,fontWeight:600,cursor:'pointer',boxShadow:`0 1px 2px ${confirmModal.danger?'rgba(230,57,70,.3)':'rgba(0,166,80,.3)'}, inset 0 1px 0 rgba(255,255,255,.15)`}}>
+                {confirmModal.danger ? 'Excluir' : 'Confirmar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
