@@ -25,7 +25,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' https://premix.com.br https://images.unsplash.com data: blob:",
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.emailjs.com https://images.unsplash.com",
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.emailjs.com https://images.unsplash.com https://*.googleapis.com",
               "frame-ancestors 'none'",
             ].join('; '),
           },
