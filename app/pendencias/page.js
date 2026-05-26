@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 
 /* ═══════════════════════════════════════════════════════
-   DESIGN TOKENS — Estilo Linear/Notion
+   DESIGN TOKENS
 ═══════════════════════════════════════════════════════ */
 const C = {
   bg: '#FAFAFA',
@@ -18,6 +18,7 @@ const C = {
   primary: '#5B5BD6',
   primaryHover: '#4F4FCC',
   primaryLight: '#EEF0FE',
+  primarySoft: '#F5F6FE',
 
   green: '#10B981',
   greenLight: '#ECFDF5',
@@ -34,6 +35,10 @@ const C = {
   blue: '#3B82F6',
   blueLight: '#EFF6FF',
   blueText: '#1D4ED8',
+
+  purple: '#8B5CF6',
+  purpleLight: '#F3F0FF',
+  purpleText: '#6D28D9',
 
   shadow: '0 1px 3px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.06)',
   shadowLg: '0 4px 6px rgba(0,0,0,.04), 0 10px 15px rgba(0,0,0,.08)',
@@ -71,6 +76,13 @@ const cleanFilialName = (name) => {
     .replace(/(^|\s)\S/g, (l) => l.toUpperCase());
 };
 
+const compactBRL = (v) => {
+  if (!v) return 'R$ 0';
+  if (v >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1)}M`;
+  if (v >= 1_000) return `R$ ${(v / 1_000).toFixed(1)}k`;
+  return `R$ ${Math.round(v)}`;
+};
+
 /* ═══════════════════════════════════════════════════════
    ÍCONES
 ═══════════════════════════════════════════════════════ */
@@ -85,34 +97,39 @@ const Icon = {
   Check: () => (<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>),
   X: () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>),
   Globe: () => (<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" /></svg>),
+  FileText: () => (<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>),
+  Inbox: () => (<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12" /><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" /></svg>),
+  Truck: () => (<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" /><path d="M15 18H9" /><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" /><circle cx="17" cy="18" r="2" /><circle cx="7" cy="18" r="2" /></svg>),
+  AlertCircle: () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" x2="12" y1="8" y2="12" /><line x1="12" x2="12.01" y1="16" y2="16" /></svg>),
+  Building: () => (<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2" /><path d="M9 22v-4h6v4" /><path d="M8 6h.01" /><path d="M16 6h.01" /><path d="M12 6h.01" /><path d="M12 10h.01" /><path d="M12 14h.01" /><path d="M16 10h.01" /><path d="M16 14h.01" /><path d="M8 10h.01" /><path d="M8 14h.01" /></svg>),
 };
 
 /* ═══════════════════════════════════════════════════════
    COMPONENTE PRINCIPAL
 ═══════════════════════════════════════════════════════ */
 export default function PendenciasPage() {
-  // ─── ESTADO ───
+  // Estado
   const [filiais, setFiliais] = useState([]);
   const [filialSel, setFilialSel] = useState('');
-  const [monitor, setMonitor] = useState([]);           // dados da filial (NF-e)
-  const [cteGlobal, setCteGlobal] = useState([]);       // CT-e de TODAS as filiais
-  const [preNotas, setPreNotas] = useState([]);
+  const [nfeData, setNfeData] = useState([]);          // NF-e da filial
+  const [preNotas, setPreNotas] = useState([]);        // Pré-notas da filial
+  const [cteGlobal, setCteGlobal] = useState([]);      // CT-e de TODAS as filiais
   const [ultimaAtt, setUltimaAtt] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [tab, setTab] = useState('tudo');
+  const [tab, setTab] = useState('overview'); // overview | nfe | prenotas | cte
 
-  // Filtros
+  // Filtros (compartilhados entre tabs onde fizer sentido)
   const [busca, setBusca] = useState('');
   const [filtroSLA, setFiltroSLA] = useState('TODOS');
   const [filtroPeriodo, setFiltroPeriodo] = useState('TODOS');
-  const [filtroFilialCte, setFiltroFilialCte] = useState('TODAS'); // só aba CT-e
+  const [filtroFilialCte, setFiltroFilialCte] = useState('TODAS');
   const [sortBy, setSortBy] = useState('sla');
   const [sortDir, setSortDir] = useState('desc');
 
   const [expanded, setExpanded] = useState({});
   const [copiedKey, setCopiedKey] = useState('');
 
-  // ─── CARREGA FILIAIS COM CONTAGEM ───
+  // ─── CARREGA FILIAIS ───
   useEffect(() => {
     async function load() {
       const [filRes, monRes] = await Promise.all([
@@ -121,11 +138,10 @@ export default function PendenciasPage() {
       ]);
 
       if (filRes.data && monRes.data) {
-        // conta NF-e (e similares, exceto CT) por filial
         const contagem = {};
         monRes.data.forEach((r) => {
           const tipo = (r.tipo_nota || '').toUpperCase();
-          if (tipo.includes('CT')) return; // CT-e não conta na filial
+          if (tipo.includes('CT')) return;
           if (r.descricao_filial) {
             contagem[r.descricao_filial] = (contagem[r.descricao_filial] || 0) + 1;
           }
@@ -149,30 +165,28 @@ export default function PendenciasPage() {
     load();
   }, []);
 
-  // ─── CARREGA CT-e GLOBAL (uma vez só) ───
+  // ─── CT-e GLOBAL (uma vez) ───
   useEffect(() => {
-    async function loadCteGlobal() {
+    async function loadCte() {
       const { data } = await supabase
         .from('monitor_xml')
         .select('*')
         .ilike('tipo_nota', '%CT%');
       setCteGlobal(data || []);
     }
-    loadCteGlobal();
+    loadCte();
   }, []);
 
-  // ─── CARREGA DADOS DA FILIAL SELECIONADA ───
+  // ─── DADOS DA FILIAL ───
   const loadFilialData = useCallback(async () => {
     if (!filialSel) {
-      setMonitor([]);
-      setPreNotas([]);
+      setNfeData([]); setPreNotas([]);
       return;
     }
     setLoading(true);
     const filialDesc = filiais.find((f) => f.codigo === filialSel)?.descricao;
 
     const [mRes, pRes, aRes] = await Promise.all([
-      // Pega tudo da filial MENOS CT-e (CT-e é global)
       supabase
         .from('monitor_xml')
         .select('*')
@@ -182,37 +196,28 @@ export default function PendenciasPage() {
       supabase.from('monitor_xml').select('atualizado_em').order('atualizado_em', { ascending: false }).limit(1),
     ]);
 
-    setMonitor(mRes.data || []);
+    setNfeData(mRes.data || []);
     setPreNotas(pRes.data || []);
     if (aRes.data?.[0]) setUltimaAtt(aRes.data[0].atualizado_em);
     setLoading(false);
   }, [filialSel, filiais]);
 
-  useEffect(() => {
-    loadFilialData();
-  }, [loadFilialData]);
+  useEffect(() => { loadFilialData(); }, [loadFilialData]);
 
-  // ─── AGRUPAR (NF-e da filial) POR NOTA ───
+  // ─── AGRUPAR ───
   function agruparPorNota(linhas, incluirFilial = false) {
     const map = new Map();
     linhas.forEach((item) => {
       const k = item.chave || item.documento || `${item.fornecedor}-${item.documento}`;
       if (!map.has(k)) {
         map.set(k, {
-          chave: item.chave,
-          documento: item.documento,
-          serie: item.serie,
-          tipo_nota: item.tipo_nota,
-          data_emissao: item.data_emissao,
-          status: item.status,
-          sla: item.sla,
-          sla_categoria: item.sla_categoria,
-          fornecedor: item.fornecedor,
-          nome_fornecedor: item.nome_fornecedor,
+          chave: item.chave, documento: item.documento, serie: item.serie,
+          tipo_nota: item.tipo_nota, data_emissao: item.data_emissao,
+          status: item.status, sla: item.sla, sla_categoria: item.sla_categoria,
+          fornecedor: item.fornecedor, nome_fornecedor: item.nome_fornecedor,
           descricao_filial: incluirFilial ? item.descricao_filial : undefined,
           filial: incluirFilial ? item.filial : undefined,
-          itens: [],
-          valor_total: 0,
+          itens: [], valor_total: 0,
         });
       }
       const nota = map.get(k);
@@ -222,63 +227,116 @@ export default function PendenciasPage() {
     return Array.from(map.values());
   }
 
-  const nfeAgrupado = useMemo(() => agruparPorNota(monitor), [monitor]);
+  const nfeAgrupado = useMemo(() => agruparPorNota(nfeData), [nfeData]);
   const cteAgrupado = useMemo(() => agruparPorNota(cteGlobal, true), [cteGlobal]);
 
-  // ─── LISTAS DE FILIAIS QUE APARECEM NO CT-E (pro filtro) ───
   const filiaisComCte = useMemo(() => {
     const set = new Set();
     cteGlobal.forEach((r) => r.descricao_filial && set.add(r.descricao_filial));
     return Array.from(set).sort();
   }, [cteGlobal]);
 
-  // ─── APLICAR FILTROS ───
-  const dadosFiltrados = useMemo(() => {
-    let data;
+  // ─── STATS DA FILIAL (NF-e + Pré-notas) ───
+  const stats = useMemo(() => {
+    const cr = nfeAgrupado.filter((r) => r.sla_categoria === 'CRITICO').length;
+    const at = nfeAgrupado.filter((r) => r.sla_categoria === 'ATENCAO').length;
+    const ok = nfeAgrupado.filter((r) => r.sla_categoria === 'OK').length;
+    const valorNfe = nfeAgrupado.reduce((s, r) => s + (r.valor_total || 0), 0);
+    const valorPre = preNotas.reduce((s, r) => s + (r.valor_bruto || 0), 0);
+    return {
+      nfe: nfeAgrupado.length,
+      prenotas: preNotas.length,
+      cr, at, ok,
+      valor: valorNfe + valorPre,
+      valorNfe,
+      valorPre,
+    };
+  }, [nfeAgrupado, preNotas]);
 
-    // Decide o conjunto base conforme tab
-    if (tab === 'cte') {
-      data = cteAgrupado;
-      // Filtro de filial dentro da aba CT-e
-      if (filtroFilialCte !== 'TODAS') {
-        data = data.filter((r) => r.descricao_filial === filtroFilialCte);
+  // ─── DASHBOARD: dados para gráficos ───
+  const chartData = useMemo(() => {
+    // Top fornecedores
+    const fornecedoresMap = {};
+    nfeAgrupado.forEach((n) => {
+      const nome = n.nome_fornecedor || 'Sem nome';
+      if (!fornecedoresMap[nome]) fornecedoresMap[nome] = { count: 0, valor: 0 };
+      fornecedoresMap[nome].count++;
+      fornecedoresMap[nome].valor += n.valor_total || 0;
+    });
+    const topFornecedores = Object.entries(fornecedoresMap)
+      .map(([nome, d]) => ({ nome, ...d }))
+      .sort((a, b) => b.valor - a.valor)
+      .slice(0, 5);
+
+    // Evolução por dia (últimos 14 dias)
+    const hoje = new Date();
+    const dias = [];
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date(hoje);
+      d.setDate(d.getDate() - i);
+      const iso = d.toISOString().slice(0, 10);
+      dias.push({
+        date: iso,
+        label: d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+        count: 0,
+      });
+    }
+    const diasMap = Object.fromEntries(dias.map((d) => [d.date, d]));
+    nfeAgrupado.forEach((n) => {
+      if (n.data_emissao && diasMap[n.data_emissao]) {
+        diasMap[n.data_emissao].count++;
       }
-    } else if (tab === 'nfe') {
-      data = nfeAgrupado;
+    });
+
+    // Distribuição por tipo
+    const tiposMap = {};
+    nfeAgrupado.forEach((n) => {
+      const t = n.tipo_nota || 'Outro';
+      tiposMap[t] = (tiposMap[t] || 0) + 1;
+    });
+    const tipos = Object.entries(tiposMap)
+      .map(([tipo, count]) => ({ tipo, count }))
+      .sort((a, b) => b.count - a.count);
+
+    return { topFornecedores, dias, tipos };
+  }, [nfeAgrupado]);
+
+  // ─── DADOS DA TAB ATIVA ───
+  const dadosTab = useMemo(() => {
+    let base;
+    if (tab === 'cte') {
+      base = cteAgrupado;
+      if (filtroFilialCte !== 'TODAS') {
+        base = base.filter((r) => r.descricao_filial === filtroFilialCte);
+      }
+    } else if (tab === 'nfe' || tab === 'overview') {
+      base = nfeAgrupado;
     } else {
-      // 'tudo' = NF-e da filial + CT-e global
-      data = [...nfeAgrupado, ...cteAgrupado];
+      base = [];
     }
 
-    // Filtro SLA
+    // Filtros gerais (não se aplicam a pré-notas)
     if (filtroSLA !== 'TODOS') {
-      data = data.filter((r) => r.sla_categoria === filtroSLA);
+      base = base.filter((r) => r.sla_categoria === filtroSLA);
     }
-
-    // Filtro período
     if (filtroPeriodo !== 'TODOS') {
       const dias = parseInt(filtroPeriodo);
       const cutoff = new Date();
       cutoff.setDate(cutoff.getDate() - dias);
-      data = data.filter((r) => {
-        if (!r.data_emissao) return false;
-        return new Date(r.data_emissao) >= cutoff;
-      });
+      base = base.filter((r) => r.data_emissao && new Date(r.data_emissao) >= cutoff);
     }
-
-    // Busca
     if (busca) {
       const b = busca.toLowerCase();
-      data = data.filter((r) =>
-        [r.chave, r.documento, r.nome_fornecedor, r.fornecedor, r.descricao_filial, ...(r.itens || []).flatMap(i => [i.descricao_xml, i.descricao_protheus, i.produto_xml])]
+      base = base.filter((r) =>
+        [r.chave, r.documento, r.nome_fornecedor, r.fornecedor, r.descricao_filial,
+        ...(r.itens || []).flatMap(i => [i.descricao_xml, i.descricao_protheus, i.produto_xml])]
           .some((c) => c && String(c).toLowerCase().includes(b))
       );
     }
 
     // Ordenação
     if (tab === 'cte') {
-      // Aba CT-e: ordena primeiro por filial (alfabético), depois pelo sort escolhido
-      data = [...data].sort((a, b) => {
+      base = [...base].sort((a, b) => {
         const af = a.descricao_filial || '';
         const bf = b.descricao_filial || '';
         if (af !== bf) return af.localeCompare(bf, 'pt-BR');
@@ -292,7 +350,7 @@ export default function PendenciasPage() {
         return 0;
       });
     } else {
-      data = [...data].sort((a, b) => {
+      base = [...base].sort((a, b) => {
         let av = a[sortBy], bv = b[sortBy];
         if (av == null) av = sortDir === 'asc' ? Infinity : -Infinity;
         if (bv == null) bv = sortDir === 'asc' ? Infinity : -Infinity;
@@ -303,9 +361,8 @@ export default function PendenciasPage() {
         return 0;
       });
     }
-
-    return data;
-  }, [nfeAgrupado, cteAgrupado, tab, filtroSLA, filtroPeriodo, filtroFilialCte, busca, sortBy, sortDir]);
+    return base;
+  }, [tab, nfeAgrupado, cteAgrupado, filtroSLA, filtroPeriodo, filtroFilialCte, busca, sortBy, sortDir]);
 
   const preNotasFiltradas = useMemo(() => {
     let data = preNotas;
@@ -318,42 +375,33 @@ export default function PendenciasPage() {
     return data;
   }, [preNotas, busca]);
 
-  // ─── STATS (NF-e filial + CT-e global) ───
-  const stats = useMemo(() => {
-    const todos = [...nfeAgrupado, ...cteAgrupado];
-    const cr = todos.filter((r) => r.sla_categoria === 'CRITICO').length;
-    const at = todos.filter((r) => r.sla_categoria === 'ATENCAO').length;
-    const ok = todos.filter((r) => r.sla_categoria === 'OK').length;
-    const valor = todos.reduce((s, r) => s + (r.valor_total || 0), 0);
-    return {
-      total: todos.length,
-      cr, at, ok, valor,
-      nfe: nfeAgrupado.length,
-      cte: cteAgrupado.length,
-    };
-  }, [nfeAgrupado, cteAgrupado]);
+  // Stats CT-e (mostrados só na aba CT-e)
+  const cteStats = useMemo(() => {
+    const cr = cteAgrupado.filter((r) => r.sla_categoria === 'CRITICO').length;
+    const at = cteAgrupado.filter((r) => r.sla_categoria === 'ATENCAO').length;
+    const ok = cteAgrupado.filter((r) => r.sla_categoria === 'OK').length;
+    const valor = cteAgrupado.reduce((s, r) => s + (r.valor_total || 0), 0);
+    return { total: cteAgrupado.length, cr, at, ok, valor };
+  }, [cteAgrupado]);
 
   // ─── AÇÕES ───
   function toggleSort(col) {
     if (sortBy === col) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     else { setSortBy(col); setSortDir('desc'); }
   }
-
   function copyKey(k) {
     if (!k) return;
     navigator.clipboard.writeText(k);
     setCopiedKey(k);
     setTimeout(() => setCopiedKey(''), 1500);
   }
-
   function toggleExpand(k) {
     setExpanded((e) => ({ ...e, [k]: !e[k] }));
   }
 
   function exportarCSV() {
-    const dados = tab === 'prenotas' ? preNotasFiltradas : dadosFiltrados;
+    const dados = tab === 'prenotas' ? preNotasFiltradas : dadosTab;
     if (!dados.length) return;
-
     let rows;
     if (tab === 'prenotas') {
       rows = dados.map(r => ({
@@ -377,14 +425,12 @@ export default function PendenciasPage() {
         });
       });
     }
-
     if (!rows.length) return;
     const cols = Object.keys(rows[0]);
     const csv = '\uFEFF' + [
       cols.join(';'),
       ...rows.map(r => cols.map(c => `"${(r[c] ?? '').toString().replace(/"/g, '""')}"`).join(';')),
     ].join('\n');
-
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -393,17 +439,11 @@ export default function PendenciasPage() {
   }
 
   function limparFiltros() {
-    setBusca('');
-    setFiltroSLA('TODOS');
-    setFiltroPeriodo('TODOS');
-    setFiltroFilialCte('TODAS');
-    setTab('tudo');
+    setBusca(''); setFiltroSLA('TODOS'); setFiltroPeriodo('TODOS'); setFiltroFilialCte('TODAS');
   }
 
   const filialSelObj = filiais.find((f) => f.codigo === filialSel);
-  const temFiltros = busca || filtroSLA !== 'TODOS' || filtroPeriodo !== 'TODOS' || tab !== 'tudo' || filtroFilialCte !== 'TODAS';
-
-  // Aba CT-e não precisa de filial selecionada
+  const temFiltros = busca || filtroSLA !== 'TODOS' || filtroPeriodo !== 'TODOS' || filtroFilialCte !== 'TODAS';
   const podeMostrarConteudo = filialSel || tab === 'cte';
 
   /* ═══════════════════════════════════════════════════════
@@ -436,8 +476,6 @@ export default function PendenciasPage() {
               display: 'flex', alignItems: 'center', gap: 6, opacity: loading || !filialSel ? .5 : 1,
               transition: 'all .15s',
             }}
-            onMouseEnter={e => !loading && filialSel && (e.currentTarget.style.background = C.surfaceHover)}
-            onMouseLeave={e => (e.currentTarget.style.background = C.surface)}
           >
             <span style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }}><Icon.Refresh /></span>
             Atualizar
@@ -478,6 +516,20 @@ export default function PendenciasPage() {
           </div>
         </div>
 
+        {/* TABS */}
+        <div style={{ marginBottom: 20 }}>
+          <div style={{
+            display: 'flex', gap: 4, padding: 4,
+            background: C.surface, border: `1px solid ${C.border}`,
+            borderRadius: 10, boxShadow: C.shadow, flexWrap: 'wrap',
+          }}>
+            <TabButton active={tab === 'overview'} onClick={() => setTab('overview')} icon={<Icon.Building />} label="Visão Geral" disabled={!filialSel} />
+            <TabButton active={tab === 'nfe'} onClick={() => setTab('nfe')} icon={<Icon.FileText />} label="NF-e" badge={stats.nfe} disabled={!filialSel} />
+            <TabButton active={tab === 'prenotas'} onClick={() => setTab('prenotas')} icon={<Icon.Inbox />} label="Pré-notas" badge={stats.prenotas} disabled={!filialSel} />
+            <TabButton active={tab === 'cte'} onClick={() => setTab('cte')} icon={<Icon.Truck />} label="CT-e" badge={cteStats.total} badgeColor={C.purple} hint="global" />
+          </div>
+        </div>
+
         {/* CONTEÚDO */}
         {!podeMostrarConteudo ? (
           <EmptyState onClickCte={() => setTab('cte')} />
@@ -485,177 +537,130 @@ export default function PendenciasPage() {
           <LoadingState />
         ) : (
           <>
-            {/* STATS CARDS */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 20 }}>
-              <StatCard label="Total de Notas" value={stats.total} color={C.text} bg={C.surface} />
-              <StatCard label="SLA Crítico" sub=">10 dias" value={stats.cr} color={C.redText} bg={C.redLight} dot={C.red} />
-              <StatCard label="SLA Atenção" sub="6–10 dias" value={stats.at} color={C.amberText} bg={C.amberLight} dot={C.amber} />
-              <StatCard label="SLA OK" sub="≤5 dias" value={stats.ok} color={C.greenText} bg={C.greenLight} dot={C.green} />
-              <StatCard label="Valor Total" value={fmtBRL(stats.valor)} color={C.text} bg={C.surface} small />
-            </div>
+            {/* ───────── VISÃO GERAL ───────── */}
+            {tab === 'overview' && (
+              <OverviewTab
+                stats={stats}
+                chartData={chartData}
+                filial={filialSelObj}
+                onGoNfe={() => setTab('nfe')}
+                onGoPrenotas={() => setTab('prenotas')}
+              />
+            )}
 
-            {/* TABS */}
-            <div style={{
-              background: C.surface, borderRadius: 10, border: `1px solid ${C.border}`,
-              boxShadow: C.shadow, overflow: 'hidden',
-            }}>
-              <div style={{ display: 'flex', borderBottom: `1px solid ${C.border}`, padding: '0 8px', flexWrap: 'wrap' }}>
-                {[
-                  { k: 'tudo', l: 'Todos', n: stats.total, icon: null },
-                  { k: 'nfe', l: 'NF-e', n: stats.nfe, icon: null },
-                  { k: 'cte', l: 'CT-e', n: stats.cte, icon: <Icon.Globe /> },
-                  { k: 'prenotas', l: 'Pré-notas', n: preNotas.length, icon: null },
-                ].map((t) => (
-                  <button
-                    key={t.k}
-                    onClick={() => setTab(t.k)}
-                    style={{
-                      padding: '12px 14px', border: 'none', background: 'transparent',
-                      fontSize: 13, fontWeight: tab === t.k ? 600 : 500,
-                      color: tab === t.k ? C.primary : C.textMuted,
-                      cursor: 'pointer', fontFamily: 'inherit',
-                      borderBottom: `2px solid ${tab === t.k ? C.primary : 'transparent'}`,
-                      marginBottom: -1, display: 'flex', alignItems: 'center', gap: 6,
-                      transition: 'color .15s',
-                    }}
-                  >
-                    {t.icon}
-                    {t.l}
-                    <span style={{
-                      background: tab === t.k ? C.primaryLight : C.bg,
-                      color: tab === t.k ? C.primary : C.textMuted,
-                      padding: '1px 7px', borderRadius: 10, fontSize: 11, fontWeight: 600,
-                    }}>
-                      {t.n}
-                    </span>
-                  </button>
-                ))}
-              </div>
-
-              {/* Badge informativo se for aba CT-e */}
-              {tab === 'cte' && (
-                <div style={{
-                  padding: '10px 16px', background: C.blueLight, borderBottom: `1px solid ${C.border}`,
-                  display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: C.blueText,
-                }}>
-                  <Icon.Globe />
-                  <span><strong>Visão global:</strong> exibindo CT-e de todas as filiais, agrupados por filial.</span>
-                </div>
-              )}
-
-              {/* BARRA DE FILTROS */}
-              <div style={{ padding: '12px 16px', display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', borderBottom: `1px solid ${C.border}` }}>
-                <div style={{ position: 'relative', flex: '1 1 240px', minWidth: 200 }}>
-                  <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: C.textSubtle }}>
-                    <Icon.Search />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Buscar por nota, fornecedor, produto..."
-                    value={busca}
-                    onChange={(e) => setBusca(e.target.value)}
-                    style={{
-                      width: '100%', padding: '8px 12px 8px 34px', fontSize: 13,
-                      border: `1px solid ${C.border}`, borderRadius: 6,
-                      background: C.bg, outline: 'none', color: C.text,
-                      fontFamily: 'inherit', transition: 'border-color .15s',
-                    }}
-                    onFocus={e => e.target.style.borderColor = C.primary}
-                    onBlur={e => e.target.style.borderColor = C.border}
-                  />
-                </div>
-
-                {tab !== 'prenotas' && (
-                  <>
-                    <FilterSelect
-                      value={filtroSLA}
-                      onChange={setFiltroSLA}
-                      options={[
-                        { v: 'TODOS', l: 'Todos os SLAs' },
-                        { v: 'CRITICO', l: '🔴 Crítico (>10d)' },
-                        { v: 'ATENCAO', l: '🟡 Atenção (6–10d)' },
-                        { v: 'OK', l: '🟢 OK (≤5d)' },
-                      ]}
-                    />
-
-                    <FilterSelect
-                      value={filtroPeriodo}
-                      onChange={setFiltroPeriodo}
-                      options={[
-                        { v: 'TODOS', l: 'Todo período' },
-                        { v: '7', l: 'Últimos 7 dias' },
-                        { v: '30', l: 'Últimos 30 dias' },
-                        { v: '90', l: 'Últimos 90 dias' },
-                      ]}
-                    />
-
-                    {tab === 'cte' && filiaisComCte.length > 0 && (
-                      <FilterSelect
-                        value={filtroFilialCte}
-                        onChange={setFiltroFilialCte}
-                        options={[
-                          { v: 'TODAS', l: 'Todas as filiais' },
-                          ...filiaisComCte.map((f) => ({ v: f, l: cleanFilialName(f) })),
-                        ]}
-                      />
-                    )}
-                  </>
-                )}
-
-                {temFiltros && (
-                  <button onClick={limparFiltros} style={{
-                    padding: '7px 12px', background: 'transparent', border: `1px solid ${C.border}`,
-                    borderRadius: 6, color: C.textMuted, fontSize: 12, fontWeight: 500,
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
-                    fontFamily: 'inherit',
-                  }}>
-                    <Icon.X /> Limpar filtros
-                  </button>
-                )}
-
-                <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-                  <button onClick={exportarCSV} style={{
-                    padding: '8px 14px', background: C.primary, color: '#fff', border: 'none',
-                    borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit',
-                    transition: 'background .15s',
-                  }}
-                    onMouseEnter={e => e.currentTarget.style.background = C.primaryHover}
-                    onMouseLeave={e => e.currentTarget.style.background = C.primary}
-                  >
-                    <Icon.Download /> Exportar CSV
-                  </button>
-                </div>
-              </div>
-
-              {/* TABELA */}
-              {tab === 'prenotas' ? (
-                <TabelaPreNotas dados={preNotasFiltradas} />
-              ) : (
-                <TabelaMonitor
-                  dados={dadosFiltrados}
-                  mostrarFilial={tab === 'cte'}
-                  expanded={expanded}
-                  toggleExpand={toggleExpand}
-                  sortBy={sortBy}
-                  sortDir={sortDir}
-                  toggleSort={toggleSort}
-                  copyKey={copyKey}
-                  copiedKey={copiedKey}
+            {/* ───────── NF-e ───────── */}
+            {tab === 'nfe' && (
+              <>
+                <StatsRow
+                  cards={[
+                    { label: 'Total NF-e', value: stats.nfe, color: C.text, bg: C.surface },
+                    { label: 'SLA Crítico', sub: '>10 dias', value: stats.cr, color: C.redText, bg: C.redLight, dot: C.red },
+                    { label: 'SLA Atenção', sub: '6–10 dias', value: stats.at, color: C.amberText, bg: C.amberLight, dot: C.amber },
+                    { label: 'SLA OK', sub: '≤5 dias', value: stats.ok, color: C.greenText, bg: C.greenLight, dot: C.green },
+                    { label: 'Valor NF-e', value: fmtBRL(stats.valorNfe), color: C.text, bg: C.surface, small: true },
+                  ]}
                 />
-              )}
-            </div>
+                <DataPanel
+                  title="Notas Fiscais"
+                  icon={<Icon.FileText />}
+                  busca={busca} setBusca={setBusca}
+                  filtroSLA={filtroSLA} setFiltroSLA={setFiltroSLA}
+                  filtroPeriodo={filtroPeriodo} setFiltroPeriodo={setFiltroPeriodo}
+                  temFiltros={temFiltros} limparFiltros={limparFiltros}
+                  exportarCSV={exportarCSV}
+                  total={dadosTab.length}
+                >
+                  <TabelaMonitor
+                    dados={dadosTab} mostrarFilial={false}
+                    expanded={expanded} toggleExpand={toggleExpand}
+                    sortBy={sortBy} sortDir={sortDir} toggleSort={toggleSort}
+                    copyKey={copyKey} copiedKey={copiedKey}
+                  />
+                </DataPanel>
+              </>
+            )}
+
+            {/* ───────── PRÉ-NOTAS ───────── */}
+            {tab === 'prenotas' && (
+              <>
+                <StatsRow
+                  cards={[
+                    { label: 'Total Pré-notas', value: stats.prenotas, color: C.text, bg: C.surface },
+                    { label: 'Valor Mercadoria', value: fmtBRL(preNotas.reduce((s, r) => s + (r.valor_mercadoria || 0), 0)), color: C.text, bg: C.surface, small: true },
+                    { label: 'Valor Bruto', value: fmtBRL(stats.valorPre), color: C.text, bg: C.surface, small: true },
+                  ]}
+                />
+                <DataPanel
+                  title="Pré-notas"
+                  icon={<Icon.Inbox />}
+                  busca={busca} setBusca={setBusca}
+                  semFiltrosSLA
+                  temFiltros={!!busca} limparFiltros={() => setBusca('')}
+                  exportarCSV={exportarCSV}
+                  total={preNotasFiltradas.length}
+                >
+                  <TabelaPreNotas dados={preNotasFiltradas} />
+                </DataPanel>
+              </>
+            )}
+
+            {/* ───────── CT-e ───────── */}
+            {tab === 'cte' && (
+              <>
+                <div style={{
+                  background: C.purpleLight, border: `1px solid ${C.purple}33`,
+                  borderRadius: 10, padding: '12px 16px', marginBottom: 16,
+                  display: 'flex', alignItems: 'center', gap: 10,
+                }}>
+                  <div style={{ color: C.purpleText, display: 'flex', alignItems: 'center' }}>
+                    <Icon.Globe />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: C.purpleText }}>Visão Global — CT-e</div>
+                    <div style={{ fontSize: 11, color: C.purpleText, opacity: .8 }}>
+                      Exibindo conhecimentos de transporte de todas as filiais, agrupados por filial.
+                    </div>
+                  </div>
+                </div>
+
+                <StatsRow
+                  cards={[
+                    { label: 'Total CT-e', value: cteStats.total, color: C.text, bg: C.surface },
+                    { label: 'SLA Crítico', sub: '>10 dias', value: cteStats.cr, color: C.redText, bg: C.redLight, dot: C.red },
+                    { label: 'SLA Atenção', sub: '6–10 dias', value: cteStats.at, color: C.amberText, bg: C.amberLight, dot: C.amber },
+                    { label: 'SLA OK', sub: '≤5 dias', value: cteStats.ok, color: C.greenText, bg: C.greenLight, dot: C.green },
+                    { label: 'Valor Total', value: fmtBRL(cteStats.valor), color: C.text, bg: C.surface, small: true },
+                  ]}
+                />
+
+                <DataPanel
+                  title="Conhecimentos de Transporte"
+                  icon={<Icon.Truck />}
+                  busca={busca} setBusca={setBusca}
+                  filtroSLA={filtroSLA} setFiltroSLA={setFiltroSLA}
+                  filtroPeriodo={filtroPeriodo} setFiltroPeriodo={setFiltroPeriodo}
+                  filtroFilialCte={filtroFilialCte} setFiltroFilialCte={setFiltroFilialCte}
+                  filiaisComCte={filiaisComCte}
+                  temFiltros={temFiltros} limparFiltros={limparFiltros}
+                  exportarCSV={exportarCSV}
+                  total={dadosTab.length}
+                >
+                  <TabelaMonitor
+                    dados={dadosTab} mostrarFilial={true}
+                    expanded={expanded} toggleExpand={toggleExpand}
+                    sortBy={sortBy} sortDir={sortDir} toggleSort={toggleSort}
+                    copyKey={copyKey} copiedKey={copiedKey}
+                  />
+                </DataPanel>
+              </>
+            )}
 
             {/* FOOTER */}
-            <div style={{ marginTop: 16, fontSize: 11, color: C.textSubtle, textAlign: 'center' }}>
+            <div style={{ marginTop: 20, fontSize: 11, color: C.textSubtle, textAlign: 'center' }}>
               {filialSelObj && tab !== 'cte' && (
-                <>
-                  Visualizando <strong style={{ color: C.textMuted }}>{filialSelObj.codigo} — {filialSelObj.nomeLimpo}</strong>
-                </>
+                <>Visualizando <strong style={{ color: C.textMuted }}>{filialSelObj.codigo} — {filialSelObj.nomeLimpo}</strong></>
               )}
-              {tab === 'cte' && (
-                <strong style={{ color: C.textMuted }}>Visão global de CT-e</strong>
-              )}
+              {tab === 'cte' && <strong style={{ color: C.textMuted }}>Visão global de CT-e</strong>}
               {ultimaAtt && <> · Dados atualizados em {new Date(ultimaAtt).toLocaleString('pt-BR')}</>}
             </div>
           </>
@@ -664,7 +669,6 @@ export default function PendenciasPage() {
 
       <style jsx global>{`
         @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
         .skeleton { background: linear-gradient(90deg, ${C.border}33, ${C.border}66, ${C.border}33); background-size: 200% 100%; animation: shimmer 1.4s ease-in-out infinite; }
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
@@ -678,8 +682,332 @@ export default function PendenciasPage() {
 }
 
 /* ═══════════════════════════════════════════════════════
-   COMPONENTES AUXILIARES
+   TAB BUTTON
 ═══════════════════════════════════════════════════════ */
+function TabButton({ active, onClick, icon, label, badge, badgeColor, disabled, hint }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        flex: '1 1 auto', minWidth: 120,
+        padding: '10px 14px', border: 'none',
+        background: active ? C.primaryLight : 'transparent',
+        color: active ? C.primary : disabled ? C.textSubtle : C.textMuted,
+        fontSize: 13, fontWeight: active ? 600 : 500,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        borderRadius: 7, fontFamily: 'inherit',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        transition: 'all .15s', opacity: disabled ? .5 : 1,
+      }}
+      onMouseEnter={(e) => !active && !disabled && (e.currentTarget.style.background = C.surfaceHover)}
+      onMouseLeave={(e) => !active && (e.currentTarget.style.background = 'transparent')}
+    >
+      {icon}
+      <span>{label}</span>
+      {badge !== undefined && (
+        <span style={{
+          background: active ? C.primary : (badgeColor || C.bg),
+          color: active ? '#fff' : (badgeColor ? '#fff' : C.textMuted),
+          padding: '1px 7px', borderRadius: 10, fontSize: 11, fontWeight: 600,
+          minWidth: 20, textAlign: 'center',
+        }}>
+          {badge}
+        </span>
+      )}
+      {hint && (
+        <span style={{
+          fontSize: 9, padding: '1px 5px', borderRadius: 3,
+          background: C.purpleLight, color: C.purpleText, fontWeight: 600,
+          textTransform: 'uppercase', letterSpacing: '.4px',
+        }}>{hint}</span>
+      )}
+    </button>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   OVERVIEW TAB (Dashboard com gráficos)
+═══════════════════════════════════════════════════════ */
+function OverviewTab({ stats, chartData, filial, onGoNfe, onGoPrenotas }) {
+  return (
+    <div style={{ animation: 'fadeIn .3s ease' }}>
+      {/* HERO STATS */}
+      <div style={{
+        background: `linear-gradient(135deg, ${C.primary} 0%, ${C.purple} 100%)`,
+        borderRadius: 12, padding: 24, marginBottom: 16,
+        color: '#fff', boxShadow: C.shadowLg,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, fontWeight: 600, opacity: .9, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>
+          <Icon.Building />
+          {filial?.codigo} — {filial?.nomeLimpo}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 16, marginTop: 16 }}>
+          <div>
+            <div style={{ fontSize: 11, opacity: .8, fontWeight: 500 }}>NOTAS FISCAIS</div>
+            <div style={{ fontSize: 32, fontWeight: 700, lineHeight: 1 }}>{stats.nfe}</div>
+            <button onClick={onGoNfe} style={{
+              marginTop: 6, padding: '4px 10px', background: 'rgba(255,255,255,.2)',
+              border: '1px solid rgba(255,255,255,.3)', borderRadius: 5, color: '#fff',
+              fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
+            }}>Ver detalhes →</button>
+          </div>
+          <div>
+            <div style={{ fontSize: 11, opacity: .8, fontWeight: 500 }}>PRÉ-NOTAS</div>
+            <div style={{ fontSize: 32, fontWeight: 700, lineHeight: 1 }}>{stats.prenotas}</div>
+            <button onClick={onGoPrenotas} style={{
+              marginTop: 6, padding: '4px 10px', background: 'rgba(255,255,255,.2)',
+              border: '1px solid rgba(255,255,255,.3)', borderRadius: 5, color: '#fff',
+              fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
+            }}>Ver detalhes →</button>
+          </div>
+          <div>
+            <div style={{ fontSize: 11, opacity: .8, fontWeight: 500 }}>VALOR TOTAL</div>
+            <div style={{ fontSize: 32, fontWeight: 700, lineHeight: 1 }}>{compactBRL(stats.valor)}</div>
+            <div style={{ marginTop: 6, fontSize: 11, opacity: .8 }}>NF-e + Pré-notas</div>
+          </div>
+        </div>
+      </div>
+
+      {/* SLA CARDS */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 16 }}>
+        <StatCard label="SLA Crítico" sub=">10 dias" value={stats.cr} color={C.redText} bg={C.redLight} dot={C.red} />
+        <StatCard label="SLA Atenção" sub="6–10 dias" value={stats.at} color={C.amberText} bg={C.amberLight} dot={C.amber} />
+        <StatCard label="SLA OK" sub="≤5 dias" value={stats.ok} color={C.greenText} bg={C.greenLight} dot={C.green} />
+      </div>
+
+      {/* GRÁFICOS GRID */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+        <ChartCard title="Distribuição por SLA" subtitle="Notas fiscais por categoria de prazo">
+          <SLADonut critico={stats.cr} atencao={stats.at} ok={stats.ok} />
+        </ChartCard>
+        <ChartCard title="Distribuição por Tipo" subtitle="Tipos de documentos pendentes">
+          <TipoBar tipos={chartData.tipos} />
+        </ChartCard>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16, marginBottom: 16 }}>
+        <ChartCard title="Evolução de Pendências" subtitle="Notas por data de emissão — últimos 14 dias">
+          <Timeline dias={chartData.dias} />
+        </ChartCard>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
+        <ChartCard title="Top 5 Fornecedores" subtitle="Por valor total em pendência">
+          <TopFornecedores dados={chartData.topFornecedores} />
+        </ChartCard>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   CHARTS (SVG puro, sem libs)
+═══════════════════════════════════════════════════════ */
+
+function ChartCard({ title, subtitle, children }) {
+  return (
+    <div style={{
+      background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10,
+      padding: 20, boxShadow: C.shadow,
+    }}>
+      <div style={{ marginBottom: 16 }}>
+        <h3 style={{ fontSize: 14, fontWeight: 600, color: C.text, margin: 0 }}>{title}</h3>
+        <p style={{ fontSize: 11, color: C.textMuted, margin: '2px 0 0' }}>{subtitle}</p>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function SLADonut({ critico, atencao, ok }) {
+  const total = critico + atencao + ok;
+  if (total === 0) return <EmptyChart label="Sem dados" />;
+
+  const r = 60, cx = 90, cy = 90;
+  const circ = 2 * Math.PI * r;
+
+  const segs = [
+    { val: critico, color: C.red, label: 'Crítico' },
+    { val: atencao, color: C.amber, label: 'Atenção' },
+    { val: ok, color: C.green, label: 'OK' },
+  ];
+
+  let offset = 0;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 24, justifyContent: 'center' }}>
+      <svg width="180" height="180" viewBox="0 0 180 180">
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke={C.border} strokeWidth="20" />
+        {segs.map((s, i) => {
+          if (s.val === 0) return null;
+          const len = (s.val / total) * circ;
+          const el = (
+            <circle
+              key={i}
+              cx={cx} cy={cy} r={r}
+              fill="none" stroke={s.color} strokeWidth="20"
+              strokeDasharray={`${len} ${circ - len}`}
+              strokeDashoffset={-offset}
+              transform={`rotate(-90 ${cx} ${cy})`}
+              style={{ transition: 'all .6s ease' }}
+            />
+          );
+          offset += len;
+          return el;
+        })}
+        <text x={cx} y={cy - 4} textAnchor="middle" style={{ fontSize: 28, fontWeight: 700, fill: C.text }}>
+          {total}
+        </text>
+        <text x={cx} y={cy + 16} textAnchor="middle" style={{ fontSize: 11, fill: C.textMuted, fontWeight: 500 }}>
+          NF-e
+        </text>
+      </svg>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1, maxWidth: 200 }}>
+        {segs.map((s, i) => {
+          const pct = total > 0 ? Math.round((s.val / total) * 100) : 0;
+          return (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ width: 10, height: 10, borderRadius: 2, background: s.color, flexShrink: 0 }} />
+              <span style={{ fontSize: 12, color: C.text, flex: 1 }}>{s.label}</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: C.text, fontVariantNumeric: 'tabular-nums' }}>{s.val}</span>
+              <span style={{ fontSize: 11, color: C.textMuted, fontVariantNumeric: 'tabular-nums', minWidth: 32, textAlign: 'right' }}>{pct}%</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function TipoBar({ tipos }) {
+  if (!tipos.length) return <EmptyChart label="Sem dados" />;
+  const max = Math.max(...tipos.map(t => t.count));
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {tipos.slice(0, 6).map((t, i) => (
+        <div key={i}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
+            <span style={{ color: C.text, fontWeight: 500 }}>{t.tipo}</span>
+            <span style={{ color: C.textMuted, fontVariantNumeric: 'tabular-nums' }}>{t.count}</span>
+          </div>
+          <div style={{ height: 8, background: C.bg, borderRadius: 4, overflow: 'hidden' }}>
+            <div style={{
+              height: '100%', width: `${(t.count / max) * 100}%`,
+              background: `linear-gradient(90deg, ${C.primary}, ${C.purple})`,
+              borderRadius: 4, transition: 'width .6s ease',
+            }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Timeline({ dias }) {
+  const max = Math.max(...dias.map(d => d.count), 1);
+  const w = 100 / dias.length;
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'flex-end', height: 140, gap: 4, padding: '0 4px' }}>
+        {dias.map((d, i) => {
+          const h = (d.count / max) * 100;
+          return (
+            <div key={i} style={{
+              flex: 1, display: 'flex', flexDirection: 'column',
+              alignItems: 'center', height: '100%', justifyContent: 'flex-end',
+              position: 'relative', cursor: 'default',
+            }}
+              title={`${d.label}: ${d.count} notas`}
+            >
+              {d.count > 0 && (
+                <div style={{
+                  fontSize: 10, color: C.textMuted, marginBottom: 2,
+                  fontVariantNumeric: 'tabular-nums', fontWeight: 600,
+                }}>{d.count}</div>
+              )}
+              <div style={{
+                width: '100%', maxWidth: 32,
+                height: d.count > 0 ? `${h}%` : 2,
+                minHeight: 2,
+                background: d.count > 0
+                  ? `linear-gradient(180deg, ${C.primary}, ${C.purple})`
+                  : C.border,
+                borderRadius: '4px 4px 0 0',
+                transition: 'height .6s ease',
+              }} />
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ display: 'flex', gap: 4, marginTop: 8, padding: '0 4px' }}>
+        {dias.map((d, i) => (
+          <div key={i} style={{
+            flex: 1, fontSize: 9, color: C.textSubtle, textAlign: 'center',
+            transform: 'rotate(-45deg) translateY(4px)', transformOrigin: 'center',
+          }}>
+            {i % 2 === 0 ? d.label : ''}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TopFornecedores({ dados }) {
+  if (!dados.length) return <EmptyChart label="Sem dados" />;
+  const maxValor = Math.max(...dados.map(d => d.valor));
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {dados.map((d, i) => (
+        <div key={i}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4, alignItems: 'baseline' }}>
+            <span style={{
+              color: C.text, fontWeight: 500, flex: 1,
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 12,
+            }} title={d.nome}>
+              {d.nome}
+            </span>
+            <span style={{ color: C.textMuted, fontSize: 11, marginRight: 8 }}>
+              {d.count} {d.count === 1 ? 'nota' : 'notas'}
+            </span>
+            <span style={{ color: C.text, fontWeight: 600, fontVariantNumeric: 'tabular-nums', minWidth: 100, textAlign: 'right' }}>
+              {fmtBRL(d.valor)}
+            </span>
+          </div>
+          <div style={{ height: 6, background: C.bg, borderRadius: 3, overflow: 'hidden' }}>
+            <div style={{
+              height: '100%', width: `${(d.valor / maxValor) * 100}%`,
+              background: `linear-gradient(90deg, ${C.primary}, ${C.purple})`,
+              borderRadius: 3, transition: 'width .6s ease',
+            }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function EmptyChart({ label }) {
+  return (
+    <div style={{
+      height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center',
+      color: C.textSubtle, fontSize: 12,
+    }}>
+      {label}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   STATS ROW (linhas de cards)
+═══════════════════════════════════════════════════════ */
+function StatsRow({ cards }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 16 }}>
+      {cards.map((c, i) => <StatCard key={i} {...c} />)}
+    </div>
+  );
+}
 
 function StatCard({ label, sub, value, color, bg, dot, small }) {
   return (
@@ -699,6 +1027,125 @@ function StatCard({ label, sub, value, color, bg, dot, small }) {
       <span style={{ fontSize: small ? 18 : 24, fontWeight: 700, color, lineHeight: 1.1, marginTop: 2 }}>
         {value}
       </span>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   DATA PANEL (tabela + filtros)
+═══════════════════════════════════════════════════════ */
+function DataPanel({
+  title, icon, busca, setBusca,
+  filtroSLA, setFiltroSLA, filtroPeriodo, setFiltroPeriodo,
+  filtroFilialCte, setFiltroFilialCte, filiaisComCte,
+  temFiltros, limparFiltros, exportarCSV, total, children, semFiltrosSLA,
+}) {
+  return (
+    <div style={{
+      background: C.surface, borderRadius: 10, border: `1px solid ${C.border}`,
+      boxShadow: C.shadow, overflow: 'hidden',
+    }}>
+      {/* Header do painel */}
+      <div style={{
+        padding: '14px 16px', borderBottom: `1px solid ${C.border}`,
+        display: 'flex', alignItems: 'center', gap: 10,
+      }}>
+        <div style={{ color: C.textMuted, display: 'flex' }}>{icon}</div>
+        <h2 style={{ fontSize: 14, fontWeight: 600, color: C.text, margin: 0, flex: 1 }}>{title}</h2>
+        <span style={{
+          fontSize: 11, color: C.textMuted, fontWeight: 500,
+          padding: '3px 10px', background: C.bg, borderRadius: 10,
+        }}>
+          {total} {total === 1 ? 'registro' : 'registros'}
+        </span>
+      </div>
+
+      {/* Barra de filtros */}
+      <div style={{ padding: '12px 16px', display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', borderBottom: `1px solid ${C.border}` }}>
+        <div style={{ position: 'relative', flex: '1 1 240px', minWidth: 200 }}>
+          <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: C.textSubtle }}>
+            <Icon.Search />
+          </div>
+          <input
+            type="text"
+            placeholder="Buscar..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            style={{
+              width: '100%', padding: '8px 12px 8px 34px', fontSize: 13,
+              border: `1px solid ${C.border}`, borderRadius: 6,
+              background: C.bg, outline: 'none', color: C.text,
+              fontFamily: 'inherit', transition: 'border-color .15s',
+            }}
+            onFocus={e => e.target.style.borderColor = C.primary}
+            onBlur={e => e.target.style.borderColor = C.border}
+          />
+        </div>
+
+        {!semFiltrosSLA && setFiltroSLA && (
+          <FilterSelect
+            value={filtroSLA}
+            onChange={setFiltroSLA}
+            options={[
+              { v: 'TODOS', l: 'Todos os SLAs' },
+              { v: 'CRITICO', l: '🔴 Crítico (>10d)' },
+              { v: 'ATENCAO', l: '🟡 Atenção (6–10d)' },
+              { v: 'OK', l: '🟢 OK (≤5d)' },
+            ]}
+          />
+        )}
+
+        {!semFiltrosSLA && setFiltroPeriodo && (
+          <FilterSelect
+            value={filtroPeriodo}
+            onChange={setFiltroPeriodo}
+            options={[
+              { v: 'TODOS', l: 'Todo período' },
+              { v: '7', l: 'Últimos 7 dias' },
+              { v: '30', l: 'Últimos 30 dias' },
+              { v: '90', l: 'Últimos 90 dias' },
+            ]}
+          />
+        )}
+
+        {setFiltroFilialCte && filiaisComCte && filiaisComCte.length > 0 && (
+          <FilterSelect
+            value={filtroFilialCte}
+            onChange={setFiltroFilialCte}
+            options={[
+              { v: 'TODAS', l: 'Todas as filiais' },
+              ...filiaisComCte.map((f) => ({ v: f, l: cleanFilialName(f) })),
+            ]}
+          />
+        )}
+
+        {temFiltros && (
+          <button onClick={limparFiltros} style={{
+            padding: '7px 12px', background: 'transparent', border: `1px solid ${C.border}`,
+            borderRadius: 6, color: C.textMuted, fontSize: 12, fontWeight: 500,
+            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
+            fontFamily: 'inherit',
+          }}>
+            <Icon.X /> Limpar
+          </button>
+        )}
+
+        <div style={{ marginLeft: 'auto' }}>
+          <button onClick={exportarCSV} style={{
+            padding: '8px 14px', background: C.primary, color: '#fff', border: 'none',
+            borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit',
+            transition: 'background .15s',
+          }}
+            onMouseEnter={e => e.currentTarget.style.background = C.primaryHover}
+            onMouseLeave={e => e.currentTarget.style.background = C.primary}
+          >
+            <Icon.Download /> Exportar CSV
+          </button>
+        </div>
+      </div>
+
+      {children}
     </div>
   );
 }
@@ -758,7 +1205,6 @@ function TabelaMonitor({ dados, mostrarFilial, expanded, toggleExpand, sortBy, s
     );
   }
 
-  // Agrupa visualmente por filial quando mostrarFilial = true
   let ultimaFilial = null;
 
   return (
@@ -767,15 +1213,15 @@ function TabelaMonitor({ dados, mostrarFilial, expanded, toggleExpand, sortBy, s
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr>
-              <th style={{ width: 28, background: C.bg, borderBottom: `1px solid ${C.border}`, position: 'sticky', top: 0, zIndex: 1 }}></th>
+              <th style={{ width: 28, background: C.bg, borderBottom: `1px solid ${C.border}` }}></th>
               <SortableHeader label="SLA" col="sla" {...{ sortBy, sortDir, toggleSort }} width={70} />
               <SortableHeader label="Tipo" col="tipo_nota" {...{ sortBy, sortDir, toggleSort }} width={60} />
               <SortableHeader label="Documento" col="documento" {...{ sortBy, sortDir, toggleSort }} />
               <SortableHeader label="Emissão" col="data_emissao" {...{ sortBy, sortDir, toggleSort }} />
               <SortableHeader label="Fornecedor" col="nome_fornecedor" {...{ sortBy, sortDir, toggleSort }} />
-              <th style={{ padding: '10px 12px', textAlign: 'center', fontSize: 11, fontWeight: 600, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '.4px', background: C.bg, borderBottom: `1px solid ${C.border}`, position: 'sticky', top: 0, zIndex: 1 }}>Itens</th>
+              <th style={{ padding: '10px 12px', textAlign: 'center', fontSize: 11, fontWeight: 600, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '.4px', background: C.bg, borderBottom: `1px solid ${C.border}` }}>Itens</th>
               <SortableHeader label="Valor" col="valor_total" {...{ sortBy, sortDir, toggleSort }} align="right" />
-              <th style={{ padding: '10px 12px', textAlign: 'center', fontSize: 11, fontWeight: 600, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '.4px', background: C.bg, borderBottom: `1px solid ${C.border}`, position: 'sticky', top: 0, zIndex: 1, width: 50 }}>Chave</th>
+              <th style={{ padding: '10px 12px', textAlign: 'center', fontSize: 11, fontWeight: 600, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '.4px', background: C.bg, borderBottom: `1px solid ${C.border}`, width: 50 }}>Chave</th>
             </tr>
           </thead>
           <tbody>
@@ -783,18 +1229,17 @@ function TabelaMonitor({ dados, mostrarFilial, expanded, toggleExpand, sortBy, s
               const k = nota.chave || `${nota.documento}-${idx}`;
               const isExp = expanded[k];
 
-              // Cabeçalho de filial (só quando mostrarFilial)
               let headerFilial = null;
               if (mostrarFilial && nota.descricao_filial !== ultimaFilial) {
                 headerFilial = (
-                  <tr key={`header-${nota.descricao_filial}`} style={{ background: C.primaryLight }}>
+                  <tr key={`header-${nota.descricao_filial}`} style={{ background: C.purpleLight }}>
                     <td colSpan={9} style={{
                       padding: '8px 16px', fontSize: 11, fontWeight: 700,
-                      color: C.primary, textTransform: 'uppercase', letterSpacing: '.5px',
-                      borderTop: `2px solid ${C.primary}33`,
-                      borderBottom: `1px solid ${C.primary}22`,
+                      color: C.purpleText, textTransform: 'uppercase', letterSpacing: '.5px',
+                      borderTop: `2px solid ${C.purple}33`,
+                      borderBottom: `1px solid ${C.purple}22`,
                     }}>
-                      🏢 {cleanFilialName(nota.descricao_filial)}
+                      🚛 {cleanFilialName(nota.descricao_filial)}
                       <span style={{ marginLeft: 8, color: C.textMuted, fontWeight: 500, textTransform: 'none', letterSpacing: 0 }}>
                         ({dados.filter(d => d.descricao_filial === nota.descricao_filial).length} CT-e)
                       </span>
@@ -860,8 +1305,6 @@ function TabelaMonitor({ dados, mostrarFilial, expanded, toggleExpand, sortBy, s
                           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                           transition: 'color .15s',
                         }}
-                        onMouseEnter={(e) => copiedKey !== nota.chave && (e.currentTarget.style.color = C.text)}
-                        onMouseLeave={(e) => copiedKey !== nota.chave && (e.currentTarget.style.color = C.textMuted)}
                         title={copiedKey === nota.chave ? 'Copiado!' : 'Copiar chave'}
                       >
                         {copiedKey === nota.chave ? <Icon.Check /> : <Icon.Copy />}
@@ -930,8 +1373,7 @@ function TabelaMonitor({ dados, mostrarFilial, expanded, toggleExpand, sortBy, s
         </table>
       </div>
 
-      {/* RODAPÉ COM CONTADOR (sem paginação) */}
-      <div style={{ padding: '12px 16px', borderTop: `1px solid ${C.border}`, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <div style={{ padding: '12px 16px', borderTop: `1px solid ${C.border}`, display: 'flex', justifyContent: 'center' }}>
         <span style={{ fontSize: 12, color: C.textMuted }}>
           Exibindo <strong style={{ color: C.text }}>{dados.length}</strong> {dados.length === 1 ? 'nota' : 'notas'}
         </span>
@@ -961,7 +1403,6 @@ function TabelaPreNotas({ dados }) {
                   fontSize: 11, fontWeight: 600, color: C.textMuted,
                   textTransform: 'uppercase', letterSpacing: '.4px',
                   background: C.bg, borderBottom: `1px solid ${C.border}`,
-                  position: 'sticky', top: 0, zIndex: 1,
                 }}>{h}</th>
               ))}
             </tr>
@@ -986,7 +1427,7 @@ function TabelaPreNotas({ dados }) {
           </tbody>
         </table>
       </div>
-      <div style={{ padding: '12px 16px', borderTop: `1px solid ${C.border}`, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <div style={{ padding: '12px 16px', borderTop: `1px solid ${C.border}`, display: 'flex', justifyContent: 'center' }}>
         <span style={{ fontSize: 12, color: C.textMuted }}>
           Exibindo <strong style={{ color: C.text }}>{dados.length}</strong> {dados.length === 1 ? 'pré-nota' : 'pré-notas'}
         </span>
@@ -1025,14 +1466,14 @@ function EmptyState({ onClickCte }) {
         Selecione uma filial
       </h3>
       <p style={{ fontSize: 13, color: C.textMuted, margin: '0 auto 16px', maxWidth: 400 }}>
-        Escolha sua filial no seletor acima para visualizar as pendências fiscais e pré-notas em aberto.
+        Escolha sua filial no seletor acima para visualizar pendências fiscais e pré-notas em aberto.
       </p>
       <button onClick={onClickCte} style={{
-        padding: '8px 16px', background: C.primaryLight, color: C.primary,
-        border: `1px solid ${C.primary}33`, borderRadius: 6, fontSize: 12, fontWeight: 600,
+        padding: '8px 16px', background: C.purpleLight, color: C.purpleText,
+        border: `1px solid ${C.purple}33`, borderRadius: 6, fontSize: 12, fontWeight: 600,
         cursor: 'pointer', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: 6,
       }}>
-        <Icon.Globe /> Ou veja CT-e de todas as filiais
+        <Icon.Truck /> Ou veja CT-e de todas as filiais
       </button>
     </div>
   );
