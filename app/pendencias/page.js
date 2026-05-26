@@ -43,9 +43,7 @@ const C = {
    HELPERS
 ═══════════════════════════════════════════════════════ */
 const fmtBRL = (v) =>
-  v == null
-    ? '—'
-    : v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  v == null ? '—' : v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 const fmtNum = (v) =>
   v == null ? '—' : v.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
@@ -65,7 +63,6 @@ const fmtRelativeTime = (iso) => {
   return `há ${Math.floor(diff / 86400)}d`;
 };
 
-// "PRX_PATROCÍNIO PAULISTA" → "Patrocínio Paulista"
 const cleanFilialName = (name) => {
   if (!name) return '';
   return name
@@ -75,66 +72,19 @@ const cleanFilialName = (name) => {
 };
 
 /* ═══════════════════════════════════════════════════════
-   ÍCONES (inline SVG)
+   ÍCONES
 ═══════════════════════════════════════════════════════ */
 const Icon = {
-  Search: () => (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="11" cy="11" r="8" />
-      <path d="m21 21-4.3-4.3" />
-    </svg>
-  ),
-  Refresh: () => (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-      <path d="M21 3v5h-5" />
-      <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
-      <path d="M8 16H3v5" />
-    </svg>
-  ),
-  Download: () => (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="7 10 12 15 17 10" />
-      <line x1="12" x2="12" y1="15" y2="3" />
-    </svg>
-  ),
-  Copy: () => (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
-      <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-    </svg>
-  ),
-  Chevron: ({ rotate = 0 }) => (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: `rotate(${rotate}deg)`, transition: 'transform .2s' }}>
-      <polyline points="9 18 15 12 9 6" />
-    </svg>
-  ),
-  ArrowUp: () => (
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 19V5" /><path d="m5 12 7-7 7 7" />
-    </svg>
-  ),
-  ArrowDown: () => (
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 5v14" /><path d="m19 12-7 7-7-7" />
-    </svg>
-  ),
-  Check: () => (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  ),
-  X: () => (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M18 6 6 18" /><path d="m6 6 12 12" />
-    </svg>
-  ),
-  AlertCircle: () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" /><line x1="12" x2="12" y1="8" y2="12" /><line x1="12" x2="12.01" y1="16" y2="16" />
-    </svg>
-  ),
+  Search: () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>),
+  Refresh: () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></svg>),
+  Download: () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></svg>),
+  Copy: () => (<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></svg>),
+  Chevron: ({ rotate = 0 }) => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: `rotate(${rotate}deg)`, transition: 'transform .2s' }}><polyline points="9 18 15 12 9 6" /></svg>),
+  ArrowUp: () => (<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5" /><path d="m5 12 7-7 7 7" /></svg>),
+  ArrowDown: () => (<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14" /><path d="m19 12-7 7-7-7" /></svg>),
+  Check: () => (<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>),
+  X: () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>),
+  Globe: () => (<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" /></svg>),
 };
 
 /* ═══════════════════════════════════════════════════════
@@ -144,25 +94,22 @@ export default function PendenciasPage() {
   // ─── ESTADO ───
   const [filiais, setFiliais] = useState([]);
   const [filialSel, setFilialSel] = useState('');
-  const [monitor, setMonitor] = useState([]);
+  const [monitor, setMonitor] = useState([]);           // dados da filial (NF-e)
+  const [cteGlobal, setCteGlobal] = useState([]);       // CT-e de TODAS as filiais
   const [preNotas, setPreNotas] = useState([]);
   const [ultimaAtt, setUltimaAtt] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [tab, setTab] = useState('tudo'); // tudo | nfe | cte | prenotas
+  const [tab, setTab] = useState('tudo');
 
   // Filtros
   const [busca, setBusca] = useState('');
   const [filtroSLA, setFiltroSLA] = useState('TODOS');
   const [filtroPeriodo, setFiltroPeriodo] = useState('TODOS');
+  const [filtroFilialCte, setFiltroFilialCte] = useState('TODAS'); // só aba CT-e
   const [sortBy, setSortBy] = useState('sla');
   const [sortDir, setSortDir] = useState('desc');
 
-  // Tabela
   const [expanded, setExpanded] = useState({});
-  const [page, setPage] = useState(1);
-  const PER_PAGE = 25;
-
-  // Cópia
   const [copiedKey, setCopiedKey] = useState('');
 
   // ─── CARREGA FILIAIS COM CONTAGEM ───
@@ -170,13 +117,15 @@ export default function PendenciasPage() {
     async function load() {
       const [filRes, monRes] = await Promise.all([
         supabase.from('filiais').select('codigo, descricao').order('codigo'),
-        supabase.from('monitor_xml').select('descricao_filial'),
+        supabase.from('monitor_xml').select('descricao_filial, tipo_nota'),
       ]);
 
       if (filRes.data && monRes.data) {
-        // conta pendências por filial
+        // conta NF-e (e similares, exceto CT) por filial
         const contagem = {};
         monRes.data.forEach((r) => {
+          const tipo = (r.tipo_nota || '').toUpperCase();
+          if (tipo.includes('CT')) return; // CT-e não conta na filial
           if (r.descricao_filial) {
             contagem[r.descricao_filial] = (contagem[r.descricao_filial] || 0) + 1;
           }
@@ -188,7 +137,6 @@ export default function PendenciasPage() {
           count: contagem[f.descricao] || 0,
         }));
 
-        // Ordena: primeiro com pendências, depois por código
         enriched.sort((a, b) => {
           if (a.count > 0 && b.count === 0) return -1;
           if (a.count === 0 && b.count > 0) return 1;
@@ -201,7 +149,19 @@ export default function PendenciasPage() {
     load();
   }, []);
 
-  // ─── CARREGA DADOS QUANDO MUDA FILIAL ───
+  // ─── CARREGA CT-e GLOBAL (uma vez só) ───
+  useEffect(() => {
+    async function loadCteGlobal() {
+      const { data } = await supabase
+        .from('monitor_xml')
+        .select('*')
+        .ilike('tipo_nota', '%CT%');
+      setCteGlobal(data || []);
+    }
+    loadCteGlobal();
+  }, []);
+
+  // ─── CARREGA DADOS DA FILIAL SELECIONADA ───
   const loadFilialData = useCallback(async () => {
     if (!filialSel) {
       setMonitor([]);
@@ -212,7 +172,12 @@ export default function PendenciasPage() {
     const filialDesc = filiais.find((f) => f.codigo === filialSel)?.descricao;
 
     const [mRes, pRes, aRes] = await Promise.all([
-      supabase.from('monitor_xml').select('*').eq('descricao_filial', filialDesc),
+      // Pega tudo da filial MENOS CT-e (CT-e é global)
+      supabase
+        .from('monitor_xml')
+        .select('*')
+        .eq('descricao_filial', filialDesc)
+        .not('tipo_nota', 'ilike', '%CT%'),
       supabase.from('pre_notas').select('*').eq('filial', filialSel),
       supabase.from('monitor_xml').select('atualizado_em').order('atualizado_em', { ascending: false }).limit(1),
     ]);
@@ -227,10 +192,10 @@ export default function PendenciasPage() {
     loadFilialData();
   }, [loadFilialData]);
 
-  // ─── AGRUPAR MONITOR POR NOTA (chave) ───
-  const monitorAgrupado = useMemo(() => {
+  // ─── AGRUPAR (NF-e da filial) POR NOTA ───
+  function agruparPorNota(linhas, incluirFilial = false) {
     const map = new Map();
-    monitor.forEach((item) => {
+    linhas.forEach((item) => {
       const k = item.chave || item.documento || `${item.fornecedor}-${item.documento}`;
       if (!map.has(k)) {
         map.set(k, {
@@ -244,6 +209,8 @@ export default function PendenciasPage() {
           sla_categoria: item.sla_categoria,
           fornecedor: item.fornecedor,
           nome_fornecedor: item.nome_fornecedor,
+          descricao_filial: incluirFilial ? item.descricao_filial : undefined,
+          filial: incluirFilial ? item.filial : undefined,
           itens: [],
           valor_total: 0,
         });
@@ -253,17 +220,34 @@ export default function PendenciasPage() {
       nota.valor_total += item.valor_total || 0;
     });
     return Array.from(map.values());
-  }, [monitor]);
+  }
+
+  const nfeAgrupado = useMemo(() => agruparPorNota(monitor), [monitor]);
+  const cteAgrupado = useMemo(() => agruparPorNota(cteGlobal, true), [cteGlobal]);
+
+  // ─── LISTAS DE FILIAIS QUE APARECEM NO CT-E (pro filtro) ───
+  const filiaisComCte = useMemo(() => {
+    const set = new Set();
+    cteGlobal.forEach((r) => r.descricao_filial && set.add(r.descricao_filial));
+    return Array.from(set).sort();
+  }, [cteGlobal]);
 
   // ─── APLICAR FILTROS ───
   const dadosFiltrados = useMemo(() => {
-    let data = monitorAgrupado;
+    let data;
 
-    // Filtro de tipo (tab)
-    if (tab === 'nfe') {
-      data = data.filter((r) => r.tipo_nota && r.tipo_nota.toUpperCase().includes('NF'));
-    } else if (tab === 'cte') {
-      data = data.filter((r) => r.tipo_nota && r.tipo_nota.toUpperCase().includes('CT'));
+    // Decide o conjunto base conforme tab
+    if (tab === 'cte') {
+      data = cteAgrupado;
+      // Filtro de filial dentro da aba CT-e
+      if (filtroFilialCte !== 'TODAS') {
+        data = data.filter((r) => r.descricao_filial === filtroFilialCte);
+      }
+    } else if (tab === 'nfe') {
+      data = nfeAgrupado;
+    } else {
+      // 'tudo' = NF-e da filial + CT-e global
+      data = [...nfeAgrupado, ...cteAgrupado];
     }
 
     // Filtro SLA
@@ -286,28 +270,43 @@ export default function PendenciasPage() {
     if (busca) {
       const b = busca.toLowerCase();
       data = data.filter((r) =>
-        [r.chave, r.documento, r.nome_fornecedor, r.fornecedor, ...(r.itens || []).flatMap(i => [i.descricao_xml, i.descricao_protheus, i.produto_xml])]
+        [r.chave, r.documento, r.nome_fornecedor, r.fornecedor, r.descricao_filial, ...(r.itens || []).flatMap(i => [i.descricao_xml, i.descricao_protheus, i.produto_xml])]
           .some((c) => c && String(c).toLowerCase().includes(b))
       );
     }
 
     // Ordenação
-    data = [...data].sort((a, b) => {
-      let av = a[sortBy];
-      let bv = b[sortBy];
-      if (av == null) av = sortDir === 'asc' ? Infinity : -Infinity;
-      if (bv == null) bv = sortDir === 'asc' ? Infinity : -Infinity;
-      if (typeof av === 'string') av = av.toLowerCase();
-      if (typeof bv === 'string') bv = bv.toLowerCase();
-      if (av < bv) return sortDir === 'asc' ? -1 : 1;
-      if (av > bv) return sortDir === 'asc' ? 1 : -1;
-      return 0;
-    });
+    if (tab === 'cte') {
+      // Aba CT-e: ordena primeiro por filial (alfabético), depois pelo sort escolhido
+      data = [...data].sort((a, b) => {
+        const af = a.descricao_filial || '';
+        const bf = b.descricao_filial || '';
+        if (af !== bf) return af.localeCompare(bf, 'pt-BR');
+        let av = a[sortBy], bv = b[sortBy];
+        if (av == null) av = sortDir === 'asc' ? Infinity : -Infinity;
+        if (bv == null) bv = sortDir === 'asc' ? Infinity : -Infinity;
+        if (typeof av === 'string') av = av.toLowerCase();
+        if (typeof bv === 'string') bv = bv.toLowerCase();
+        if (av < bv) return sortDir === 'asc' ? -1 : 1;
+        if (av > bv) return sortDir === 'asc' ? 1 : -1;
+        return 0;
+      });
+    } else {
+      data = [...data].sort((a, b) => {
+        let av = a[sortBy], bv = b[sortBy];
+        if (av == null) av = sortDir === 'asc' ? Infinity : -Infinity;
+        if (bv == null) bv = sortDir === 'asc' ? Infinity : -Infinity;
+        if (typeof av === 'string') av = av.toLowerCase();
+        if (typeof bv === 'string') bv = bv.toLowerCase();
+        if (av < bv) return sortDir === 'asc' ? -1 : 1;
+        if (av > bv) return sortDir === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
 
     return data;
-  }, [monitorAgrupado, tab, filtroSLA, filtroPeriodo, busca, sortBy, sortDir]);
+  }, [nfeAgrupado, cteAgrupado, tab, filtroSLA, filtroPeriodo, filtroFilialCte, busca, sortBy, sortDir]);
 
-  // Pré-notas filtradas
   const preNotasFiltradas = useMemo(() => {
     let data = preNotas;
     if (busca) {
@@ -319,22 +318,20 @@ export default function PendenciasPage() {
     return data;
   }, [preNotas, busca]);
 
-  // Paginação
-  const totalPaginas = Math.ceil(dadosFiltrados.length / PER_PAGE);
-  const dadosPagina = dadosFiltrados.slice((page - 1) * PER_PAGE, page * PER_PAGE);
-
-  useEffect(() => setPage(1), [tab, filtroSLA, filtroPeriodo, busca]);
-
-  // ─── STATS ───
+  // ─── STATS (NF-e filial + CT-e global) ───
   const stats = useMemo(() => {
-    const cr = monitorAgrupado.filter((r) => r.sla_categoria === 'CRITICO').length;
-    const at = monitorAgrupado.filter((r) => r.sla_categoria === 'ATENCAO').length;
-    const ok = monitorAgrupado.filter((r) => r.sla_categoria === 'OK').length;
-    const valor = monitorAgrupado.reduce((s, r) => s + (r.valor_total || 0), 0);
-    const nfeCount = monitorAgrupado.filter(r => r.tipo_nota && r.tipo_nota.toUpperCase().includes('NF')).length;
-    const cteCount = monitorAgrupado.filter(r => r.tipo_nota && r.tipo_nota.toUpperCase().includes('CT')).length;
-    return { total: monitorAgrupado.length, cr, at, ok, valor, nfe: nfeCount, cte: cteCount };
-  }, [monitorAgrupado]);
+    const todos = [...nfeAgrupado, ...cteAgrupado];
+    const cr = todos.filter((r) => r.sla_categoria === 'CRITICO').length;
+    const at = todos.filter((r) => r.sla_categoria === 'ATENCAO').length;
+    const ok = todos.filter((r) => r.sla_categoria === 'OK').length;
+    const valor = todos.reduce((s, r) => s + (r.valor_total || 0), 0);
+    return {
+      total: todos.length,
+      cr, at, ok, valor,
+      nfe: nfeAgrupado.length,
+      cte: cteAgrupado.length,
+    };
+  }, [nfeAgrupado, cteAgrupado]);
 
   // ─── AÇÕES ───
   function toggleSort(col) {
@@ -360,32 +357,22 @@ export default function PendenciasPage() {
     let rows;
     if (tab === 'prenotas') {
       rows = dados.map(r => ({
-        numero: r.numero,
-        serie: r.serie,
-        emissao: fmtData(r.data_emissao),
-        digitacao: fmtData(r.data_digitacao),
-        fornecedor: r.nome_fornecedor,
-        valor_bruto: r.valor_bruto,
+        numero: r.numero, serie: r.serie,
+        emissao: fmtData(r.data_emissao), digitacao: fmtData(r.data_digitacao),
+        fornecedor: r.nome_fornecedor, valor_bruto: r.valor_bruto,
       }));
     } else {
-      // explodir itens
       rows = [];
       dados.forEach(nota => {
-        nota.itens.forEach(item => {
+        (nota.itens || []).forEach(item => {
           rows.push({
-            sla: nota.sla,
-            sla_categoria: nota.sla_categoria,
-            tipo: nota.tipo_nota,
-            documento: nota.documento,
-            serie: nota.serie,
-            emissao: fmtData(nota.data_emissao),
-            fornecedor: nota.nome_fornecedor,
-            produto: item.produto_xml,
-            descricao: item.descricao_xml,
-            qtd: item.quantidade,
-            vlr_unit: item.valor_unitario,
-            vlr_total: item.valor_total,
-            chave: nota.chave,
+            filial: nota.descricao_filial || filialSel || '',
+            sla: nota.sla, sla_categoria: nota.sla_categoria,
+            tipo: nota.tipo_nota, documento: nota.documento, serie: nota.serie,
+            emissao: fmtData(nota.data_emissao), fornecedor: nota.nome_fornecedor,
+            produto: item.produto_xml, descricao: item.descricao_xml,
+            qtd: item.quantidade, vlr_unit: item.valor_unitario,
+            vlr_total: item.valor_total, chave: nota.chave,
           });
         });
       });
@@ -401,7 +388,7 @@ export default function PendenciasPage() {
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `pendencias_${filialSel}_${tab}_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `pendencias_${filialSel || 'geral'}_${tab}_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
   }
 
@@ -409,11 +396,15 @@ export default function PendenciasPage() {
     setBusca('');
     setFiltroSLA('TODOS');
     setFiltroPeriodo('TODOS');
+    setFiltroFilialCte('TODAS');
     setTab('tudo');
   }
 
   const filialSelObj = filiais.find((f) => f.codigo === filialSel);
-  const temFiltros = busca || filtroSLA !== 'TODOS' || filtroPeriodo !== 'TODOS' || tab !== 'tudo';
+  const temFiltros = busca || filtroSLA !== 'TODOS' || filtroPeriodo !== 'TODOS' || tab !== 'tudo' || filtroFilialCte !== 'TODAS';
+
+  // Aba CT-e não precisa de filial selecionada
+  const podeMostrarConteudo = filialSel || tab === 'cte';
 
   /* ═══════════════════════════════════════════════════════
      RENDER
@@ -421,11 +412,10 @@ export default function PendenciasPage() {
   return (
     <div style={{ minHeight: '100vh', background: C.bg, fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif", color: C.text }}>
 
-      {/* ───────── TOPBAR ───────── */}
+      {/* TOPBAR */}
       <header style={{
         background: C.surface, borderBottom: `1px solid ${C.border}`,
-        position: 'sticky', top: 0, zIndex: 50,
-        backdropFilter: 'blur(8px)',
+        position: 'sticky', top: 0, zIndex: 50, backdropFilter: 'blur(8px)',
       }}>
         <div style={{ maxWidth: 1440, margin: '0 auto', padding: '12px 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
           <img src="https://premix.com.br/wp-content/uploads/2023/06/Logotipo_Premix_Positivo_Com-Bandeira.png" alt="Premix" style={{ height: 28 }} />
@@ -457,10 +447,10 @@ export default function PendenciasPage() {
 
       <main style={{ maxWidth: 1440, margin: '0 auto', padding: '24px' }}>
 
-        {/* ───────── DROPDOWN FILIAL ───────── */}
+        {/* DROPDOWN FILIAL */}
         <div style={{ marginBottom: 24 }}>
           <label style={{ fontSize: 11, fontWeight: 600, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '.5px', display: 'block', marginBottom: 8 }}>
-            Filial
+            Filial {tab === 'cte' && <span style={{ color: C.textSubtle, textTransform: 'none', fontWeight: 500 }}>(aba CT-e ignora esta seleção)</span>}
           </label>
           <div style={{ position: 'relative', maxWidth: 480 }}>
             <select
@@ -472,8 +462,7 @@ export default function PendenciasPage() {
                 background: C.surface, border: `1px solid ${C.border}`,
                 borderRadius: 8, cursor: 'pointer', outline: 'none',
                 appearance: 'none', WebkitAppearance: 'none',
-                fontFamily: 'inherit',
-                boxShadow: C.shadow,
+                fontFamily: 'inherit', boxShadow: C.shadow,
               }}
             >
               <option value="">Selecione uma filial...</option>
@@ -489,14 +478,14 @@ export default function PendenciasPage() {
           </div>
         </div>
 
-        {/* ───────── ESTADO VAZIO ───────── */}
-        {!filialSel ? (
-          <EmptyState />
+        {/* CONTEÚDO */}
+        {!podeMostrarConteudo ? (
+          <EmptyState onClickCte={() => setTab('cte')} />
         ) : loading ? (
           <LoadingState />
         ) : (
           <>
-            {/* ───────── STATS CARDS ───────── */}
+            {/* STATS CARDS */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 20 }}>
               <StatCard label="Total de Notas" value={stats.total} color={C.text} bg={C.surface} />
               <StatCard label="SLA Crítico" sub=">10 dias" value={stats.cr} color={C.redText} bg={C.redLight} dot={C.red} />
@@ -505,17 +494,17 @@ export default function PendenciasPage() {
               <StatCard label="Valor Total" value={fmtBRL(stats.valor)} color={C.text} bg={C.surface} small />
             </div>
 
-            {/* ───────── TABS ───────── */}
+            {/* TABS */}
             <div style={{
               background: C.surface, borderRadius: 10, border: `1px solid ${C.border}`,
               boxShadow: C.shadow, overflow: 'hidden',
             }}>
-              <div style={{ display: 'flex', borderBottom: `1px solid ${C.border}`, padding: '0 8px' }}>
+              <div style={{ display: 'flex', borderBottom: `1px solid ${C.border}`, padding: '0 8px', flexWrap: 'wrap' }}>
                 {[
-                  { k: 'tudo', l: 'Todos', n: stats.total },
-                  { k: 'nfe', l: 'NF-e', n: stats.nfe },
-                  { k: 'cte', l: 'CT-e', n: stats.cte },
-                  { k: 'prenotas', l: 'Pré-notas', n: preNotas.length },
+                  { k: 'tudo', l: 'Todos', n: stats.total, icon: null },
+                  { k: 'nfe', l: 'NF-e', n: stats.nfe, icon: null },
+                  { k: 'cte', l: 'CT-e', n: stats.cte, icon: <Icon.Globe /> },
+                  { k: 'prenotas', l: 'Pré-notas', n: preNotas.length, icon: null },
                 ].map((t) => (
                   <button
                     key={t.k}
@@ -530,6 +519,7 @@ export default function PendenciasPage() {
                       transition: 'color .15s',
                     }}
                   >
+                    {t.icon}
                     {t.l}
                     <span style={{
                       background: tab === t.k ? C.primaryLight : C.bg,
@@ -542,7 +532,18 @@ export default function PendenciasPage() {
                 ))}
               </div>
 
-              {/* ───────── BARRA DE FILTROS ───────── */}
+              {/* Badge informativo se for aba CT-e */}
+              {tab === 'cte' && (
+                <div style={{
+                  padding: '10px 16px', background: C.blueLight, borderBottom: `1px solid ${C.border}`,
+                  display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: C.blueText,
+                }}>
+                  <Icon.Globe />
+                  <span><strong>Visão global:</strong> exibindo CT-e de todas as filiais, agrupados por filial.</span>
+                </div>
+              )}
+
+              {/* BARRA DE FILTROS */}
               <div style={{ padding: '12px 16px', display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', borderBottom: `1px solid ${C.border}` }}>
                 <div style={{ position: 'relative', flex: '1 1 240px', minWidth: 200 }}>
                   <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: C.textSubtle }}>
@@ -569,7 +570,6 @@ export default function PendenciasPage() {
                     <FilterSelect
                       value={filtroSLA}
                       onChange={setFiltroSLA}
-                      label="SLA"
                       options={[
                         { v: 'TODOS', l: 'Todos os SLAs' },
                         { v: 'CRITICO', l: '🔴 Crítico (>10d)' },
@@ -581,7 +581,6 @@ export default function PendenciasPage() {
                     <FilterSelect
                       value={filtroPeriodo}
                       onChange={setFiltroPeriodo}
-                      label="Período"
                       options={[
                         { v: 'TODOS', l: 'Todo período' },
                         { v: '7', l: 'Últimos 7 dias' },
@@ -589,6 +588,17 @@ export default function PendenciasPage() {
                         { v: '90', l: 'Últimos 90 dias' },
                       ]}
                     />
+
+                    {tab === 'cte' && filiaisComCte.length > 0 && (
+                      <FilterSelect
+                        value={filtroFilialCte}
+                        onChange={setFiltroFilialCte}
+                        options={[
+                          { v: 'TODAS', l: 'Todas as filiais' },
+                          ...filiaisComCte.map((f) => ({ v: f, l: cleanFilialName(f) })),
+                        ]}
+                      />
+                    )}
                   </>
                 )}
 
@@ -618,21 +628,13 @@ export default function PendenciasPage() {
                 </div>
               </div>
 
-              {/* ───────── TABELA ───────── */}
+              {/* TABELA */}
               {tab === 'prenotas' ? (
-                <TabelaPreNotas
-                  dados={preNotasFiltradas}
-                  copyKey={copyKey}
-                  copiedKey={copiedKey}
-                />
+                <TabelaPreNotas dados={preNotasFiltradas} />
               ) : (
                 <TabelaMonitor
-                  dados={dadosPagina}
-                  total={dadosFiltrados.length}
-                  page={page}
-                  setPage={setPage}
-                  totalPaginas={totalPaginas}
-                  perPage={PER_PAGE}
+                  dados={dadosFiltrados}
+                  mostrarFilial={tab === 'cte'}
                   expanded={expanded}
                   toggleExpand={toggleExpand}
                   sortBy={sortBy}
@@ -644,14 +646,17 @@ export default function PendenciasPage() {
               )}
             </div>
 
-            {/* ───────── FOOTER INFO ───────── */}
+            {/* FOOTER */}
             <div style={{ marginTop: 16, fontSize: 11, color: C.textSubtle, textAlign: 'center' }}>
-              {filialSelObj && (
+              {filialSelObj && tab !== 'cte' && (
                 <>
                   Visualizando <strong style={{ color: C.textMuted }}>{filialSelObj.codigo} — {filialSelObj.nomeLimpo}</strong>
-                  {ultimaAtt && <> · Dados atualizados em {new Date(ultimaAtt).toLocaleString('pt-BR')}</>}
                 </>
               )}
+              {tab === 'cte' && (
+                <strong style={{ color: C.textMuted }}>Visão global de CT-e</strong>
+              )}
+              {ultimaAtt && <> · Dados atualizados em {new Date(ultimaAtt).toLocaleString('pt-BR')}</>}
             </div>
           </>
         )}
@@ -698,7 +703,7 @@ function StatCard({ label, sub, value, color, bg, dot, small }) {
   );
 }
 
-function FilterSelect({ value, onChange, label, options }) {
+function FilterSelect({ value, onChange, options }) {
   return (
     <div style={{ position: 'relative' }}>
       <select
@@ -731,8 +736,7 @@ function SortableHeader({ label, col, sortBy, sortDir, toggleSort, align = 'left
       color: active ? C.text : C.textMuted, textTransform: 'uppercase', letterSpacing: '.4px',
       background: C.bg, borderBottom: `1px solid ${C.border}`,
       cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap',
-      position: 'sticky', top: 0, zIndex: 1,
-      width,
+      position: 'sticky', top: 0, zIndex: 1, width,
     }}
       onClick={() => toggleSort(col)}
     >
@@ -744,7 +748,7 @@ function SortableHeader({ label, col, sortBy, sortDir, toggleSort, align = 'left
   );
 }
 
-function TabelaMonitor({ dados, total, page, setPage, totalPaginas, perPage, expanded, toggleExpand, sortBy, sortDir, toggleSort, copyKey, copiedKey }) {
+function TabelaMonitor({ dados, mostrarFilial, expanded, toggleExpand, sortBy, sortDir, toggleSort, copyKey, copiedKey }) {
   if (dados.length === 0) {
     return (
       <div style={{ padding: '60px 20px', textAlign: 'center', color: C.textSubtle, fontSize: 13 }}>
@@ -754,9 +758,12 @@ function TabelaMonitor({ dados, total, page, setPage, totalPaginas, perPage, exp
     );
   }
 
+  // Agrupa visualmente por filial quando mostrarFilial = true
+  let ultimaFilial = null;
+
   return (
     <>
-      <div style={{ overflowX: 'auto', maxHeight: 'calc(100vh - 380px)', minHeight: 300 }}>
+      <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr>
@@ -775,8 +782,31 @@ function TabelaMonitor({ dados, total, page, setPage, totalPaginas, perPage, exp
             {dados.map((nota, idx) => {
               const k = nota.chave || `${nota.documento}-${idx}`;
               const isExp = expanded[k];
+
+              // Cabeçalho de filial (só quando mostrarFilial)
+              let headerFilial = null;
+              if (mostrarFilial && nota.descricao_filial !== ultimaFilial) {
+                headerFilial = (
+                  <tr key={`header-${nota.descricao_filial}`} style={{ background: C.primaryLight }}>
+                    <td colSpan={9} style={{
+                      padding: '8px 16px', fontSize: 11, fontWeight: 700,
+                      color: C.primary, textTransform: 'uppercase', letterSpacing: '.5px',
+                      borderTop: `2px solid ${C.primary}33`,
+                      borderBottom: `1px solid ${C.primary}22`,
+                    }}>
+                      🏢 {cleanFilialName(nota.descricao_filial)}
+                      <span style={{ marginLeft: 8, color: C.textMuted, fontWeight: 500, textTransform: 'none', letterSpacing: 0 }}>
+                        ({dados.filter(d => d.descricao_filial === nota.descricao_filial).length} CT-e)
+                      </span>
+                    </td>
+                  </tr>
+                );
+                ultimaFilial = nota.descricao_filial;
+              }
+
               return (
                 <>
+                  {headerFilial}
                   <tr
                     key={k}
                     onClick={() => toggleExpand(k)}
@@ -839,7 +869,6 @@ function TabelaMonitor({ dados, total, page, setPage, totalPaginas, perPage, exp
                     </td>
                   </tr>
 
-                  {/* LINHAS EXPANDIDAS (PRODUTOS) */}
                   {isExp && (
                     <tr style={{ background: C.bg, animation: 'fadeIn .2s ease' }}>
                       <td colSpan={9} style={{ padding: '0 12px 12px 50px' }}>
@@ -901,47 +930,17 @@ function TabelaMonitor({ dados, total, page, setPage, totalPaginas, perPage, exp
         </table>
       </div>
 
-      {/* PAGINAÇÃO */}
-      <div style={{ padding: '12px 16px', borderTop: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+      {/* RODAPÉ COM CONTADOR (sem paginação) */}
+      <div style={{ padding: '12px 16px', borderTop: `1px solid ${C.border}`, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         <span style={{ fontSize: 12, color: C.textMuted }}>
-          Mostrando <strong style={{ color: C.text }}>{(page - 1) * perPage + 1}</strong>–
-          <strong style={{ color: C.text }}>{Math.min(page * perPage, total)}</strong> de{' '}
-          <strong style={{ color: C.text }}>{total}</strong> notas
+          Exibindo <strong style={{ color: C.text }}>{dados.length}</strong> {dados.length === 1 ? 'nota' : 'notas'}
         </span>
-        {totalPaginas > 1 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <PaginationButton onClick={() => setPage(1)} disabled={page === 1}>«</PaginationButton>
-            <PaginationButton onClick={() => setPage(page - 1)} disabled={page === 1}>‹</PaginationButton>
-            <span style={{ padding: '0 10px', fontSize: 12, color: C.text, fontWeight: 500 }}>
-              {page} / {totalPaginas}
-            </span>
-            <PaginationButton onClick={() => setPage(page + 1)} disabled={page === totalPaginas}>›</PaginationButton>
-            <PaginationButton onClick={() => setPage(totalPaginas)} disabled={page === totalPaginas}>»</PaginationButton>
-          </div>
-        )}
       </div>
     </>
   );
 }
 
-function PaginationButton({ children, onClick, disabled }) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      style={{
-        padding: '4px 10px', border: `1px solid ${C.border}`, borderRadius: 4,
-        background: C.surface, color: disabled ? C.textSubtle : C.text,
-        fontSize: 12, fontWeight: 500, cursor: disabled ? 'not-allowed' : 'pointer',
-        opacity: disabled ? .5 : 1, fontFamily: 'inherit', minWidth: 28,
-      }}
-    >
-      {children}
-    </button>
-  );
-}
-
-function TabelaPreNotas({ dados, copyKey, copiedKey }) {
+function TabelaPreNotas({ dados }) {
   if (dados.length === 0) {
     return (
       <div style={{ padding: '60px 20px', textAlign: 'center', color: C.textSubtle, fontSize: 13 }}>
@@ -951,41 +950,48 @@ function TabelaPreNotas({ dados, copyKey, copiedKey }) {
     );
   }
   return (
-    <div style={{ overflowX: 'auto', maxHeight: 'calc(100vh - 380px)' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-        <thead>
-          <tr>
-            {['Número', 'Série', 'Emissão', 'Digitação', 'Fornecedor', 'UF', 'Vlr Mercadoria', 'Vlr Bruto'].map(h => (
-              <th key={h} style={{
-                padding: '10px 12px', textAlign: h.includes('Vlr') ? 'right' : 'left',
-                fontSize: 11, fontWeight: 600, color: C.textMuted,
-                textTransform: 'uppercase', letterSpacing: '.4px',
-                background: C.bg, borderBottom: `1px solid ${C.border}`,
-                position: 'sticky', top: 0, zIndex: 1,
-              }}>{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {dados.map((r, i) => (
-            <tr key={r.id || i} style={{ borderBottom: `1px solid ${C.border}` }}
-              onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-            >
-              <td style={{ padding: '10px 12px', fontWeight: 500, color: C.text, fontFamily: 'monospace', fontSize: 12 }}>{r.numero}</td>
-              <td style={{ padding: '10px 12px', color: C.textMuted, fontSize: 12 }}>{r.serie}</td>
-              <td style={{ padding: '10px 12px', color: C.textMuted, fontSize: 12 }}>{fmtData(r.data_emissao)}</td>
-              <td style={{ padding: '10px 12px', color: C.textMuted, fontSize: 12 }}>{fmtData(r.data_digitacao)}</td>
-              <td style={{ padding: '10px 12px', color: C.text, maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                title={r.nome_fornecedor}>{r.nome_fornecedor || '—'}</td>
-              <td style={{ padding: '10px 12px', color: C.textMuted, fontSize: 12 }}>{r.estado || '—'}</td>
-              <td style={{ padding: '10px 12px', textAlign: 'right', color: C.textMuted, fontVariantNumeric: 'tabular-nums' }}>{fmtBRL(r.valor_mercadoria)}</td>
-              <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600, color: C.text, fontVariantNumeric: 'tabular-nums' }}>{fmtBRL(r.valor_bruto)}</td>
+    <>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead>
+            <tr>
+              {['Número', 'Série', 'Emissão', 'Digitação', 'Fornecedor', 'UF', 'Vlr Mercadoria', 'Vlr Bruto'].map(h => (
+                <th key={h} style={{
+                  padding: '10px 12px', textAlign: h.includes('Vlr') ? 'right' : 'left',
+                  fontSize: 11, fontWeight: 600, color: C.textMuted,
+                  textTransform: 'uppercase', letterSpacing: '.4px',
+                  background: C.bg, borderBottom: `1px solid ${C.border}`,
+                  position: 'sticky', top: 0, zIndex: 1,
+                }}>{h}</th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {dados.map((r, i) => (
+              <tr key={r.id || i} style={{ borderBottom: `1px solid ${C.border}` }}
+                onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <td style={{ padding: '10px 12px', fontWeight: 500, color: C.text, fontFamily: 'monospace', fontSize: 12 }}>{r.numero}</td>
+                <td style={{ padding: '10px 12px', color: C.textMuted, fontSize: 12 }}>{r.serie}</td>
+                <td style={{ padding: '10px 12px', color: C.textMuted, fontSize: 12 }}>{fmtData(r.data_emissao)}</td>
+                <td style={{ padding: '10px 12px', color: C.textMuted, fontSize: 12 }}>{fmtData(r.data_digitacao)}</td>
+                <td style={{ padding: '10px 12px', color: C.text, maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                  title={r.nome_fornecedor}>{r.nome_fornecedor || '—'}</td>
+                <td style={{ padding: '10px 12px', color: C.textMuted, fontSize: 12 }}>{r.estado || '—'}</td>
+                <td style={{ padding: '10px 12px', textAlign: 'right', color: C.textMuted, fontVariantNumeric: 'tabular-nums' }}>{fmtBRL(r.valor_mercadoria)}</td>
+                <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600, color: C.text, fontVariantNumeric: 'tabular-nums' }}>{fmtBRL(r.valor_bruto)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div style={{ padding: '12px 16px', borderTop: `1px solid ${C.border}`, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <span style={{ fontSize: 12, color: C.textMuted }}>
+          Exibindo <strong style={{ color: C.text }}>{dados.length}</strong> {dados.length === 1 ? 'pré-nota' : 'pré-notas'}
+        </span>
+      </div>
+    </>
   );
 }
 
@@ -1008,19 +1014,26 @@ function SLABadge({ sla, cat }) {
   );
 }
 
-function EmptyState() {
+function EmptyState({ onClickCte }) {
   return (
     <div style={{
       background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12,
-      padding: '80px 24px', textAlign: 'center', boxShadow: C.shadow,
+      padding: '60px 24px', textAlign: 'center', boxShadow: C.shadow,
     }}>
       <div style={{ fontSize: 40, marginBottom: 12, opacity: .5 }}>📊</div>
       <h3 style={{ fontSize: 16, fontWeight: 600, color: C.text, margin: '0 0 6px' }}>
         Selecione uma filial
       </h3>
-      <p style={{ fontSize: 13, color: C.textMuted, margin: 0, maxWidth: 400, marginLeft: 'auto', marginRight: 'auto' }}>
+      <p style={{ fontSize: 13, color: C.textMuted, margin: '0 auto 16px', maxWidth: 400 }}>
         Escolha sua filial no seletor acima para visualizar as pendências fiscais e pré-notas em aberto.
       </p>
+      <button onClick={onClickCte} style={{
+        padding: '8px 16px', background: C.primaryLight, color: C.primary,
+        border: `1px solid ${C.primary}33`, borderRadius: 6, fontSize: 12, fontWeight: 600,
+        cursor: 'pointer', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: 6,
+      }}>
+        <Icon.Globe /> Ou veja CT-e de todas as filiais
+      </button>
     </div>
   );
 }
