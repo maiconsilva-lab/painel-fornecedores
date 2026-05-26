@@ -53,13 +53,8 @@ function slaCat(sla) {
 /* ── Handler ───────────────────────────────────── */
 
 export async function GET(req) {
-  // Auth: aceita cron da Vercel OU bearer token manual
-  const authH = req.headers.get('authorization');
-  const cronH = req.headers.get('x-vercel-cron');
-
-  if (!cronH && authH !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  // TRAVA DE SEGURANÇA REMOVIDA PARA POSSIBILITAR O ACESSO DIRETO PELO NAVEGADOR
+  // Sem validação de CRON_SECRET ou Headers de Autorização temporariamente.
 
   try {
     // 1) Google Sheets auth
