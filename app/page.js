@@ -178,6 +178,8 @@ export default function Home() {
   const [subTab, setSubTab] = useState('fornecedores'); // 'fornecedores' | 'produtos' | 'desbloqueios'
   const [tab, setTab] = useState('pendentes');
   const [sel, setSel] = useState(null);
+  const [selProd, setSelProd] = useState(null);
+  const [selDesb, setSelDesb] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [search, setSearch] = useState('');
   const [searchDone, setSearchDone] = useState('');
@@ -1368,7 +1370,7 @@ export default function Home() {
                         const stBg = p.status==='aprovado'?'#E6F7EE':p.status==='rejeitado'?'#FEE2E2':p.status==='em_analise'?'#DBEAFE':'#FEF3C7';
                         const isFinal = p.status === 'aprovado' || p.status === 'rejeitado';
                         return (
-                          <tr key={p.id} className="pmx-row" style={{borderBottom:'1px solid #E5E9EF'}}>
+                          <tr key={p.id} className="pmx-row" onClick={()=>setSelProd(p)} style={{borderBottom:'1px solid #E5E9EF',cursor:'pointer',background: selProd?.id===p.id ? '#F0FDF4' : 'transparent'}}>
                             <td style={tdSnew()}>
                               <div style={{display:'flex',alignItems:'flex-start',gap:12}}>
                                 <div style={{width:36,height:36,borderRadius:9,background:'#FEF6E0',color:'#B8941F',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
@@ -1398,7 +1400,7 @@ export default function Home() {
                                 {st.l}
                               </span>
                             </td>
-                            <td style={{...tdSnew(),textAlign:'right'}}>
+                            <td style={{...tdSnew(),textAlign:'right'}} onClick={e=>e.stopPropagation()}>
                               {!isFinal ? (
                                 <div style={{display:'inline-flex',gap:4}}>
                                   {p.status === 'pendente' && (
@@ -1478,7 +1480,7 @@ export default function Home() {
                         const statusLabel = d.status==='desbloqueado'?'Desbloqueado':d.status==='rejeitado'?'Rejeitado':d.status==='em_analise'?'Em análise':'Pendente';
                         const isFinal = d.status === 'desbloqueado' || d.status === 'rejeitado';
                         return (
-                          <tr key={d.id} className="pmx-row" style={{borderBottom:'1px solid #E5E9EF'}}>
+                          <tr key={d.id} className="pmx-row" onClick={()=>setSelDesb(d)} style={{borderBottom:'1px solid #E5E9EF',cursor:'pointer',background: selDesb?.id===d.id ? '#F0FDF4' : 'transparent'}}>
                             <td style={tdSnew()}>
                               <div style={{display:'flex',alignItems:'center',gap:12}}>
                                 <div style={{width:36,height:36,borderRadius:9,background:'#FEF3C7',color:'#B45309',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
@@ -1503,7 +1505,7 @@ export default function Home() {
                                 {statusLabel}
                               </span>
                             </td>
-                            <td style={{...tdSnew(),textAlign:'right'}}>
+                            <td style={{...tdSnew(),textAlign:'right'}} onClick={e=>e.stopPropagation()}>
                               {!isFinal ? (
                                 <div style={{display:'inline-flex',gap:4}}>
                                   {d.status === 'pendente' && (
@@ -2490,6 +2492,204 @@ export default function Home() {
               <button onClick={async ()=>{ const fn = confirmModal.onConfirm; setConfirmModal(null); try { await fn(); } catch(e) { console.error('[confirmModal]', e); showToast('Erro inesperado'); } }} autoFocus style={{padding:'10px 18px',borderRadius:9,border:'none',background: confirmModal.danger ? '#E63946' : '#00A650',color:'#fff',fontFamily:'inherit',fontSize:13,fontWeight:600,cursor:'pointer',boxShadow:`0 1px 2px ${confirmModal.danger?'rgba(230,57,70,.3)':'rgba(0,166,80,.3)'}, inset 0 1px 0 rgba(255,255,255,.15)`}}>
                 {confirmModal.danger ? 'Excluir' : 'Confirmar'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══ MODAL — DETALHE DO PRODUTO ══ */}
+      {selProd && (
+        <div style={{position:'fixed',inset:0,background:'rgba(26,35,50,.55)',backdropFilter:'blur(6px)',WebkitBackdropFilter:'blur(6px)',zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',padding:20,animation:'fadeIn .2s ease'}} onClick={e=>{if(e.target===e.currentTarget)setSelProd(null)}}>
+          <div style={{background:'#fff',borderRadius:14,width:'100%',maxWidth:720,maxHeight:'90vh',display:'flex',flexDirection:'column',boxShadow:'0 24px 64px rgba(16,24,40,.18),0 8px 16px rgba(16,24,40,.08)',animation:'scaleIn .25s cubic-bezier(.16,1,.3,1)',border:'1px solid #E5E9EF'}}>
+            {/* Header */}
+            <div style={{padding:'18px 24px',borderBottom:'1px solid #E5E9EF',display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0,background:'linear-gradient(180deg,#F8F9FB 0%,#fff 100%)'}}>
+              <div style={{display:'flex',alignItems:'center',gap:14,minWidth:0,flex:1}}>
+                <div style={{width:44,height:44,borderRadius:11,background:'#FEF6E0',color:'#B8941F',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+                </div>
+                <div style={{minWidth:0,flex:1}}>
+                  <h2 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:15,fontWeight:700,color:'#1A2332',margin:0,letterSpacing:'-.2px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{sanitize((selProd.descricao || 'Produto').slice(0, 80))}</h2>
+                  <span style={{fontSize:12,color:'#8B94A3'}}>Cadastro de Produto · {fmtDate(selProd.created_at)}</span>
+                </div>
+              </div>
+              <button onClick={()=>setSelProd(null)} style={{width:36,height:36,borderRadius:8,border:'1px solid #E5E9EF',background:'#fff',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',color:'#8B94A3',flexShrink:0}}>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div style={{padding:'22px 24px',overflowY:'auto',flex:1,background:'#FAFBFC'}}>
+              {/* Status badge */}
+              <div style={{marginBottom:16}}>
+                {(() => {
+                  const c = selProd.status==='aprovado'?'#008C44':selProd.status==='rejeitado'?'#E63946':selProd.status==='em_analise'?'#2563EB':'#D97706';
+                  const bg = selProd.status==='aprovado'?'#E6F7EE':selProd.status==='rejeitado'?'#FEE2E2':selProd.status==='em_analise'?'#DBEAFE':'#FEF3C7';
+                  const lbl = selProd.status==='aprovado'?'Aprovado':selProd.status==='rejeitado'?'Devolvido':selProd.status==='em_analise'?'Em análise':'Pendente';
+                  return (
+                    <span style={{display:'inline-flex',alignItems:'center',gap:6,padding:'4px 12px',borderRadius:20,fontSize:12,fontWeight:600,color:c,background:bg}}>
+                      <span style={{width:7,height:7,borderRadius:'50%',background:c}} />
+                      {lbl}
+                    </span>
+                  );
+                })()}
+                {selProd.atribuido_para && <span style={{marginLeft:8,fontSize:12,color:'#4F5868'}}>· atribuído a <strong>{sanitize(selProd.atribuido_para)}</strong></span>}
+              </div>
+
+              {/* Ações */}
+              {!['aprovado','rejeitado'].includes(selProd.status) && (
+                <div style={{display:'flex',gap:8,marginBottom:18,flexWrap:'wrap'}}>
+                  {selProd.status==='pendente' && (
+                    <button onClick={async ()=>{ await pegarProduto(selProd.id); setSelProd({...selProd,atribuido_para:user.nome,status:'em_analise'}); }} style={modalActBtn('info')}>
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>
+                      Pegar para mim
+                    </button>
+                  )}
+                  <button onClick={async ()=>{ const cod = prompt('Código do produto no Protheus:', selProd.codigo_protheus||''); if (cod && cod.trim()) { await concluirProduto(selProd, cod); setSelProd(null); } }} style={modalActBtn('primary')}>
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                    Concluir
+                  </button>
+                  {isAdmin && (
+                    <button onClick={()=>{ excluirProduto(selProd.id); setSelProd(null); }} style={{...modalActBtn('danger'),marginLeft:'auto'}}>
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                      Excluir
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Motivo devolução */}
+              {selProd.motivo_devolucao && (
+                <div style={{padding:'12px 14px',background:'#FEE2E2',border:'1px solid #FECACA',borderRadius:10,marginBottom:18,display:'flex',gap:10,alignItems:'flex-start'}}>
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:2}}><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></svg>
+                  <div style={{color:'#991B1B',fontSize:13}}><strong>Motivo da devolução:</strong> {sanitize(selProd.motivo_devolucao)}</div>
+                </div>
+              )}
+
+              {/* DataSections */}
+              <DataSection title="Solicitante" icon="👤" items={[
+                ['Nome', selProd.nome_solicitante],
+                ['E-mail', selProd.email_solicitante],
+              ]} onCopy={txt => { navigator.clipboard?.writeText(txt); showToast('Copiado!'); }} />
+
+              <DataSection title="Produto" icon="📦" items={[
+                ['Descrição', selProd.descricao],
+                ['Finalidade', selProd.finalidade],
+                ['NCM', selProd.ncm],
+                ['Unidade de Medida', selProd.unidade_medida],
+                ['Principais Marcas', selProd.principais_marcas],
+              ]} onCopy={txt => { navigator.clipboard?.writeText(txt); showToast('Copiado!'); }} />
+
+              {selProd.imagem_url && (
+                <DataSection title="Imagem" icon="🖼️" items={[
+                  ['Link', selProd.imagem_url],
+                ]} onCopy={txt => { navigator.clipboard?.writeText(txt); showToast('Copiado!'); }} />
+              )}
+
+              {selProd.codigo_protheus && (
+                <DataSection title="Cadastro no Protheus" icon="✓" items={[
+                  ['Código Protheus', selProd.codigo_protheus],
+                  ['Finalizado por', selProd.finalizado_por],
+                  ['Data', selProd.data_finalizacao && fmtDate(selProd.data_finalizacao)],
+                ]} onCopy={txt => { navigator.clipboard?.writeText(txt); showToast('Copiado!'); }} />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══ MODAL — DETALHE DO DESBLOQUEIO ══ */}
+      {selDesb && (
+        <div style={{position:'fixed',inset:0,background:'rgba(26,35,50,.55)',backdropFilter:'blur(6px)',WebkitBackdropFilter:'blur(6px)',zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',padding:20,animation:'fadeIn .2s ease'}} onClick={e=>{if(e.target===e.currentTarget)setSelDesb(null)}}>
+          <div style={{background:'#fff',borderRadius:14,width:'100%',maxWidth:680,maxHeight:'90vh',display:'flex',flexDirection:'column',boxShadow:'0 24px 64px rgba(16,24,40,.18),0 8px 16px rgba(16,24,40,.08)',animation:'scaleIn .25s cubic-bezier(.16,1,.3,1)',border:'1px solid #E5E9EF'}}>
+            {/* Header */}
+            <div style={{padding:'18px 24px',borderBottom:'1px solid #E5E9EF',display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0,background:'linear-gradient(180deg,#F8F9FB 0%,#fff 100%)'}}>
+              <div style={{display:'flex',alignItems:'center',gap:14,minWidth:0,flex:1}}>
+                <div style={{width:44,height:44,borderRadius:11,background:'#FEF3C7',color:'#B45309',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+                </div>
+                <div style={{minWidth:0,flex:1}}>
+                  <h2 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:15,fontWeight:700,color:'#1A2332',margin:0,letterSpacing:'-.2px',display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+                    <span style={{fontFamily:'Geist Mono,monospace',background:'#FEF3C7',color:'#B45309',padding:'2px 8px',borderRadius:5,fontSize:12,fontWeight:700}}>{sanitize(selDesb.codigo_produto || '?')}</span>
+                    <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{sanitize(selDesb.nome_produto || '(sem nome)')}</span>
+                  </h2>
+                  <span style={{fontSize:12,color:'#8B94A3'}}>Pedido de Desbloqueio · {fmtDate(selDesb.created_at)}</span>
+                </div>
+              </div>
+              <button onClick={()=>setSelDesb(null)} style={{width:36,height:36,borderRadius:8,border:'1px solid #E5E9EF',background:'#fff',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',color:'#8B94A3',flexShrink:0}}>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div style={{padding:'22px 24px',overflowY:'auto',flex:1,background:'#FAFBFC'}}>
+              {/* Status badge */}
+              <div style={{marginBottom:16}}>
+                {(() => {
+                  const c = selDesb.status==='desbloqueado'?'#008C44':selDesb.status==='rejeitado'?'#E63946':selDesb.status==='em_analise'?'#2563EB':'#D97706';
+                  const bg = selDesb.status==='desbloqueado'?'#E6F7EE':selDesb.status==='rejeitado'?'#FEE2E2':selDesb.status==='em_analise'?'#DBEAFE':'#FEF3C7';
+                  const lbl = selDesb.status==='desbloqueado'?'Desbloqueado':selDesb.status==='rejeitado'?'Rejeitado':selDesb.status==='em_analise'?'Em análise':'Pendente';
+                  return (
+                    <span style={{display:'inline-flex',alignItems:'center',gap:6,padding:'4px 12px',borderRadius:20,fontSize:12,fontWeight:600,color:c,background:bg}}>
+                      <span style={{width:7,height:7,borderRadius:'50%',background:c}} />
+                      {lbl}
+                    </span>
+                  );
+                })()}
+                {selDesb.atribuido_para && <span style={{marginLeft:8,fontSize:12,color:'#4F5868'}}>· atribuído a <strong>{sanitize(selDesb.atribuido_para)}</strong></span>}
+              </div>
+
+              {/* Ações */}
+              {!['desbloqueado','rejeitado'].includes(selDesb.status) && (
+                <div style={{display:'flex',gap:8,marginBottom:18,flexWrap:'wrap'}}>
+                  {selDesb.status==='pendente' && (
+                    <button onClick={async ()=>{ await pegarDesbloqueio(selDesb.id); setSelDesb({...selDesb,atribuido_para:user.nome,status:'em_analise'}); }} style={modalActBtn('info')}>
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>
+                      Pegar para mim
+                    </button>
+                  )}
+                  <button onClick={async ()=>{ await concluirDesbloqueio(selDesb); setSelDesb(null); }} style={modalActBtn('primary')}>
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+                    Desbloquear
+                  </button>
+                  <button onClick={async ()=>{ const m = prompt('Motivo da rejeição:'); if (m) { await rejeitarDesbloqueio(selDesb, m); setSelDesb(null); } }} style={modalActBtn('danger')}>
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></svg>
+                    Rejeitar
+                  </button>
+                  {isAdmin && (
+                    <button onClick={()=>{ excluirDesbloqueio(selDesb.id); setSelDesb(null); }} style={{...modalActBtn('danger'),marginLeft:'auto'}}>
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                      Excluir
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Motivo rejeição */}
+              {selDesb.motivo_rejeicao && (
+                <div style={{padding:'12px 14px',background:'#FEE2E2',border:'1px solid #FECACA',borderRadius:10,marginBottom:18,display:'flex',gap:10,alignItems:'flex-start'}}>
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:2}}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  <div style={{color:'#991B1B',fontSize:13}}><strong>Motivo da rejeição:</strong> {sanitize(selDesb.motivo_rejeicao)}</div>
+                </div>
+              )}
+
+              {/* DataSections */}
+              <DataSection title="Solicitante" icon="👤" items={[
+                ['Nome', selDesb.nome_solicitante],
+                ['E-mail', selDesb.email_solicitante],
+              ]} onCopy={txt => { navigator.clipboard?.writeText(txt); showToast('Copiado!'); }} />
+
+              <DataSection title="Produto a Desbloquear" icon="🔓" items={[
+                ['Código no Protheus', selDesb.codigo_produto],
+                ['Nome / Descrição', selDesb.nome_produto],
+                ['Motivo do Pedido', selDesb.motivo],
+              ]} onCopy={txt => { navigator.clipboard?.writeText(txt); showToast('Copiado!'); }} />
+
+              {selDesb.status === 'desbloqueado' && (
+                <DataSection title="Atendimento" icon="✓" items={[
+                  ['Finalizado por', selDesb.finalizado_por],
+                  ['Data', selDesb.data_finalizacao && fmtDate(selDesb.data_finalizacao)],
+                ]} onCopy={txt => { navigator.clipboard?.writeText(txt); showToast('Copiado!'); }} />
+              )}
             </div>
           </div>
         </div>
