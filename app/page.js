@@ -2806,5 +2806,4 @@ function modalActBtn(variant) {
   if (variant === 'primary') return {...base,background:'#00A650',borderColor:'#00A650',color:'#fff',boxShadow:'0 1px 2px rgba(0,166,80,.3),inset 0 1px 0 rgba(255,255,255,.15)'};
   if (variant === 'danger')  return {...base,background:'#fff',borderColor:'#FECACA',color:'#E63946'};
   if (variant === 'info')    return {...base,background:'#fff',borderColor:'#BFDBFE',color:'#2563EB'};
-  return {...base,background:'#fff',borderColor:'#E5E9EF',color:'#4F5868'};
-}
+  return {...base,background:'#fff',borderColor:'#E5E9EF',color:'#4F5868'}; }
