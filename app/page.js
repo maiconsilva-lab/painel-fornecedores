@@ -1,4 +1,5 @@
 'use client';
+/* Build: detalhes-modal-v1 — 2026-06-02 */
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 
