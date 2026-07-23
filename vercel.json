@@ -4,10 +4,6 @@
     {
       "path": "/api/sync-sheets",
       "schedule": "0 17 * * *"
-    },
-    {
-      "path": "/api/sync-recepcao",
-      "schedule": "*/1 * * * *"
     }
   ]
 }
