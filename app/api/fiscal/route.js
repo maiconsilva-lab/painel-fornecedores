@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
-import { getServiceClient, verifySession } from '../../../lib/authServer';
+import { getServiceClient } from '../../../lib/authServer';
 
 export const dynamic = 'force-dynamic';
 
+/* Rota pública de propósito: a página /pendencias é consultada por
+   qualquer colaborador @premix.com.br sem precisar de login no painel
+   (só consulta visual, dados fiscais não sensíveis — não é fornecedor/
+   produto/desbloqueio, que continuam exigindo sessão). */
 export async function GET(req) {
   try {
-    const user = await verifySession(req);
-    if (!user) return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
-
     const url = new URL(req.url);
     const mode = url.searchParams.get('mode') || 'bootstrap';
     const supa = getServiceClient();
