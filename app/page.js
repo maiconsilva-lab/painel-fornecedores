@@ -104,7 +104,7 @@ export default function Home() {
 
   /* ── Admin State ─────────────────────────────── */
   const [showNewUser, setShowNewUser] = useState(false);
-  const [newUser, setNewUser] = useState({ nome:'',email:'',senha_hash:'premix2024',cargo:'Analista',role:'user',telefone:'' });
+  const [newUser, setNewUser] = useState({ nome:'',email:'',cargo:'Analista',role:'user',telefone:'' });
   const [editUser, setEditUser] = useState(null);
 
   const obsRef = useRef(null);
@@ -121,10 +121,17 @@ export default function Home() {
       setTimeout(() => { setLoginLocked(false); setLoginAttempts(0); setLE(''); }, 60000);
       return;
     }
-    const { data, error } = await supabase.from('usuarios_painel').select('*')
-      .eq('email', loginForm.email.toLowerCase().trim())
-      .eq('senha_hash', loginForm.senha)
-      .eq('ativo', true).maybeSingle();
+    let data, error;
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: loginForm.email, senha: loginForm.senha }),
+      });
+      const json = await res.json();
+      if (!res.ok) { error = true; }
+      else { data = json.user; }
+    } catch { error = true; }
     if (error || !data) {
       setLoginAttempts(a => a + 1);
       setLE('E-mail ou senha inválidos');
@@ -141,9 +148,14 @@ export default function Home() {
     if (newPw.nova !== newPw.conf) { setPwMsg('As senhas não coincidem'); return; }
     if (newPw.nova.length < 8) { setPwMsg('Mínimo 8 caracteres'); return; }
     if (!/[A-Z]/.test(newPw.nova) || !/[0-9]/.test(newPw.nova)) { setPwMsg('Use letras maiúsculas e números'); return; }
-    const { error } = await supabase.from('usuarios_painel').update({ senha_hash: newPw.nova, primeiro_login: false }).eq('id', user.id);
-    if (error) { setPwMsg('Erro ao atualizar'); return; }
-    const updated = { ...user, senha_hash: newPw.nova, primeiro_login: false };
+    const res = await fetch('/api/auth/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: user.id, senhaAtual: loginForm.senha, novaSenha: newPw.nova }),
+    });
+    const json = await res.json();
+    if (!res.ok) { setPwMsg(json.error || 'Erro ao atualizar'); return; }
+    const updated = { ...user, primeiro_login: false };
     setUser(updated); localStorage.setItem('premix_user', JSON.stringify(updated));
     setCP(false); setNP({ nova:'', conf:'' }); setPwMsg('');
   };
@@ -166,17 +178,27 @@ export default function Home() {
     return () => window.removeEventListener('keydown', handler);
   });
 
+  const fetchUsuarios = useCallback(async () => {
+    if (!user) return [];
+    try {
+      const res = await fetch(`/api/auth/users?actingUserId=${user.id}`);
+      if (!res.ok) return [];
+      const json = await res.json();
+      return json.users || [];
+    } catch { return []; }
+  }, [user]);
+
   const fetchAll = useCallback(async () => {
     if (!user) return;
-    const [f, uRes, k, p, d] = await Promise.all([
+    const [f, uList, k, p, d] = await Promise.all([
       fetchAllRows('fornecedores', 'created_at', false),
-      supabase.from('usuarios_painel').select('*').order('nome'),
+      fetchUsuarios(),
       fetchAllRows('kanban_tarefas', 'ordem', true),
       fetchAllRows('produtos', 'created_at', false),
       fetchAllRows('desbloqueios', 'created_at', false),
     ]);
     setForn(f);
-    if (uRes.data) setUsu(uRes.data);
+    setUsu(uList);
     setKanban(k);
     setProdutos(p);
     setDesbloqueios(d);
@@ -255,7 +277,6 @@ export default function Home() {
       produtos: setProdutos,
       desbloqueios: setDesbloqueios,
       kanban_tarefas: setKanban,
-      usuarios_painel: setUsu,
     };
     const setter = setters[table];
     if (!setter) return;
@@ -275,7 +296,6 @@ export default function Home() {
       .on('postgres_changes', { event:'*', schema:'public', table:'produtos' },     p => applyRealtimeChange('produtos', p))
       .on('postgres_changes', { event:'*', schema:'public', table:'desbloqueios' }, p => applyRealtimeChange('desbloqueios', p))
       .on('postgres_changes', { event:'*', schema:'public', table:'kanban_tarefas' }, p => applyRealtimeChange('kanban_tarefas', p))
-      .on('postgres_changes', { event:'*', schema:'public', table:'usuarios_painel' }, p => applyRealtimeChange('usuarios_painel', p))
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [user, fetchAll]);
@@ -707,37 +727,69 @@ export default function Home() {
     if (!newUser.nome.trim()) { showToast('Informe o nome do usuário'); return; }
     if (!newUser.email.trim()) { showToast('Informe o e-mail'); return; }
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(newUser.email.trim())) { showToast('E-mail inválido'); return; }
-    const { error } = await supabase.from('usuarios_painel').insert({ ...newUser, email: newUser.email.toLowerCase(), ativo: true, primeiro_login: true });
-    if (error) { showToast('Erro ao criar: ' + error.message); return; }
-    showToast('Usuário criado!');
+    const res = await fetch('/api/auth/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ actingUserId: user.id, nome: newUser.nome, email: newUser.email }),
+    });
+    const json = await res.json();
+    if (!res.ok) { showToast('Erro ao criar: ' + (json.error || '')); return; }
     setShowNewUser(false);
-    setNewUser({ nome:'',email:'',senha_hash:'premix2024',cargo:'Analista',role:'user',telefone:'' });
+    setNewUser({ nome:'',email:'',cargo:'Analista',role:'user',telefone:'' });
     await fetchAll();
+    askConfirm(
+      'Usuário criado!',
+      `Senha temporária de ${newUser.nome}: ${json.tempPassword} — copie agora e repasse com segurança, ela não será exibida de novo.`,
+      () => {}, false
+    );
   };
   const updateUser = async (id, data) => {
-    const { error } = await supabase.from('usuarios_painel').update(data).eq('id', id);
-    if (error) { showToast('Erro ao atualizar: ' + error.message); return; }
+    const res = await fetch(`/api/auth/users/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ actingUserId: user.id, ...data }),
+    });
+    const json = await res.json();
+    if (!res.ok) { showToast('Erro ao atualizar: ' + (json.error || '')); return; }
     showToast('Usuário atualizado');
     setEditUser(null); await fetchAll();
   };
   const deleteUser = (id, nome) => {
     askConfirm('Excluir usuário?', `${nome} perderá acesso ao painel. Esta ação não pode ser desfeita.`, async () => {
-      const { error } = await supabase.from('usuarios_painel').delete().eq('id', id);
-      if (error) { showToast('Erro ao excluir: ' + error.message); return; }
+      const res = await fetch(`/api/auth/users/${id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ actingUserId: user.id }),
+      });
+      const json = await res.json();
+      if (!res.ok) { showToast('Erro ao excluir: ' + (json.error || '')); return; }
       showToast('Usuário excluído');
       await fetchAll();
     });
   };
   const toggleUserActive = async (u) => {
-    await supabase.from('usuarios_painel').update({ ativo: !u.ativo }).eq('id', u.id);
+    await fetch('/api/auth/users/toggle-active', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ actingUserId: user.id, userId: u.id }),
+    });
     await fetchAll();
   };
   const resetUserPw = (id, nome) => {
-    askConfirm('Resetar senha?', `A senha de ${nome} será redefinida para "premix2024" e o usuário precisará alterá-la no próximo login.`, async () => {
-      const { error } = await supabase.from('usuarios_painel').update({ senha_hash:'premix2024', primeiro_login: true }).eq('id', id);
-      if (error) { showToast('Erro: ' + error.message); return; }
-      showToast('Senha resetada');
+    askConfirm('Resetar senha?', `Uma nova senha temporária será gerada para ${nome} e ele precisará alterá-la no próximo login.`, async () => {
+      const res = await fetch('/api/auth/users/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ actingUserId: user.id, userId: id }),
+      });
+      const json = await res.json();
+      if (!res.ok) { showToast('Erro: ' + (json.error || '')); return; }
       await fetchAll();
+      askConfirm(
+        'Senha resetada!',
+        `Nova senha temporária de ${nome}: ${json.tempPassword} — copie agora e repasse com segurança, ela não será exibida de novo.`,
+        () => {}, false
+      );
     }, false);
   };
 
@@ -2011,7 +2063,7 @@ export default function Home() {
                 <select value={newUser.role} onChange={e=>setNewUser({...newUser,role:e.target.value})} style={fieldStyle()}>
                   <option value="user">Usuário</option><option value="subadmin">Sub-Admin</option><option value="admin">Admin</option>
                 </select>
-                <input placeholder="Senha inicial" value={newUser.senha_hash} onChange={e=>setNewUser({...newUser,senha_hash:e.target.value})} style={fieldStyle()} />
+                <div style={{fontSize:11,color:'#94a3b8',padding:'8px 0'}}>A senha temporária será gerada automaticamente e exibida após criar.</div>
                 <div style={{gridColumn:'1/-1',display:'flex',gap:10,marginTop:4}}>
                   <button onClick={addUser} className="pmx-cta" style={{padding:'10px 20px',borderRadius:9,border:'none',background:'#00A650',color:'#fff',fontFamily:'inherit',fontWeight:600,fontSize:13,cursor:'pointer',boxShadow:'0 1px 2px rgba(0,166,80,.3),inset 0 1px 0 rgba(255,255,255,.15)'}}>Criar Usuário</button>
                   <button onClick={()=>setShowNewUser(false)} style={{padding:'10px 20px',borderRadius:9,border:'1px solid #E5E9EF',background:'#fff',fontFamily:'inherit',fontWeight:500,fontSize:13,cursor:'pointer',color:'#4F5868'}}>Cancelar</button>
