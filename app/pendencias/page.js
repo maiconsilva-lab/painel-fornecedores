@@ -1,24 +1,23 @@
 'use client';
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { supabase } from '../../lib/supabase';
 
 /* ═══════════════════════════════════════════════════════
    DESIGN TOKENS
 ═══════════════════════════════════════════════════════ */
 const C = {
-  bg: '#FAFAFA',
+  bg: '#F3F6F9',
   surface: '#FFFFFF',
-  surfaceHover: '#F7F8FA',
-  border: '#E8E9ED',
-  borderStrong: '#D5D7DC',
-  text: '#0F172A',
-  textMuted: '#64748B',
-  textSubtle: '#94A3B8',
+  surfaceHover: '#F7F9FC',
+  border: '#DDE5ED',
+  borderStrong: '#BDCBD9',
+  text: '#172033',
+  textMuted: '#475467',
+  textSubtle: '#7C899B',
 
-  primary: '#5B5BD6',
-  primaryHover: '#4F4FCC',
-  primaryLight: '#EEF0FE',
-  primarySoft: '#F5F6FE',
+  primary: '#20558A',
+  primaryHover: '#173F69',
+  primaryLight: '#EAF2FA',
+  primarySoft: '#F7FAFD',
 
   green: '#10B981',
   greenLight: '#ECFDF5',
@@ -36,9 +35,9 @@ const C = {
   blueLight: '#EFF6FF',
   blueText: '#1D4ED8',
 
-  purple: '#8B5CF6',
-  purpleLight: '#F3F0FF',
-  purpleText: '#6D28D9',
+  accent: '#F15A24',
+  accentLight: '#FFF0E8',
+  accentText: '#C24718',
 
   shadow: '0 1px 3px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.06)',
   shadowLg: '0 4px 6px rgba(0,0,0,.04), 0 10px 15px rgba(0,0,0,.08)',
@@ -104,6 +103,15 @@ const Icon = {
   Building: () => (<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2" /><path d="M9 22v-4h6v4" /><path d="M8 6h.01" /><path d="M16 6h.01" /><path d="M12 6h.01" /><path d="M12 10h.01" /><path d="M12 14h.01" /><path d="M16 10h.01" /><path d="M16 14h.01" /><path d="M8 10h.01" /><path d="M8 14h.01" /></svg>),
 };
 
+
+async function fetchFiscal(params) {
+  const query = new URLSearchParams(params);
+  const response = await fetch(`/api/fiscal?${query.toString()}`, { credentials: 'same-origin', cache: 'no-store' });
+  const json = await response.json();
+  if (!response.ok) throw new Error(json.error || 'Falha ao consultar pendências fiscais.');
+  return json;
+}
+
 /* ═══════════════════════════════════════════════════════
    COMPONENTE PRINCIPAL
 ═══════════════════════════════════════════════════════ */
@@ -116,6 +124,7 @@ export default function PendenciasPage() {
   const [cteGlobal, setCteGlobal] = useState([]);      // CT-e de TODAS as filiais
   const [ultimaAtt, setUltimaAtt] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState('');
   const [tab, setTab] = useState('overview'); // overview | nfe | prenotas | cte
 
   // Filtros (compartilhados entre tabs onde fizer sentido)
@@ -129,77 +138,63 @@ export default function PendenciasPage() {
   const [expanded, setExpanded] = useState({});
   const [copiedKey, setCopiedKey] = useState('');
 
-  // ─── CARREGA FILIAIS ───
+  // ─── CARGA INICIAL PROTEGIDA POR SESSÃO ───
   useEffect(() => {
+    let active = true;
     async function load() {
-      const [filRes, monRes] = await Promise.all([
-        supabase.from('filiais').select('codigo, descricao').order('codigo'),
-        supabase.from('monitor_xml').select('descricao_filial, tipo_nota'),
-      ]);
-
-      if (filRes.data && monRes.data) {
+      setLoading(true);
+      setLoadError('');
+      try {
+        const payload = await fetchFiscal({ mode:'bootstrap' });
+        if (!active) return;
         const contagem = {};
-        monRes.data.forEach((r) => {
-          const tipo = (r.tipo_nota || '').toUpperCase();
+        payload.monitorResumo.forEach((row) => {
+          const tipo = (row.tipo_nota || '').toUpperCase();
           if (tipo.includes('CT')) return;
-          if (r.descricao_filial) {
-            contagem[r.descricao_filial] = (contagem[r.descricao_filial] || 0) + 1;
-          }
+          if (row.descricao_filial) contagem[row.descricao_filial] = (contagem[row.descricao_filial] || 0) + 1;
         });
-
-        const enriched = filRes.data.map((f) => ({
-          ...f,
-          nomeLimpo: cleanFilialName(f.descricao),
-          count: contagem[f.descricao] || 0,
-        }));
-
-        enriched.sort((a, b) => {
+        const enriched = payload.filiais.map((filial) => ({
+          ...filial,
+          nomeLimpo: cleanFilialName(filial.descricao),
+          count: contagem[filial.descricao] || 0,
+        })).sort((a, b) => {
           if (a.count > 0 && b.count === 0) return -1;
           if (a.count === 0 && b.count > 0) return 1;
-          return parseInt(a.codigo) - parseInt(b.codigo);
+          return parseInt(a.codigo, 10) - parseInt(b.codigo, 10);
         });
-
         setFiliais(enriched);
+        setCteGlobal(payload.ctes || []);
+        setUltimaAtt(payload.atualizadoEm || null);
+      } catch (error) {
+        if (active) {
+          console.error('[pendencias:bootstrap]', error);
+          setLoadError(error?.message || 'Não foi possível carregar as pendências fiscais.');
+        }
+      } finally {
+        if (active) setLoading(false);
       }
     }
     load();
-  }, []);
-
-  // ─── CT-e GLOBAL (uma vez) ───
-  useEffect(() => {
-    async function loadCte() {
-      const { data } = await supabase
-        .from('monitor_xml')
-        .select('*')
-        .ilike('tipo_nota', '%CT%');
-      setCteGlobal(data || []);
-    }
-    loadCte();
+    return () => { active = false; };
   }, []);
 
   // ─── DADOS DA FILIAL ───
   const loadFilialData = useCallback(async () => {
-    if (!filialSel) {
-      setNfeData([]); setPreNotas([]);
-      return;
-    }
+    if (!filialSel) { setNfeData([]); setPreNotas([]); return; }
     setLoading(true);
-    const filialDesc = filiais.find((f) => f.codigo === filialSel)?.descricao;
-
-    const [mRes, pRes, aRes] = await Promise.all([
-      supabase
-        .from('monitor_xml')
-        .select('*')
-        .eq('descricao_filial', filialDesc)
-        .not('tipo_nota', 'ilike', '%CT%'),
-      supabase.from('pre_notas').select('*').eq('filial', filialSel),
-      supabase.from('monitor_xml').select('atualizado_em').order('atualizado_em', { ascending: false }).limit(1),
-    ]);
-
-    setNfeData(mRes.data || []);
-    setPreNotas(pRes.data || []);
-    if (aRes.data?.[0]) setUltimaAtt(aRes.data[0].atualizado_em);
-    setLoading(false);
+    setLoadError('');
+    const filialDesc = filiais.find((filial) => filial.codigo === filialSel)?.descricao;
+    if (!filialDesc) { setLoading(false); return; }
+    try {
+      const payload = await fetchFiscal({ mode:'filial', codigo:filialSel, descricao:filialDesc });
+      setNfeData(payload.nfe || []);
+      setPreNotas(payload.preNotas || []);
+      if (payload.atualizadoEm) setUltimaAtt(payload.atualizadoEm);
+    } catch (error) {
+      console.error('[pendencias:filial]', error);
+      setLoadError(error?.message || 'Não foi possível atualizar os dados da filial.');
+      setNfeData([]); setPreNotas([]);
+    } finally { setLoading(false); }
   }, [filialSel, filiais]);
 
   useEffect(() => { loadFilialData(); }, [loadFilialData]);
@@ -450,7 +445,7 @@ export default function PendenciasPage() {
      RENDER
   ═══════════════════════════════════════════════════════ */
   return (
-    <div style={{ minHeight: '100vh', background: C.bg, fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif", color: C.text }}>
+    <div style={{ minHeight: '100vh', background: C.bg, fontFamily: "'Geist', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif", color: C.text }}>
 
       {/* TOPBAR */}
       <header style={{
@@ -458,7 +453,9 @@ export default function PendenciasPage() {
         position: 'sticky', top: 0, zIndex: 50, backdropFilter: 'blur(8px)',
       }}>
         <div style={{ maxWidth: 1440, margin: '0 auto', padding: '12px 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
-          <img src="https://premix.com.br/wp-content/uploads/2023/06/Logotipo_Premix_Positivo_Com-Bandeira.png" alt="Premix" style={{ height: 28 }} />
+          <a href="/" aria-label="Voltar ao painel" style={{display:'inline-flex',alignItems:'center',gap:9,textDecoration:'none'}}>
+            <img src="https://premix.com.br/wp-content/uploads/2023/06/Logotipo_Premix_Positivo_Com-Bandeira.png" alt="Premix" style={{ height: 28 }} />
+          </a>
           <div style={{ width: 1, height: 24, background: C.border }} />
           <div style={{ flex: 1 }}>
             <h1 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: C.text }}>Pendências Fiscais</h1>
@@ -466,6 +463,7 @@ export default function PendenciasPage() {
               {ultimaAtt ? `Atualizado ${fmtRelativeTime(ultimaAtt)}` : 'Núcleo Fiscal'}
             </p>
           </div>
+          <a href="/" style={{padding:'7px 11px',border:`1px solid ${C.border}`,borderRadius:8,background:C.surface,color:C.primary,fontSize:11,fontWeight:650,textDecoration:'none'}}>← Central de Cadastros</a>
           <button
             onClick={loadFilialData}
             disabled={loading || !filialSel}
@@ -483,7 +481,29 @@ export default function PendenciasPage() {
         </div>
       </header>
 
+      <nav aria-label="Módulos do painel" style={{background:'#173F69',borderBottom:'3px solid #F15A24'}}>
+        <div style={{maxWidth:1440,margin:'0 auto',padding:'0 24px',display:'flex',gap:4,overflowX:'auto'}}>
+          {[
+            ['/?view=dashboard','Visão Geral'],
+            ['/?view=fila','Fila Protheus'],
+            ['/?view=cadastros&tab=fornecedores','Fornecedores'],
+            ['/?view=cadastros&tab=produtos','Produtos'],
+            ['/?view=kanban','Tarefas'],
+            ['/?view=relatorios','Relatórios'],
+          ].map(([href,label]) => <a key={href} href={href} style={{padding:'11px 13px',color:'#EAF2FA',textDecoration:'none',fontSize:12,fontWeight:600,whiteSpace:'nowrap'}}>{label}</a>)}
+          <span aria-current="page" style={{padding:'11px 13px',color:'#fff',background:'rgba(255,255,255,.10)',fontSize:12,fontWeight:700,whiteSpace:'nowrap',borderBottom:'3px solid #F15A24',marginBottom:-3}}>Pendências Fiscais</span>
+        </div>
+      </nav>
+
       <main style={{ maxWidth: 1440, margin: '0 auto', padding: '24px' }}>
+
+        {loadError && (
+          <div role="alert" style={{marginBottom:20,padding:'16px 18px',background:C.redLight,border:`1px solid ${C.red}33`,borderRadius:10,display:'flex',alignItems:'center',gap:12,color:C.redText}}>
+            <Icon.AlertCircle />
+            <div style={{flex:1}}><strong style={{display:'block',fontSize:13}}>Falha ao carregar dados</strong><span style={{fontSize:12}}>{loadError}</span></div>
+            <a href="/" style={{padding:'7px 10px',border:`1px solid ${C.red}55`,borderRadius:7,color:C.redText,textDecoration:'none',fontSize:11,fontWeight:600}}>Voltar ao painel</a>
+          </div>
+        )}
 
         {/* DROPDOWN FILIAL */}
         <div style={{ marginBottom: 24 }}>
@@ -526,7 +546,7 @@ export default function PendenciasPage() {
             <TabButton active={tab === 'overview'} onClick={() => setTab('overview')} icon={<Icon.Building />} label="Visão Geral" disabled={!filialSel} />
             <TabButton active={tab === 'nfe'} onClick={() => setTab('nfe')} icon={<Icon.FileText />} label="NF-e" badge={stats.nfe} disabled={!filialSel} />
             <TabButton active={tab === 'prenotas'} onClick={() => setTab('prenotas')} icon={<Icon.Inbox />} label="Pré-notas" badge={stats.prenotas} disabled={!filialSel} />
-            <TabButton active={tab === 'cte'} onClick={() => setTab('cte')} icon={<Icon.Truck />} label="CT-e" badge={cteStats.total} badgeColor={C.purple} hint="global" />
+            <TabButton active={tab === 'cte'} onClick={() => setTab('cte')} icon={<Icon.Truck />} label="CT-e" badge={cteStats.total} badgeColor={C.accent} hint="global" />
           </div>
         </div>
 
@@ -608,16 +628,16 @@ export default function PendenciasPage() {
             {tab === 'cte' && (
               <>
                 <div style={{
-                  background: C.purpleLight, border: `1px solid ${C.purple}33`,
+                  background: C.accentLight, border: `1px solid ${C.accent}33`,
                   borderRadius: 10, padding: '12px 16px', marginBottom: 16,
                   display: 'flex', alignItems: 'center', gap: 10,
                 }}>
-                  <div style={{ color: C.purpleText, display: 'flex', alignItems: 'center' }}>
+                  <div style={{ color: C.accentText, display: 'flex', alignItems: 'center' }}>
                     <Icon.Globe />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: C.purpleText }}>Visão Global — CT-e</div>
-                    <div style={{ fontSize: 11, color: C.purpleText, opacity: .8 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: C.accentText }}>Visão Global — CT-e</div>
+                    <div style={{ fontSize: 11, color: C.accentText, opacity: .8 }}>
                       Exibindo conhecimentos de transporte de todas as filiais, agrupados por filial.
                     </div>
                   </div>
@@ -718,7 +738,7 @@ function TabButton({ active, onClick, icon, label, badge, badgeColor, disabled, 
       {hint && (
         <span style={{
           fontSize: 9, padding: '1px 5px', borderRadius: 3,
-          background: C.purpleLight, color: C.purpleText, fontWeight: 600,
+          background: C.accentLight, color: C.accentText, fontWeight: 600,
           textTransform: 'uppercase', letterSpacing: '.4px',
         }}>{hint}</span>
       )}
@@ -734,7 +754,7 @@ function OverviewTab({ stats, chartData, filial, onGoNfe, onGoPrenotas }) {
     <div style={{ animation: 'fadeIn .3s ease' }}>
       {/* HERO STATS */}
       <div style={{
-        background: `linear-gradient(135deg, ${C.primary} 0%, ${C.purple} 100%)`,
+        background: `linear-gradient(135deg, ${C.primary} 0%, ${C.accent} 100%)`,
         borderRadius: 12, padding: 24, marginBottom: 16,
         color: '#fff', boxShadow: C.shadowLg,
       }}>
@@ -893,7 +913,7 @@ function TipoBar({ tipos }) {
           <div style={{ height: 8, background: C.bg, borderRadius: 4, overflow: 'hidden' }}>
             <div style={{
               height: '100%', width: `${(t.count / max) * 100}%`,
-              background: `linear-gradient(90deg, ${C.primary}, ${C.purple})`,
+              background: `linear-gradient(90deg, ${C.primary}, ${C.accent})`,
               borderRadius: 4, transition: 'width .6s ease',
             }} />
           </div>
@@ -930,7 +950,7 @@ function Timeline({ dias }) {
                 height: d.count > 0 ? `${h}%` : 2,
                 minHeight: 2,
                 background: d.count > 0
-                  ? `linear-gradient(180deg, ${C.primary}, ${C.purple})`
+                  ? `linear-gradient(180deg, ${C.primary}, ${C.accent})`
                   : C.border,
                 borderRadius: '4px 4px 0 0',
                 transition: 'height .6s ease',
@@ -977,7 +997,7 @@ function TopFornecedores({ dados }) {
           <div style={{ height: 6, background: C.bg, borderRadius: 3, overflow: 'hidden' }}>
             <div style={{
               height: '100%', width: `${(d.valor / maxValor) * 100}%`,
-              background: `linear-gradient(90deg, ${C.primary}, ${C.purple})`,
+              background: `linear-gradient(90deg, ${C.primary}, ${C.accent})`,
               borderRadius: 3, transition: 'width .6s ease',
             }} />
           </div>
@@ -1232,12 +1252,12 @@ function TabelaMonitor({ dados, mostrarFilial, expanded, toggleExpand, sortBy, s
               let headerFilial = null;
               if (mostrarFilial && nota.descricao_filial !== ultimaFilial) {
                 headerFilial = (
-                  <tr key={`header-${nota.descricao_filial}`} style={{ background: C.purpleLight }}>
+                  <tr key={`header-${nota.descricao_filial}`} style={{ background: C.accentLight }}>
                     <td colSpan={9} style={{
                       padding: '8px 16px', fontSize: 11, fontWeight: 700,
-                      color: C.purpleText, textTransform: 'uppercase', letterSpacing: '.5px',
-                      borderTop: `2px solid ${C.purple}33`,
-                      borderBottom: `1px solid ${C.purple}22`,
+                      color: C.accentText, textTransform: 'uppercase', letterSpacing: '.5px',
+                      borderTop: `2px solid ${C.accent}33`,
+                      borderBottom: `1px solid ${C.accent}22`,
                     }}>
                       🚛 {cleanFilialName(nota.descricao_filial)}
                       <span style={{ marginLeft: 8, color: C.textMuted, fontWeight: 500, textTransform: 'none', letterSpacing: 0 }}>
@@ -1469,8 +1489,8 @@ function EmptyState({ onClickCte }) {
         Escolha sua filial no seletor acima para visualizar pendências fiscais e pré-notas em aberto.
       </p>
       <button onClick={onClickCte} style={{
-        padding: '8px 16px', background: C.purpleLight, color: C.purpleText,
-        border: `1px solid ${C.purple}33`, borderRadius: 6, fontSize: 12, fontWeight: 600,
+        padding: '8px 16px', background: C.accentLight, color: C.accentText,
+        border: `1px solid ${C.accent}33`, borderRadius: 6, fontSize: 12, fontWeight: 600,
         cursor: 'pointer', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: 6,
       }}>
         <Icon.Truck /> Ou veja CT-e de todas as filiais

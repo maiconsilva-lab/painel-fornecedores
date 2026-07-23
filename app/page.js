@@ -1,17 +1,20 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '../lib/supabase';
 import { listTable, mutateTable } from '../lib/dataApi';
 import { sanitize } from '../lib/sanitize';
 import { inputStyle, fieldStyle, selectStyle, menuItem, tdS, thS, tdSnew, btnAction, actBtn, modalActBtn } from '../lib/styleHelpers';
 import { ST, TL, PRI, KAN_COLS } from '../constants/status';
-import { TEMAS, WALLPAPERS, CORES_SUGERIDAS } from '../constants/theme';
+import { TEMAS } from '../constants/theme';
 import { DEV_MOTIVOS, MOTIVO_CAMPOS, CAMPO_LABELS } from '../constants/devolucao';
 import { DataSection, ActionBtn, PillBtn, SmBtn, StatNum } from '../components/shared';
+import { OverviewDashboard, ProtheusQueue, ReportsDashboard, HistoryTimeline } from '../components/premiumPanels';
+import RecordDrawer from '../components/recordDrawer';
+import { buildRecentActivity, buildUnifiedQueue, getCompleteness, getDuplicateCandidates, recordToClipboardText, fieldsForType } from '../lib/panelMetrics';
 
 export default function Home() {
   /* ── Auth State ──────────────────────────────── */
   const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [loginForm, setLF] = useState({ email:'', senha:'' });
   const [loginErr, setLE] = useState('');
   const [loginAttempts, setLoginAttempts] = useState(0);
@@ -26,8 +29,11 @@ export default function Home() {
   const [desbloqueios, setDesbloqueios] = useState([]);
   const [usuarios, setUsu] = useState([]);
   const [kanban, setKanban] = useState([]);
+  const [auditLog, setAuditLog] = useState([]);
   const [loading, setLoad] = useState(true);
-  const [page, setPage] = useState('cadastros');
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  const [page, setPage] = useState('dashboard');
   const [subTab, setSubTab] = useState('fornecedores'); // 'fornecedores' | 'produtos' | 'desbloqueios'
   const [tab, setTab] = useState('pendentes');
   const [sel, setSel] = useState(null);
@@ -53,6 +59,8 @@ export default function Home() {
   const [showConcluir, setShowConcluir] = useState(false);
   const [concluirData, setConcluirData] = useState({ codigo:'' });
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [rejectUnlock, setRejectUnlock] = useState(null);
+  const [rejectUnlockReason, setRejectUnlockReason] = useState('');
 
   /* ── Aparência: tema, wallpaper, cor, densidade ──
      IMPORTANTE: inicialização lazy a partir do localStorage para evitar FOUC.
@@ -68,22 +76,18 @@ export default function Home() {
   };
 
   const [tema, setTema] = useState(() => readLS('tema', 'premix_claro'));
-  const [corPrimaria, setCorPrimaria] = useState(() => readLS('corPrimaria', '#00A650'));
-  const [wallpaper, setWallpaper] = useState(() => readLS('wallpaper', null));
-  const [wallpaperOpacidade, setWallpaperOpacidade] = useState(() => readLS('wallpaperOpacidade', 8));
   const [densidade, setDensidade] = useState(() => readLS('densidade', 'normal'));
   const [prefsLoaded, setPrefsLoaded] = useState(false);
-  const [apCat, setApCat] = useState('Agro'); // categoria selecionada na galeria
   const [sidebarCol, setSidebarCol] = useState(() => readLS('sidebarCol', false));
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [searchGlobal, setSearchGlobal] = useState(''); // busca global da topbar
   const [searchGlobalDeb, setSearchGlobalDeb] = useState(''); // versão "debounced" (250ms)
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [detailMode, setDetailMode] = useState('protheus');
 
 
   /* Persistir cada mudança no localStorage (mirror do Supabase, latência zero) */
   useEffect(() => { writeLS('tema', tema); }, [tema]);
-  useEffect(() => { writeLS('corPrimaria', corPrimaria); }, [corPrimaria]);
-  useEffect(() => { writeLS('wallpaper', wallpaper); }, [wallpaper]);
-  useEffect(() => { writeLS('wallpaperOpacidade', wallpaperOpacidade); }, [wallpaperOpacidade]);
   useEffect(() => { writeLS('densidade', densidade); }, [densidade]);
   useEffect(() => { writeLS('sidebarCol', sidebarCol); }, [sidebarCol]);
 
@@ -101,6 +105,9 @@ export default function Home() {
   const [newTask, setNewTask] = useState({ titulo:'',descricao:'',atribuido_para:'',prioridade:'media',prazo:'',status:'backlog' });
   const [editTask, setEditTask] = useState(null);
   const [newChkItem, setNewChkItem] = useState('');
+  const [dragTaskId, setDragTaskId] = useState(null);
+  const [kanLayout, setKanLayout] = useState('board');
+  const [newTaskComment, setNewTaskComment] = useState('');
 
   /* ── Admin State ─────────────────────────────── */
   const [showNewUser, setShowNewUser] = useState(false);
@@ -138,7 +145,8 @@ export default function Home() {
       return;
     }
     setUser(data);
-    localStorage.setItem('premix_user', JSON.stringify(data));
+    setAuthLoading(false);
+    localStorage.setItem('premix_user_profile', JSON.stringify(data));
     if (data.primeiro_login) setCP(true);
     setLoginAttempts(0);
   };
@@ -151,16 +159,52 @@ export default function Home() {
     const res = await fetch('/api/auth/change-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: user.id, senhaAtual: loginForm.senha, novaSenha: newPw.nova }),
+      credentials: 'same-origin',
+      body: JSON.stringify({ senhaAtual: loginForm.senha, novaSenha: newPw.nova }),
     });
     const json = await res.json();
     if (!res.ok) { setPwMsg(json.error || 'Erro ao atualizar'); return; }
     const updated = { ...user, primeiro_login: false };
-    setUser(updated); localStorage.setItem('premix_user', JSON.stringify(updated));
+    setUser(updated); localStorage.setItem('premix_user_profile', JSON.stringify(updated));
     setCP(false); setNP({ nova:'', conf:'' }); setPwMsg('');
   };
 
-  useEffect(() => { const s = localStorage.getItem('premix_user'); if (s) try { setUser(JSON.parse(s)); } catch {} }, []);
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch('/api/auth/session', { credentials: 'same-origin', cache: 'no-store' });
+        if (!res.ok) throw new Error('Sessão ausente');
+        const json = await res.json();
+        if (active) { setUser(json.user); localStorage.setItem('premix_user_profile', JSON.stringify(json.user)); }
+      } catch {
+        if (active) { setUser(null); localStorage.removeItem('premix_user_profile'); }
+      } finally { if (active) setAuthLoading(false); }
+    })();
+    return () => { active = false; };
+  }, []);
+
+  /* Permite links diretos entre módulos, inclusive a página de Pendências Fiscais. */
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const requestedView = params.get('view');
+    const requestedTab = params.get('tab');
+    const allowedViews = new Set(['dashboard','fila','cadastros','kanban','relatorios','historico','admin','aparencia']);
+    if (allowedViews.has(requestedView)) setPage(requestedView);
+    if (['fornecedores','produtos','desbloqueios'].includes(requestedTab)) {
+      setPage('cadastros');
+      setSubTab(requestedTab);
+    }
+  }, []);
+
+  const doLogout = async () => {
+    try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }); } catch {}
+    localStorage.removeItem('premix_user_profile');
+    setShowLogout(false);
+    setUser(null);
+    setPage('dashboard');
+  };
 
   /* ESC fecha modais e dropdowns abertos (acessibilidade) */
   useEffect(() => {
@@ -181,97 +225,76 @@ export default function Home() {
   const fetchUsuarios = useCallback(async () => {
     if (!user) return [];
     try {
-      const res = await fetch(`/api/auth/users?actingUserId=${user.id}`);
+      const res = await fetch('/api/auth/users', { credentials: 'same-origin', cache: 'no-store' });
       if (!res.ok) return [];
       const json = await res.json();
       return json.users || [];
     } catch { return []; }
   }, [user]);
 
-  const fetchAll = useCallback(async () => {
+  const fetchAll = useCallback(async (silent = false) => {
     if (!user) return;
-    const [f, uList, k, p, d] = await Promise.all([
-      listTable(user.id, 'fornecedores', { orderCol: 'created_at', ascending: false }),
-      fetchUsuarios(),
-      listTable(user.id, 'kanban_tarefas', { orderCol: 'ordem', ascending: true }),
-      listTable(user.id, 'produtos', { orderCol: 'created_at', ascending: false }),
-      listTable(user.id, 'desbloqueios', { orderCol: 'created_at', ascending: false }),
-    ]);
-    setForn(f);
-    setUsu(uList);
-    setKanban(k);
-    setProdutos(p);
-    setDesbloqueios(d);
-    setLoad(false);
-  }, [user]);
+    if (silent) setRefreshing(true); else setLoad(true);
+    setLoadError('');
+    try {
+      const [f, uList, k, p, d, auditRows] = await Promise.all([
+        listTable(user.id, 'fornecedores', { orderCol: 'created_at', ascending: false }),
+        fetchUsuarios(),
+        listTable(user.id, 'kanban_tarefas', { orderCol: 'ordem', ascending: true }),
+        listTable(user.id, 'produtos', { orderCol: 'created_at', ascending: false }),
+        listTable(user.id, 'desbloqueios', { orderCol: 'created_at', ascending: false }),
+        fetch('/api/audit?limit=700', { credentials:'same-origin', cache:'no-store' }).then(r => r.ok ? r.json() : { logs:[] }).then(j => j.logs || []).catch(() => []),
+      ]);
+      setForn(f); setUsu(uList); setKanban(k); setProdutos(p); setDesbloqueios(d); setAuditLog(auditRows);
+    } catch (error) {
+      console.error('[fetchAll]', error);
+      setLoadError(error?.message || 'Não foi possível carregar os dados.');
+    } finally {
+      if (silent) setRefreshing(false); else setLoad(false);
+    }
+  }, [user, fetchUsuarios]);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
-
-  /* Polling: como o realtime não é mais possível pra fornecedores/produtos/
-     desbloqueios/kanban_tarefas (dependia de SELECT liberado pra anon, que
-     foi revogado por segurança), recarrega os dados sozinho a cada 20s pra
-     pegar novos cadastros vindos dos formulários públicos e mudanças feitas
-     por outras pessoas com o painel aberto ao mesmo tempo. Só roda com a
-     aba em foco, pra não gastar função à toa em segundo plano. */
-  useEffect(() => {
-    if (!user) return;
-    const interval = setInterval(() => {
-      if (document.visibilityState === 'visible') fetchAll();
-    }, 20000);
-    return () => clearInterval(interval);
-  }, [user, fetchAll]);
+  useEffect(() => { fetchAll(false); }, [fetchAll]);
 
   /* ── Aparência: carregar e salvar preferências do usuário ── */
   const loadPrefs = useCallback(async () => {
-    if (!user?.email) return;
+    if (!user) return;
     try {
-      const { data, error } = await supabase
-        .from('preferencias_usuario')
-        .select('*')
-        .eq('user_email', user.email)
-        .maybeSingle();
-      if (error) { console.warn('[loadPrefs]', error.message); }
+      const res = await fetch('/api/preferences', { credentials:'same-origin', cache:'no-store' });
+      if (!res.ok) throw new Error('Falha ao carregar preferências');
+      const { preferences:data } = await res.json();
       if (data) {
-        if (data.tema) setTema(data.tema);
-        if (data.cor_primaria) setCorPrimaria(data.cor_primaria);
-        setWallpaper(data.wallpaper || null);
-        if (typeof data.wallpaper_opacidade === 'number') setWallpaperOpacidade(data.wallpaper_opacidade);
+        if (data.tema && ['premix_claro', 'premix_escuro'].includes(data.tema)) setTema(data.tema);
         if (data.densidade) setDensidade(data.densidade);
       }
-    } catch (e) { console.warn('[loadPrefs] exception', e); }
+    } catch (e) { console.warn('[loadPrefs]', e.message); }
     finally { setPrefsLoaded(true); }
   }, [user]);
 
   useEffect(() => { if (user) loadPrefs(); }, [user, loadPrefs]);
 
   const savePrefs = async (patch) => {
-    if (!user?.email) return;
+    if (!user) return;
     const payload = {
-      user_email: user.email,
-      tema, cor_primaria: corPrimaria,
-      wallpaper, wallpaper_opacidade: wallpaperOpacidade,
+      tema,
       densidade,
       ...patch,
     };
     try {
-      // upsert por user_email (UNIQUE)
-      const { error } = await supabase
-        .from('preferencias_usuario')
-        .upsert(payload, { onConflict: 'user_email' });
-      if (error) {
-        console.warn('[savePrefs]', error.message);
-        showToast('Erro ao salvar preferências');
-      }
+      const res = await fetch('/api/preferences', {
+        method:'POST', credentials:'same-origin',
+        headers:{ 'Content-Type':'application/json' },
+        body:JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error('Falha ao salvar preferências');
     } catch (e) {
-      console.warn('[savePrefs] exception', e);
+      console.warn('[savePrefs]', e.message);
+      showToast('Erro ao salvar preferências');
     }
   };
 
-  /* ── Tema ativo (com cor primária custom aplicada) ── */
-  const T = (() => {
-    const base = TEMAS[tema] || TEMAS.premix_claro;
-    return { ...base, primary: corPrimaria || base.primary };
-  })();
+  /* ── Tema institucional Premix ativo ── */
+  const T = TEMAS[tema] || TEMAS.premix_claro;
 
   /* ── Helpers de densidade ── */
   const D = densidade === 'compacto' ? { cardPad:12, gapStat:10, rowPad:'10px 14px' }
@@ -318,49 +341,33 @@ export default function Home() {
     setSav(true);
     const u = { status: s };
     if (s === 'aprovado') { u.finalizado_por = user.nome; u.data_finalizacao = new Date().toISOString(); }
-    await mutateTable(user.id, 'fornecedores', 'update', { id, data: u });
-    if (sel?.id === id) setSel({ ...sel, ...u });
-    logAcao('mudou_status', 'fornecedor', id, { para: s });
-    setSav(false);
+    try {
+      const { row } = await mutateTable(user.id, 'fornecedores', 'update', { id, data: u, returning:true });
+      applyRealtimeChange('fornecedores', { eventType:'UPDATE', new:row || { id, ...u } });
+      if (sel?.id === id) setSel({ ...sel, ...(row || u) });
+      logAcao('mudou_status', 'fornecedor', id, { para: s });
+    } catch (error) {
+      showToast(error?.message || 'Não foi possível atualizar o status');
+    } finally {
+      setSav(false);
+    }
   };
 
-  /* ── EmailJS — configs ──────────────────────────
-     Vars de ambiente (.env.local na raiz do projeto):
-       NEXT_PUBLIC_EMAILJS_SERVICE=service_w7xzoya
-       NEXT_PUBLIC_EMAILJS_PUBLIC=A5igXA6RKwkf84zyR
-       NEXT_PUBLIC_EMAILJS_TEMPLATE_APROVADO=template_9r33gy7
-       NEXT_PUBLIC_EMAILJS_TEMPLATE_DEVOLVIDO=template_devolvido
-       NEXT_PUBLIC_EMAILJS_TEMPLATE_DESBLOQ=template_desbloqueado
-     Não esqueça de configurar no Vercel também (Settings → Environment Variables).
-     Fallbacks abaixo são os valores antigos hardcoded — funcionam mesmo sem .env. */
-  const EMAILJS_SERVICE  = process.env.NEXT_PUBLIC_EMAILJS_SERVICE  || 'service_w7xzoya';
-  const EMAILJS_PUBLIC   = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC   || 'A5igXA6RKwkf84zyR';
-  const EMAILJS_TEMPLATE_APROVADO   = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_APROVADO  || 'template_9r33gy7';
-  const EMAILJS_TEMPLATE_DEVOLVIDO  = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_DEVOLVIDO || 'template_devolvido';
-  const EMAILJS_TEMPLATE_DESBLOQ    = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_DESBLOQ   || 'template_desbloqueado';
-
-  /* ── Envia um e-mail genérico via EmailJS ── */
-  const sendEmail = async (templateId, params) => {
+  /* ── E-mails transacionais ──────────────────────
+     O navegador chama uma rota autenticada; credenciais e templates ficam
+     exclusivamente no servidor/Vercel. */
+  const sendEmail = async (kind, params) => {
     try {
-      const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          service_id: EMAILJS_SERVICE,
-          template_id: templateId,
-          user_id: EMAILJS_PUBLIC,
-          template_params: params,
-        }),
+      const res = await fetch('/api/email', {
+        method:'POST', credentials:'same-origin',
+        headers:{ 'Content-Type':'application/json' },
+        body:JSON.stringify({ kind, params }),
       });
-      if (!res.ok) {
-        const body = await res.text();
-        console.error('[sendEmail] EmailJS falhou:', res.status, body);
-        return { ok: false, error: `${res.status} — ${body.slice(0,80)}` };
-      }
-      return { ok: true };
+      const json = await res.json();
+      return res.ok ? { ok:true } : { ok:false, error:json.error || `HTTP ${res.status}` };
     } catch (err) {
-      console.error('[sendEmail] Exceção:', err);
-      return { ok: false, error: err.message || 'desconhecido' };
+      console.error('[sendEmail]', err);
+      return { ok:false, error:err.message || 'desconhecido' };
     }
   };
 
@@ -368,43 +375,39 @@ export default function Home() {
      Falha silenciosa: se a auditoria falhar, a operação principal continua.
      Não usa await intencionalmente — fire-and-forget pra não travar UI. */
   const logAcao = (acao, tipoCadastro, cadastroId, detalhes = null) => {
-    try {
-      supabase.from('auditoria').insert({
-        ator_nome: user?.nome || 'desconhecido',
-        ator_email: user?.email || null,
-        acao,
-        tipo_cadastro: tipoCadastro,
-        cadastro_id: cadastroId,
-        detalhes,
-      }).then(({ error }) => {
-        if (error) console.warn('[logAcao] falhou (não crítico):', error.message);
-      });
-    } catch (e) {
-      console.warn('[logAcao] exceção (não crítico):', e);
-    }
+    const optimisticLog = {
+      id:`local-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      created_at:new Date().toISOString(), ator_nome:user?.nome, ator_email:user?.email,
+      acao, tipo_cadastro:tipoCadastro, cadastro_id:cadastroId, detalhes,
+    };
+    setAuditLog(current => [optimisticLog, ...current].slice(0, 1000));
+    fetch('/api/audit', {
+      method:'POST', credentials:'same-origin', keepalive:true,
+      headers:{ 'Content-Type':'application/json' },
+      body:JSON.stringify({ acao, tipo_cadastro:tipoCadastro, cadastro_id:cadastroId, detalhes }),
+    }).then(res => {
+      if (!res.ok) console.warn('[logAcao] falhou (não crítico):', res.status);
+    }).catch(e => console.warn('[logAcao] exceção (não crítico):', e));
   };
 
   /* ── Gera token único de correção e devolve a URL pública ──
      URL: https://formulario-fornecedor-nine.vercel.app/corrigir?token=XYZ
      O token só vale uma vez e expira em 30 dias (validado pelo formulário). */
-  const FORM_URL_BASE = 'https://formulario-fornecedor-nine.vercel.app';
+  const FORM_URL_BASE = process.env.NEXT_PUBLIC_CORRECTION_FORM_URL || 'https://formulario-fornecedor-nine.vercel.app';
   const gerarTokenCorrecao = async (tipoCadastro, cadastroId, motivo, camposACorrigir) => {
-    const { data, error } = await supabase
-      .from('tokens_correcao')
-      .insert({
-        tipo_cadastro: tipoCadastro,
-        cadastro_id: cadastroId,
-        gerado_por: user.nome,
-        motivo,
-        campos_a_corrigir: camposACorrigir,
-      })
-      .select('token')
-      .single();
-    if (error || !data?.token) {
+    try {
+      const res = await fetch('/api/correction-token', {
+        method:'POST', credentials:'same-origin',
+        headers:{ 'Content-Type':'application/json' },
+        body:JSON.stringify({ tipo_cadastro:tipoCadastro, cadastro_id:cadastroId, motivo, campos_a_corrigir:camposACorrigir }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.token) throw new Error(json.error || 'Token não gerado');
+      return `${FORM_URL_BASE}/corrigir?token=${json.token}`;
+    } catch (error) {
       console.error('[gerarTokenCorrecao] erro:', error);
       return null;
     }
-    return `${FORM_URL_BASE}/corrigir?token=${data.token}`;
   };
 
   const concluirCadastro = async () => {
@@ -427,26 +430,20 @@ export default function Home() {
       codigo_fornecedor: concluirData.codigo.trim(),
     };
 
-    const { data: updRes, error: updErr } = await supabase
-      .from('fornecedores')
-      .update(upd)
-      .eq('id', sel.id)
-      .select();
-
-    if (updErr) {
-      console.error('[concluirCadastro] Erro no UPDATE Supabase:', updErr);
+    let updatedRow;
+    try {
+      const result = await mutateTable(user.id, 'fornecedores', 'update', { id:sel.id, data:upd, returning:true });
+      updatedRow = result?.row;
+      applyRealtimeChange('fornecedores', { eventType:'UPDATE', new:updatedRow || { id:sel.id, ...upd } });
+    } catch (updErr) {
+      console.error('[concluirCadastro] Erro no UPDATE:', updErr);
       showToast(`Erro ao concluir: ${updErr.message}`);
-      setSendingEmail(false);
-      return;
-    }
-    if (!updRes || updRes.length === 0) {
-      showToast('Cadastro não foi alterado (verifique permissões RLS).');
       setSendingEmail(false);
       return;
     }
 
     // Envia e-mail (não bloqueia o sucesso do cadastro se falhar)
-    const r = await sendEmail(EMAILJS_TEMPLATE_APROVADO, {
+    const r = await sendEmail('aprovado', {
       to_name: nomeSolic || 'Solicitante',
       to_email: emailSolic,
       codigo_fornecedor: concluirData.codigo.trim(),
@@ -461,11 +458,11 @@ export default function Home() {
       email_enviado: r.ok,
     });
 
-    if (sel) setSel({ ...sel, ...upd });
+    if (sel) setSel({ ...sel, ...(updatedRow || upd) });
     setShowConcluir(false);
     setConcluirData({ codigo:'' });
     setSendingEmail(false);
-    // Não precisa fetchAll() — realtime atualiza a lista automaticamente
+    // O estado local é atualizado após a mutação; não é necessário recarregar toda a base
   };
 
   /* ──────────────────────────────────────────────────────────────
@@ -506,7 +503,7 @@ export default function Home() {
     } catch (err) { showToast(`Erro: ${err.message}`); return; }
     applyRealtimeChange('produtos', { eventType:'UPDATE', new: row });
 
-    const r = await sendEmail(EMAILJS_TEMPLATE_APROVADO, {
+    const r = await sendEmail('aprovado', {
       to_name: produto.nome_solicitante,
       to_email: produto.email_solicitante,
       codigo_fornecedor: codigoProtheus.trim(),   // reaproveita o mesmo template
@@ -551,7 +548,7 @@ export default function Home() {
     } catch (err) { showToast(`Erro: ${err.message}`); return; }
     applyRealtimeChange('desbloqueios', { eventType:'UPDATE', new: row });
 
-    const r = await sendEmail(EMAILJS_TEMPLATE_DESBLOQ, {
+    const r = await sendEmail('desbloqueio', {
       to_name: d.nome_solicitante,
       to_email: d.email_solicitante,
       codigo_produto: d.codigo_produto,
@@ -665,12 +662,12 @@ export default function Home() {
       finalizado_por: user.nome,
       data_finalizacao: new Date().toISOString(),
     };
-    const { error: updErr } = await supabase
-      .from('fornecedores')
-      .update(upd)
-      .eq('id', sel.id);
-
-    if (updErr) {
+    let returnedRow;
+    try {
+      const result = await mutateTable(user.id, 'fornecedores', 'update', { id:sel.id, data:upd, returning:true });
+      returnedRow = result?.row;
+      applyRealtimeChange('fornecedores', { eventType:'UPDATE', new:returnedRow || { id:sel.id, ...upd } });
+    } catch (updErr) {
       console.error('[sendDevolutiva] Erro update:', updErr);
       showToast(`Erro ao devolver: ${updErr.message}`);
       setDevSending(false);
@@ -683,7 +680,7 @@ export default function Home() {
       .join(', ') || '(nenhum campo específico — revise o cadastro completo)';
 
     // 4. Envia e-mail
-    const r = await sendEmail(EMAILJS_TEMPLATE_DEVOLVIDO, {
+    const r = await sendEmail('devolvido', {
       to_name:         (sel.nome_solicitante || 'Solicitante').trim(),
       to_email:        emailDest,
       fornecedor_nome: sel.razao_social || sel.nome_completo || 'Cadastro',
@@ -702,7 +699,7 @@ export default function Home() {
       email_enviado: r.ok,
     });
 
-    setSel({ ...sel, ...upd });
+    setSel({ ...sel, ...(returnedRow || upd) });
     setShowDev(false);
     setDevMotivoSel('');
     setDevMsg('');
@@ -717,20 +714,40 @@ export default function Home() {
     if (!newTask.atribuido_para) { showToast('Atribua a tarefa a alguém'); return; }
     const dt = { ...newTask, criado_por: user.nome, checklist: [], comentarios: [] };
     if (!dt.prazo) delete dt.prazo;
-    let error;
-    try { await mutateTable(user.id, 'kanban_tarefas', 'insert', { data: dt }); }
+    let error, created;
+    try { created = await mutateTable(user.id, 'kanban_tarefas', 'insert', { data: dt, returning:true }); }
     catch (err) { error = err; }
     if (error) { showToast('Erro ao criar: ' + error.message); return; }
+    logAcao('criou', 'tarefa', created?.row?.id || 'novo', { titulo:dt.titulo, atribuido_para:dt.atribuido_para, prioridade:dt.prioridade });
     showToast('Tarefa criada!');
     setShowNewTask(false);
     setNewTask({ titulo:'',descricao:'',atribuido_para:'',prioridade:'media',prazo:'',status:'backlog' });
     await fetchAll();
   };
-  const moveKanTask = async (id, newStatus) => { await mutateTable(user.id, 'kanban_tarefas', 'update', { id, data: { status: newStatus, updated_at: new Date().toISOString() } }); await fetchAll(); };
+  const moveKanTask = async (id, newStatus) => {
+    const previous = kanban.find((task) => task.id === id);
+    if (!previous || previous.status === newStatus) return;
+    setKanban((rows) => rows.map((task) => task.id === id ? { ...task, status:newStatus, updated_at:new Date().toISOString() } : task));
+    try {
+      const { row } = await mutateTable(user.id, 'kanban_tarefas', 'update', { id, data: { status: newStatus, updated_at: new Date().toISOString() }, returning:true });
+      if (row) applyRealtimeChange('kanban_tarefas', { eventType:'UPDATE', new:row });
+      logAcao('moveu', 'tarefa', id, { de:previous.status, para:newStatus });
+      showToast('Tarefa movida');
+    } catch (err) {
+      setKanban((rows) => rows.map((task) => task.id === id ? previous : task));
+      showToast('Não foi possível mover a tarefa');
+    }
+  };
+  const dropKanTask = async (newStatus) => {
+    const id = dragTaskId;
+    setDragTaskId(null);
+    if (id) await moveKanTask(id, newStatus);
+  };
   const deleteKanTask = (id) => {
     askConfirm('Excluir tarefa?', 'Esta tarefa será removida permanentemente.', async () => {
       try { await mutateTable(user.id, 'kanban_tarefas', 'delete', { id }); }
       catch (err) { showToast('Erro ao excluir: ' + err.message); return; }
+      logAcao('excluiu', 'tarefa', id);
       showToast('Tarefa excluída');
       if (editTask?.id === id) setEditTask(null);
       await fetchAll();
@@ -739,7 +756,8 @@ export default function Home() {
   const updateKanTask = async (id, data) => {
     const { row } = await mutateTable(user.id, 'kanban_tarefas', 'update', { id, data: { ...data, updated_at: new Date().toISOString() }, returning: true });
     if (editTask?.id === id && row) setEditTask(row);
-    await fetchAll();
+    setKanban(current => current.map(task => task.id === id ? { ...task, ...(row || data) } : task));
+    if (!('comentarios' in data) && !('checklist' in data)) logAcao(data.status === 'concluido' ? 'concluiu' : 'editou', 'tarefa', id, data);
   };
 
   const addChkItem = async () => {
@@ -758,6 +776,15 @@ export default function Home() {
     const newList = (editTask.checklist || []).filter(i => i.id !== itemId);
     await updateKanTask(editTask.id, { checklist: newList });
   };
+  const addTaskComment = async () => {
+    if (!editTask || !newTaskComment.trim()) return;
+    const comments = [...(editTask.comentarios || []), {
+      id: Date.now(), texto: sanitize(newTaskComment.trim()), autor: user.nome, criado_em: new Date().toISOString(),
+    }];
+    await updateKanTask(editTask.id, { comentarios: comments });
+    setNewTaskComment('');
+    logAcao('comentou', 'tarefa', editTask.id, { comentario: newTaskComment.trim().slice(0, 180) });
+  };
 
   /* ── Usuarios (admin) ────────────────────────── */
   const addUser = async (e) => {
@@ -768,7 +795,7 @@ export default function Home() {
     const res = await fetch('/api/auth/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ actingUserId: user.id, nome: newUser.nome, email: newUser.email }),
+      body: JSON.stringify({ nome: newUser.nome, email: newUser.email, cargo: newUser.cargo, role: newUser.role, telefone: newUser.telefone }),
     });
     const json = await res.json();
     if (!res.ok) { showToast('Erro ao criar: ' + (json.error || '')); return; }
@@ -863,6 +890,67 @@ export default function Home() {
     return Math.round((checklist.filter(i => i.feito).length / checklist.length) * 100);
   };
 
+
+  const operationalQueue = buildUnifiedQueue(forn, produtos, desbloqueios);
+  const recentActivity = buildRecentActivity(forn, produtos, desbloqueios, kanban);
+  const overdueTasks = kanban.filter(t => t.status !== 'concluido' && t.prazo && new Date(`${t.prazo}T23:59:59`) < new Date());
+  const notifications = [
+    ...operationalQueue.filter(i => i._priority === 'critica').slice(0, 5).map(i => ({
+      id:`critical-${i._type}-${i.id}`,
+      title:`${i._name} está há ${i._age} dias na fila`,
+      description:`${i._status.label} · ${i.atribuido_para || 'sem responsável'}`,
+      item:i,
+    })),
+    ...overdueTasks.slice(0, 4).map(t => ({
+      id:`task-${t.id}`,
+      title:`Tarefa vencida: ${t.titulo}`,
+      description:`Responsável: ${t.atribuido_para || 'não atribuído'}`,
+      page:'kanban',
+    })),
+  ];
+
+  const navigatePremium = (target) => {
+    setShowNotifications(false);
+    if (target === 'produtos') { setPage('cadastros'); setSubTab('produtos'); return; }
+    if (target === 'desbloqueios') { setPage('cadastros'); setSubTab('desbloqueios'); return; }
+    setPage(target);
+    setSel(null);
+    setShowModal(false);
+  };
+
+  const openOperationalItem = (item) => {
+    setShowNotifications(false);
+    const type = item?._type || (item?.tipo_cadastro ? 'fornecedor' : null);
+    if (type === 'fornecedor') {
+      setPage('cadastros');
+      setSubTab('fornecedores');
+      setDetailMode('protheus');
+      openDetail(item);
+      return;
+    }
+    if (type === 'produto') {
+      setPage('cadastros'); setSubTab('produtos'); setDetailMode('protheus'); openDetail({ ...item, _type:'produto' }); return;
+    }
+    if (type === 'desbloqueio') {
+      setPage('cadastros'); setSubTab('desbloqueios'); setDetailMode('protheus'); openDetail({ ...item, _type:'desbloqueio' });
+    }
+  };
+
+  const copySupplierRecord = (record) => {
+    cp(recordToClipboardText(record, 'fornecedor'));
+    showToast('Todos os dados recebidos foram copiados na ordem do cadastro');
+  };
+
+  if (authLoading) return (
+    <div className="pmx-auth-loading" role="status" aria-live="polite">
+      <div className="pmx-auth-loading__card">
+        <img src="https://premix.com.br/wp-content/uploads/2023/06/Logotipo_Premix_Positivo_Com-Bandeira.png" alt="Premix" />
+        <span className="pmx-spinner" />
+        <p>Carregando sua central de cadastros...</p>
+      </div>
+    </div>
+  );
+
   /* ═══════════════════════════════════════════════
      RENDER — LOGIN
      ═══════════════════════════════════════════════ */
@@ -872,17 +960,17 @@ export default function Home() {
         @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap');
         @keyframes premixShimmer { from { background-position:0% 0 } to { background-position:200% 0 } }
         @keyframes loginFadeIn { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:translateY(0) } }
-        .login-input:focus { background:#fff !important; border-color:#00A650 !important; box-shadow:0 0 0 3px #E6F7EE !important; }
+        .login-input:focus { background:#fff !important; border-color:#20558A !important; box-shadow:0 0 0 3px #EAF2FA !important; }
         .login-input { transition: all .15s; }
-        .login-btn:hover:not(:disabled) { background:#008C44 !important; box-shadow:0 6px 16px rgba(0,166,80,.35); transform:translateY(-1px); }
+        .login-btn:hover:not(:disabled) { background:#173F69 !important; box-shadow:0 6px 16px rgba(32,85,138,.35); transform:translateY(-1px); }
         .login-btn { transition: all .15s; }
       `}</style>
       {/* Decorative background */}
-      <div style={{position:'absolute',top:'-200px',right:'-200px',width:500,height:500,background:'radial-gradient(circle,rgba(0,166,80,.08) 0%,transparent 70%)',pointerEvents:'none'}} />
+      <div style={{position:'absolute',top:'-200px',right:'-200px',width:500,height:500,background:'radial-gradient(circle,rgba(32,85,138,.09) 0%,transparent 70%)',pointerEvents:'none'}} />
       <div style={{position:'absolute',bottom:'-200px',left:'-200px',width:500,height:500,background:'radial-gradient(circle,rgba(200,169,81,.08) 0%,transparent 70%)',pointerEvents:'none'}} />
 
       <div style={{background:'#fff',borderRadius:16,padding:'48px 40px',maxWidth:420,width:'100%',textAlign:'center',position:'relative',overflow:'hidden',boxShadow:'0 12px 32px rgba(16,24,40,.08),0 4px 8px rgba(16,24,40,.04)',border:'1px solid #E5E9EF',animation:'loginFadeIn .35s cubic-bezier(.16,1,.3,1)'}}>
-        <div style={{position:'absolute',top:0,left:0,right:0,height:3,background:'linear-gradient(90deg,#00A650 0%,#00A650 30%,#C8A951 50%,#E63946 70%,#E63946 100%)',backgroundSize:'200% 100%',animation:'premixShimmer 8s linear infinite'}} />
+        <div style={{position:'absolute',top:0,left:0,right:0,height:3,background:'linear-gradient(90deg,#20558A 0%,#20558A 45%,#F15A24 55%,#F15A24 100%)',backgroundSize:'200% 100%',animation:'premixShimmer 8s linear infinite'}} />
         <img src="https://premix.com.br/wp-content/uploads/2023/06/Logotipo_Premix_Positivo_Com-Bandeira.png" alt="Premix" style={{height:44,marginBottom:28}} />
         <h2 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:20,fontWeight:700,letterSpacing:'-.4px',marginBottom:6,color:'#1A2332'}}>Núcleo Fiscal</h2>
         <p style={{fontSize:13,color:'#8B94A3',marginBottom:32}}>Gestão de fornecedores, produtos e desbloqueios</p>
@@ -890,7 +978,7 @@ export default function Home() {
           <input className="login-input" placeholder="E-mail corporativo" type="email" value={loginForm.email} onChange={e=>setLF({...loginForm,email:e.target.value})} disabled={loginLocked} style={{width:'100%',padding:'12px 14px',background:'#F8F9FB',border:'1px solid #E5E9EF',borderRadius:10,fontSize:14,fontFamily:'inherit',color:'#1A2332',outline:'none'}} />
           <input className="login-input" placeholder="Senha" type="password" value={loginForm.senha} onChange={e=>setLF({...loginForm,senha:e.target.value})} disabled={loginLocked} style={{width:'100%',padding:'12px 14px',background:'#F8F9FB',border:'1px solid #E5E9EF',borderRadius:10,fontSize:14,fontFamily:'inherit',color:'#1A2332',outline:'none'}} />
           {loginErr && <p style={{color:'#E63946',fontSize:12,margin:'-2px 0',textAlign:'left',fontWeight:500}}>{loginErr}</p>}
-          <button className="login-btn" type="submit" disabled={loginLocked} style={{width:'100%',padding:'13px',background:loginLocked?'#B5BCC6':'#00A650',color:'#fff',border:'none',borderRadius:10,fontFamily:'inherit',fontWeight:600,fontSize:14,cursor:loginLocked?'not-allowed':'pointer',letterSpacing:'.2px',marginTop:6,boxShadow:loginLocked?'none':'0 1px 2px rgba(0,166,80,.3),inset 0 1px 0 rgba(255,255,255,.15)'}}>
+          <button className="login-btn" type="submit" disabled={loginLocked} style={{width:'100%',padding:'13px',background:loginLocked?'#B5BCC6':'#20558A',color:'#fff',border:'none',borderRadius:10,fontFamily:'inherit',fontWeight:600,fontSize:14,cursor:loginLocked?'not-allowed':'pointer',letterSpacing:'.2px',marginTop:6,boxShadow:loginLocked?'none':'0 1px 2px rgba(32,85,138,.3),inset 0 1px 0 rgba(255,255,255,.15)'}}>
             {loginLocked ? 'Aguarde...' : 'Entrar'}
           </button>
         </form>
@@ -907,17 +995,17 @@ export default function Home() {
         @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap');
         @keyframes premixShimmer { from { background-position:0% 0 } to { background-position:200% 0 } }
         @keyframes loginFadeIn { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:translateY(0) } }
-        .cp-input:focus { background:#fff !important; border-color:#00A650 !important; box-shadow:0 0 0 3px #E6F7EE !important; }
+        .cp-input:focus { background:#fff !important; border-color:#20558A !important; box-shadow:0 0 0 3px #EAF2FA !important; }
         .cp-input { transition: all .15s; }
-        .cp-btn:hover { background:#008C44 !important; box-shadow:0 6px 16px rgba(0,166,80,.35); transform:translateY(-1px); }
+        .cp-btn:hover { background:#173F69 !important; box-shadow:0 6px 16px rgba(32,85,138,.35); transform:translateY(-1px); }
         .cp-btn { transition: all .15s; }
       `}</style>
-      <div style={{position:'absolute',top:'-200px',right:'-200px',width:500,height:500,background:'radial-gradient(circle,rgba(0,166,80,.08) 0%,transparent 70%)',pointerEvents:'none'}} />
+      <div style={{position:'absolute',top:'-200px',right:'-200px',width:500,height:500,background:'radial-gradient(circle,rgba(32,85,138,.09) 0%,transparent 70%)',pointerEvents:'none'}} />
       <div style={{position:'absolute',bottom:'-200px',left:'-200px',width:500,height:500,background:'radial-gradient(circle,rgba(200,169,81,.08) 0%,transparent 70%)',pointerEvents:'none'}} />
 
       <div style={{background:'#fff',borderRadius:16,padding:'48px 40px',maxWidth:420,width:'100%',textAlign:'center',position:'relative',overflow:'hidden',boxShadow:'0 12px 32px rgba(16,24,40,.08),0 4px 8px rgba(16,24,40,.04)',border:'1px solid #E5E9EF',animation:'loginFadeIn .35s cubic-bezier(.16,1,.3,1)'}}>
-        <div style={{position:'absolute',top:0,left:0,right:0,height:3,background:'linear-gradient(90deg,#00A650 0%,#00A650 30%,#C8A951 50%,#E63946 70%,#E63946 100%)',backgroundSize:'200% 100%',animation:'premixShimmer 8s linear infinite'}} />
-        <div style={{width:56,height:56,borderRadius:14,background:'#E6F7EE',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 20px',color:'#00A650'}}>
+        <div style={{position:'absolute',top:0,left:0,right:0,height:3,background:'linear-gradient(90deg,#20558A 0%,#20558A 45%,#F15A24 55%,#F15A24 100%)',backgroundSize:'200% 100%',animation:'premixShimmer 8s linear infinite'}} />
+        <div style={{width:56,height:56,borderRadius:14,background:'#EAF2FA',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 20px',color:'#20558A'}}>
           <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         </div>
         <h2 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:20,fontWeight:700,letterSpacing:'-.4px',marginBottom:6,color:'#1A2332'}}>Alterar Senha</h2>
@@ -926,10 +1014,23 @@ export default function Home() {
           <input className="cp-input" placeholder="Nova senha (mín. 8 caracteres, maiúscula + número)" type="password" value={newPw.nova} onChange={e=>setNP({...newPw,nova:e.target.value})} style={{width:'100%',padding:'12px 14px',background:'#F8F9FB',border:'1px solid #E5E9EF',borderRadius:10,fontSize:14,fontFamily:'inherit',color:'#1A2332',outline:'none'}} />
           <input className="cp-input" placeholder="Confirmar nova senha" type="password" value={newPw.conf} onChange={e=>setNP({...newPw,conf:e.target.value})} style={{width:'100%',padding:'12px 14px',background:'#F8F9FB',border:'1px solid #E5E9EF',borderRadius:10,fontSize:14,fontFamily:'inherit',color:'#1A2332',outline:'none'}} />
           {pwMsg && <p style={{color:'#E63946',fontSize:12,margin:'-2px 0',textAlign:'left',fontWeight:500}}>{pwMsg}</p>}
-          <button className="cp-btn" type="submit" style={{width:'100%',padding:'13px',background:'#00A650',color:'#fff',border:'none',borderRadius:10,fontFamily:'inherit',fontWeight:600,fontSize:14,cursor:'pointer',boxShadow:'0 1px 2px rgba(0,166,80,.3),inset 0 1px 0 rgba(255,255,255,.15)',marginTop:6}}>Salvar Nova Senha</button>
+          <button className="cp-btn" type="submit" style={{width:'100%',padding:'13px',background:'#20558A',color:'#fff',border:'none',borderRadius:10,fontFamily:'inherit',fontWeight:600,fontSize:14,cursor:'pointer',boxShadow:'0 1px 2px rgba(32,85,138,.3),inset 0 1px 0 rgba(255,255,255,.15)',marginTop:6}}>Salvar Nova Senha</button>
         </form>
         {!user.primeiro_login && <button onClick={()=>setCP(false)} style={{marginTop:16,background:'none',border:'none',color:'#8B94A3',cursor:'pointer',fontSize:13,fontWeight:500}}>Cancelar</button>}
       </div>
+    </div>
+  );
+
+  if (loadError) return (
+    <div className="pmx-load-error" role="alert">
+      <div><span>!</span><h1>Não foi possível carregar o painel</h1><p>{loadError}</p><div><button onClick={()=>fetchAll(false)}>Tentar novamente</button><button onClick={doLogout}>Sair</button></div></div>
+    </div>
+  );
+
+  if (loading) return (
+    <div className="pmx-app-skeleton" role="status" aria-live="polite" aria-label="Carregando dados do painel">
+      <aside><div className="pmx-skeleton pmx-skeleton--logo" />{Array.from({length:8}).map((_,i)=><div key={i} className="pmx-skeleton pmx-skeleton--nav" />)}</aside>
+      <main><header><div className="pmx-skeleton pmx-skeleton--search" /><div className="pmx-skeleton pmx-skeleton--avatar" /></header><section><div className="pmx-skeleton pmx-skeleton--hero" /><div className="pmx-skeleton-grid">{Array.from({length:5}).map((_,i)=><div key={i} className="pmx-skeleton pmx-skeleton--card" />)}</div><div className="pmx-skeleton pmx-skeleton--table" /></section></main>
     </div>
   );
 
@@ -937,15 +1038,7 @@ export default function Home() {
      RENDER — MAIN APP
      ═══════════════════════════════════════════════ */
   return (
-    <div style={{minHeight:'100vh',background:T.bg,fontFamily:"'Geist',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif",color:T.text1,fontSize:14,lineHeight:1.5,WebkitFontSmoothing:'antialiased',position:'relative'}}>
-      {/* Wallpaper background (sutil, atrás de tudo) */}
-      {wallpaper && (
-        <div aria-hidden="true" style={{
-          position:'fixed',inset:0,zIndex:0,pointerEvents:'none',
-          backgroundImage:`url(${wallpaper})`,backgroundSize:'cover',backgroundPosition:'center',
-          opacity: wallpaperOpacidade / 100,
-        }} />
-      )}
+    <div className={`pmx-theme-root ${tema === 'premix_escuro' ? 'pmx-theme-dark' : ''} density-${densidade}`} style={{minHeight:'100vh',background:T.bg,fontFamily:"'Geist',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif",color:T.text1,fontSize:14,lineHeight:1.5,WebkitFontSmoothing:'antialiased',position:'relative'}}>
       <div style={{position:'relative',zIndex:1}}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap');
@@ -954,16 +1047,16 @@ export default function Home() {
         @keyframes slideInRight { from { opacity:0; transform:translateX(20px) } to { opacity:1; transform:translateX(0) } }
         @keyframes premixShimmer { from { background-position:0% 0 } to { background-position:200% 0 } }
         .sb-link:hover { background:#F8F9FB; color:#1A2332 !important; }
-        .sb-link.active::before { content:''; position:absolute; left:-12px; top:50%; transform:translateY(-50%); width:3px; height:20px; background:#00A650; border-radius:0 2px 2px 0; }
+        .sb-link.active::before { content:''; position:absolute; left:-12px; top:50%; transform:translateY(-50%); width:3px; height:20px; background:#F15A24; border-radius:0 2px 2px 0; }
         .pmx-row:hover { background:#F8F9FB; }
         .pmx-row { transition: background .12s; }
         .pmx-stat:hover { border-color:#D4D9E0 !important; box-shadow:0 4px 12px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.04); transform:translateY(-1px); }
         .pmx-stat { transition: all .2s; }
         .pmx-act:hover { background:#fff !important; border-color:#D4D9E0 !important; transform:translateY(-1px); box-shadow:0 1px 2px rgba(16,24,40,.04); }
         .pmx-act { transition: all .15s; }
-        .pmx-act.primary:hover { background:#00A650 !important; color:#fff !important; box-shadow:0 4px 8px rgba(0,166,80,.3) !important; }
+        .pmx-act.primary:hover { background:#20558A !important; color:#fff !important; box-shadow:0 4px 8px rgba(32,85,138,.3) !important; }
         .pmx-act.danger:hover  { background:#E63946 !important; color:#fff !important; box-shadow:0 4px 8px rgba(230,57,70,.3) !important; }
-        .pmx-cta:hover { background:#008C44 !important; box-shadow:0 4px 12px rgba(0,166,80,.35); transform:translateY(-1px); }
+        .pmx-cta:hover { background:#173F69 !important; box-shadow:0 4px 12px rgba(32,85,138,.35); transform:translateY(-1px); }
         .pmx-cta { transition: all .15s; }
         .pmx-icon-btn:hover { background:#F8F9FB; color:#1A2332 !important; }
         .pmx-icon-btn { transition: all .15s; }
@@ -1004,17 +1097,17 @@ export default function Home() {
         .pmx-themed-faint { color: ${T.text3} !important; }
         .pmx-themed-surface2 { background: ${T.surface2} !important; }
         .sb-link.active { background: ${T.primaryLight} !important; color: ${T.primaryDark} !important; }
-        .sb-link.active::before { background: ${T.primary} !important; }
+        .sb-link.active::before { background: ${T.accent} !important; }
       `}</style>
 
       {/* Toast */}
       {toast && <div style={{position:'fixed',bottom:28,left:'50%',transform:'translateX(-50%)',background:'#1A2332',color:'#fff',padding:'12px 24px',borderRadius:10,fontSize:'.84rem',fontWeight:600,zIndex:9999,boxShadow:'0 12px 32px rgba(16,24,40,.18)',animation:'slideUp .3s cubic-bezier(.16,1,.3,1)'}}>{toast}</div>}
 
       {/* ══ APP LAYOUT: SIDEBAR + MAIN ══ */}
-      <div style={{display:'grid',gridTemplateColumns: sidebarCol ? '64px 1fr' : '240px 1fr',minHeight:'100vh',transition:'grid-template-columns .2s ease'}}>
+      <div className={`pmx-app-shell ${sidebarCol ? 'is-collapsed' : ''}`} style={{display:'grid',gridTemplateColumns: sidebarCol ? '64px 1fr' : '240px 1fr',minHeight:'100vh',transition:'grid-template-columns .2s ease'}}>
 
         {/* ── SIDEBAR ── */}
-        <aside className="pmx-themed-bg" style={{background:T.surface,borderRight:`1px solid ${T.border}`,display:'flex',flexDirection:'column',position:'sticky',top:0,height:'100vh',zIndex:50}}>
+        <aside className={`pmx-themed-bg pmx-sidebar ${mobileNavOpen ? 'is-open' : ''}`} style={{background:T.surface,borderRight:`1px solid ${T.border}`,display:'flex',flexDirection:'column',position:'sticky',top:0,height:'100vh',zIndex:50}}>
           {/* Brand + Toggle */}
           <div style={{padding: sidebarCol ? '18px 12px 16px' : '18px 16px 16px',display:'flex',alignItems:'center',gap:8,borderBottom:`1px solid ${T.border}`,justifyContent: sidebarCol ? 'center' : 'space-between'}}>
             {!sidebarCol && <img src="https://premix.com.br/wp-content/uploads/2023/06/Logotipo_Premix_Positivo_Com-Bandeira.png" alt="Premix" style={{height:30}} />}
@@ -1032,56 +1125,65 @@ export default function Home() {
 
           {/* Nav */}
           <nav style={{padding:'12px 12px 0',flex:1,overflowY:'auto'}}>
-            {!sidebarCol && <div style={{fontSize:10,fontWeight:600,textTransform:'uppercase',letterSpacing:'.8px',color:'#B5BCC6',padding:'14px 12px 6px'}}>Geral</div>}
+            {!sidebarCol && <div style={{fontSize:10,fontWeight:700,textTransform:'uppercase',letterSpacing:'.9px',color:'#98A2B3',padding:'14px 12px 6px'}}>Operação</div>}
             {[
-              { k:'cadastros', l:'Cadastros',         icon:<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg>, count: forn.length + produtos.length + desbloqueios.length },
-              { k:'kanban',    l:'Gestão de Tarefas', icon:<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>, count: kanban.filter(k=>k.status!=='concluido').length, alert: true },
+              { k:'dashboard', l:'Visão Geral', icon:<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg> },
+              { k:'fila', l:'Fila Protheus', icon:<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/><path d="m18 15 3 3-3 3"/></svg>, count: operationalQueue.length, alert: operationalQueue.some(i=>i._priority==='critica') },
+              { k:'cadastros', l:'Cadastros', icon:<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01"/></svg>, count: forn.length + produtos.length + desbloqueios.length },
+              { k:'kanban', l:'Gestão de Tarefas', icon:<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>, count: kanban.filter(k=>k.status!=='concluido').length },
+              { k:'relatorios', l:'Relatórios', icon:<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg> },
+              { k:'historico', l:'Histórico', icon:<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg> },
             ].map(n => {
               const active = page === n.k;
               return (
-                <a key={n.k} onClick={()=>{ setPage(n.k); setSel(null); setShowModal(false); }} title={sidebarCol ? n.l : ''} className={'sb-link' + (active ? ' active' : '')} style={{
+                <a key={n.k} onClick={()=>{ setPage(n.k); setSel(null); setShowModal(false); setMobileNavOpen(false); }} title={sidebarCol ? n.l : ''} className={'sb-link' + (active ? ' active' : '')} style={{
                   display:'flex',alignItems:'center',gap:11,padding: sidebarCol ? '10px 11px' : '9px 12px',borderRadius:8,
                   fontSize:13,fontWeight: active ? 600 : 500,
-                  color: active ? '#008C44' : '#4F5868',
-                  background: active ? '#E6F7EE' : 'transparent',
+                  color: active ? T.primary : T.text2,
+                  background: active ? T.primaryLight : 'transparent',
                   textDecoration:'none',cursor:'pointer',position:'relative',marginBottom:1,
                   justifyContent: sidebarCol ? 'center' : 'flex-start'
                 }}>
                   {n.icon}
                   {!sidebarCol && <span style={{flex:1}}>{n.l}</span>}
-                  {n.count > 0 && !sidebarCol && <span style={{fontWeight:700,fontSize:10,padding:'2px 7px',background: active ? '#00A650' : (n.alert ? '#E63946' : '#EEF1F5'),color: (active || n.alert) ? '#fff' : '#4F5868',borderRadius:20,minWidth:22,textAlign:'center',fontFamily:'Geist,-apple-system,sans-serif'}}>{n.count}</span>}
-                  {n.count > 0 && sidebarCol && <span style={{position:'absolute',top:4,right:4,minWidth:16,height:16,padding:'0 4px',background: n.alert ? '#E63946' : '#00A650',color:'#fff',borderRadius:20,fontSize:9,fontWeight:700,fontFamily:'Geist,-apple-system,sans-serif',display:'flex',alignItems:'center',justifyContent:'center'}}>{n.count}</span>}
+                  {n.count > 0 && !sidebarCol && <span style={{fontWeight:700,fontSize:10,padding:'2px 7px',background: active ? T.primary : (n.alert ? '#D92D20' : '#EEF1F5'),color: (active || n.alert) ? '#fff' : T.text2,borderRadius:20,minWidth:22,textAlign:'center',fontFamily:'Geist,-apple-system,sans-serif'}}>{n.count}</span>}
+                  {n.count > 0 && sidebarCol && <span style={{position:'absolute',top:4,right:4,minWidth:16,height:16,padding:'0 4px',background: n.alert ? '#D92D20' : T.primary,color:'#fff',borderRadius:20,fontSize:9,fontWeight:700,fontFamily:'Geist,-apple-system,sans-serif',display:'flex',alignItems:'center',justifyContent:'center'}}>{n.count}</span>}
                 </a>
               );
             })}
 
+            <a href="/pendencias" title={sidebarCol ? 'Pendências Fiscais' : ''} className="sb-link" style={{display:'flex',alignItems:'center',gap:11,padding: sidebarCol ? '10px 11px' : '9px 12px',borderRadius:8,fontSize:13,fontWeight:500,color:'#4F5868',textDecoration:'none',cursor:'pointer',position:'relative',marginBottom:1,justifyContent:sidebarCol?'center':'flex-start'}}>
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>
+              {!sidebarCol && <span style={{flex:1}}>Pendências Fiscais</span>}
+              {!sidebarCol && <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2"><path d="M7 17 17 7M7 7h10v10"/></svg>}
+            </a>
+
             {isAdmin && (<>
               {!sidebarCol && <div style={{fontSize:10,fontWeight:600,textTransform:'uppercase',letterSpacing:'.8px',color:'#B5BCC6',padding:'14px 12px 6px'}}>Administração</div>}
-              <a onClick={()=>{ setPage('admin'); setSel(null); setShowModal(false); }} title={sidebarCol ? 'Equipe' : ''} className={'sb-link' + (page==='admin' ? ' active' : '')} style={{
+              <a onClick={()=>{ setPage('admin'); setSel(null); setShowModal(false); setMobileNavOpen(false); }} title={sidebarCol ? 'Equipe' : ''} className={'sb-link' + (page==='admin' ? ' active' : '')} style={{
                 display:'flex',alignItems:'center',gap:11,padding: sidebarCol ? '10px 11px' : '9px 12px',borderRadius:8,fontSize:13,
                 fontWeight: page==='admin' ? 600 : 500,
-                color: page==='admin' ? '#008C44' : '#4F5868',
-                background: page==='admin' ? '#E6F7EE' : 'transparent',
+                color: page==='admin' ? T.primary : T.text2,
+                background: page==='admin' ? T.primaryLight : 'transparent',
                 textDecoration:'none',cursor:'pointer',position:'relative',marginBottom:1,
                 justifyContent: sidebarCol ? 'center' : 'flex-start'
               }}>
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 {!sidebarCol && <span style={{flex:1}}>Equipe</span>}
-                {usuarios.length > 0 && !sidebarCol && <span style={{fontWeight:700,fontSize:10,padding:'2px 7px',background: page==='admin' ? '#00A650' : '#EEF1F5',color: page==='admin' ? '#fff' : '#4F5868',borderRadius:20,minWidth:22,textAlign:'center',fontFamily:'Geist,-apple-system,sans-serif'}}>{usuarios.length}</span>}
+                {usuarios.length > 0 && !sidebarCol && <span style={{fontWeight:700,fontSize:10,padding:'2px 7px',background: page==='admin' ? T.primary : '#EEF1F5',color: page==='admin' ? '#fff' : '#4F5868',borderRadius:20,minWidth:22,textAlign:'center',fontFamily:'Geist,-apple-system,sans-serif'}}>{usuarios.length}</span>}
               </a>
             </>)}
 
             {!sidebarCol && <div style={{fontSize:10,fontWeight:600,textTransform:'uppercase',letterSpacing:'.8px',color:'#B5BCC6',padding:'18px 12px 6px'}}>Aparência</div>}
-            <a onClick={()=>{ setPage('aparencia'); setSel(null); setShowModal(false); }} title={sidebarCol ? 'Temas & Cores' : ''} className={'sb-link' + (page==='aparencia' ? ' active' : '')} style={{display:'flex',alignItems:'center',gap:11,padding: sidebarCol ? '10px 11px' : '9px 12px',borderRadius:8,fontSize:13,fontWeight: page==='aparencia' ? 600 : 500,color: page==='aparencia' ? '#008C44' : '#4F5868',background: page==='aparencia' ? '#E6F7EE' : 'transparent',textDecoration:'none',cursor:'pointer',position:'relative',marginBottom:1,justifyContent: sidebarCol ? 'center' : 'flex-start'}}>
+            <a onClick={()=>{ setPage('aparencia'); setSel(null); setShowModal(false); setMobileNavOpen(false); }} title={sidebarCol ? 'Aparência' : ''} className={'sb-link' + (page==='aparencia' ? ' active' : '')} style={{display:'flex',alignItems:'center',gap:11,padding: sidebarCol ? '10px 11px' : '9px 12px',borderRadius:8,fontSize:13,fontWeight: page==='aparencia' ? 600 : 500,color: page==='aparencia' ? T.primary : T.text2,background: page==='aparencia' ? T.primaryLight : 'transparent',textDecoration:'none',cursor:'pointer',position:'relative',marginBottom:1,justifyContent: sidebarCol ? 'center' : 'flex-start'}}>
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
-              {!sidebarCol && <span style={{flex:1}}>Temas & Cores</span>}
-              {!sidebarCol && <span style={{fontSize:9,fontWeight:700,padding:'1px 6px',background:'#E6F7EE',color:'#008C44',borderRadius:4,letterSpacing:'.3px'}}>NOVO</span>}
+              {!sidebarCol && <span style={{flex:1}}>Aparência</span>}
             </a>
           </nav>
 
           {/* Footer user */}
           <div style={{padding: sidebarCol ? '12px 8px' : 14,borderTop:`1px solid ${T.border}`,display:'flex',alignItems:'center',gap:11,cursor:'pointer',position:'relative',justifyContent: sidebarCol ? 'center' : 'flex-start'}} onClick={()=>setShowLogout(!showLogout)} title={sidebarCol ? user.nome : ''}>
-            <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(135deg,#00A650 0%,#008C44 100%)',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Geist,-apple-system,sans-serif',fontWeight:700,fontSize:12,color:'#fff',boxShadow:'0 4px 12px rgba(0,166,80,.25), inset 0 1px 0 rgba(255,255,255,.2)',flexShrink:0}}>{user.nome.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
+            <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(135deg,#20558A 0%,#123D6B 100%)',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Geist,-apple-system,sans-serif',fontWeight:700,fontSize:12,color:'#fff',boxShadow:'0 4px 12px rgba(32,85,138,.25), inset 0 1px 0 rgba(255,255,255,.2)',flexShrink:0}}>{user.nome.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
             {!sidebarCol && <div style={{flex:1,minWidth:0}}>
               <div style={{fontSize:13,fontWeight:600,color:'#1A2332',lineHeight:1.2,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{user.nome.split(' ').slice(0,2).join(' ')}</div>
               <div style={{fontSize:11,color:'#8B94A3'}}>{user.cargo}</div>
@@ -1091,20 +1193,25 @@ export default function Home() {
               <div style={{position:'absolute',bottom:'calc(100% + 6px)',left: sidebarCol ? 8 : 14, right: sidebarCol ? -160 : 14,background:'#fff',borderRadius:10,boxShadow:'0 12px 32px rgba(16,24,40,.12),0 4px 8px rgba(16,24,40,.06)',border:'1px solid #E5E9EF',overflow:'hidden',zIndex:200, minWidth: sidebarCol ? 180 : 'auto'}}>
                 <button onClick={(e)=>{e.stopPropagation();setCP(true);setShowLogout(false)}} style={menuItem()}>🔑 Trocar senha</button>
                 <div style={{height:1,background:'#EEF1F5'}} />
-                <button onClick={(e)=>{e.stopPropagation();localStorage.removeItem('premix_user');setUser(null)}} style={{...menuItem(),color:'#E63946'}}>↪ Sair</button>
+                <button onClick={(e)=>{e.stopPropagation();doLogout()}} style={{...menuItem(),color:'#E63946'}}>↪ Sair</button>
               </div>
             )}
           </div>
         </aside>
 
+        {mobileNavOpen && <button className="pmx-mobile-overlay" onClick={()=>setMobileNavOpen(false)} aria-label="Fechar menu" />}
+
         {/* ── MAIN ── */}
-        <div style={{display:'flex',flexDirection:'column',minWidth:0}}>
+        <div className="pmx-main" style={{display:'flex',flexDirection:'column',minWidth:0}}>
 
           {/* TOPBAR */}
-          <header className="pmx-themed-bg" style={{background:T.surface,borderBottom:`1px solid ${T.border}`,padding:'12px 28px',display:'flex',alignItems:'center',gap:20,position:'sticky',top:0,zIndex:10}}>
-            <div style={{height:2,background:'linear-gradient(90deg,#00A650 0%,#00A650 30%,#C8A951 50%,#E63946 70%,#E63946 100%)',backgroundSize:'200% 100%',animation:'premixShimmer 8s linear infinite',position:'absolute',top:0,left:0,right:0}} />
+          <header className="pmx-themed-bg pmx-topbar" style={{background:T.surface,borderBottom:`1px solid ${T.border}`,padding:'12px 28px',display:'flex',alignItems:'center',gap:20,position:'sticky',top:0,zIndex:10}}>
+            <div style={{height:2,background:'linear-gradient(90deg,#20558A 0%,#20558A 62%,#F15A24 62%,#F15A24 100%)',backgroundSize:'200% 100%',animation:'premixShimmer 8s linear infinite',position:'absolute',top:0,left:0,right:0}} />
 
-            <div style={{flex:1,maxWidth:520,position:'relative'}}>
+            <button className="pmx-mobile-menu" onClick={()=>setMobileNavOpen(true)} aria-label="Abrir menu">
+              <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+            <div className="pmx-global-search" style={{flex:1,maxWidth:520,position:'relative'}}>
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#8B94A3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',pointerEvents:'none',zIndex:1}}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
               <input className="pmx-search-input" type="text" placeholder="Buscar fornecedor, produto, código, CNPJ, e-mail..." value={searchGlobal} onChange={e=>setSearchGlobal(e.target.value)} onKeyDown={e=>{ if(e.key==='Escape') setSearchGlobal(''); }} style={{width:'100%',padding:'10px 14px 10px 38px',background:T.surface2,border:'1px solid transparent',borderRadius:8,fontFamily:'inherit',fontSize:13,color:T.text1,outline:'none'}} />
               {searchGlobal && (
@@ -1151,7 +1258,7 @@ export default function Home() {
                           <div>
                             <div style={{padding:'8px 14px',background:'#F8F9FB',fontSize:10,fontWeight:700,color:'#8B94A3',textTransform:'uppercase',letterSpacing:'.5px',borderBottom:'1px solid #E5E9EF'}}>Produtos ({hitsProd.length})</div>
                             {hitsProd.map(p => (
-                              <button key={p.id} onClick={()=>{setSearchGlobal('');setPage('cadastros');setSubTab('produtos');}} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',width:'100%',border:'none',background:'#fff',cursor:'pointer',textAlign:'left',borderBottom:'1px solid #F4F6F8'}}
+                              <button key={p.id} onClick={()=>{setSearchGlobal('');openOperationalItem({...p,_type:'produto'});}} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',width:'100%',border:'none',background:'#fff',cursor:'pointer',textAlign:'left',borderBottom:'1px solid #F4F6F8'}}
                                 onMouseEnter={e=>e.currentTarget.style.background='#F8F9FB'} onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
                                 <div style={{width:32,height:32,borderRadius:8,background:'#FEF6E0',color:'#B8941F',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                                   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
@@ -1168,7 +1275,7 @@ export default function Home() {
                           <div>
                             <div style={{padding:'8px 14px',background:'#F8F9FB',fontSize:10,fontWeight:700,color:'#8B94A3',textTransform:'uppercase',letterSpacing:'.5px',borderBottom:'1px solid #E5E9EF'}}>Desbloqueios ({hitsDesb.length})</div>
                             {hitsDesb.map(d => (
-                              <button key={d.id} onClick={()=>{setSearchGlobal('');setPage('cadastros');setSubTab('desbloqueios');}} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',width:'100%',border:'none',background:'#fff',cursor:'pointer',textAlign:'left',borderBottom:'1px solid #F4F6F8'}}
+                              <button key={d.id} onClick={()=>{setSearchGlobal('');openOperationalItem({...d,_type:'desbloqueio'});}} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',width:'100%',border:'none',background:'#fff',cursor:'pointer',textAlign:'left',borderBottom:'1px solid #F4F6F8'}}
                                 onMouseEnter={e=>e.currentTarget.style.background='#F8F9FB'} onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
                                 <div style={{width:32,height:32,borderRadius:8,background:'#FEF3C7',color:'#B45309',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                                   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
@@ -1193,15 +1300,79 @@ export default function Home() {
             </div>
 
             <div style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:6}}>
-              <button className="pmx-icon-btn" title="Notificações" style={{width:36,height:36,borderRadius:8,background:'transparent',border:'none',display:'flex',alignItems:'center',justifyContent:'center',color:'#4F5868',cursor:'pointer',position:'relative'}}>
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+              <button onClick={()=>fetchAll(true)} disabled={refreshing} className="pmx-icon-btn" title="Atualizar dados" aria-label="Atualizar dados" style={{width:36,height:36,borderRadius:8,background:'transparent',border:'none',display:'flex',alignItems:'center',justifyContent:'center',color:'#4F5868',cursor:refreshing?'wait':'pointer',opacity:refreshing?.65:1}}>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{animation:refreshing?'pmxSpin .8s linear infinite':'none'}}><path d="M20 7h-5V2"/><path d="M20 2 16.5 5.5A8 8 0 1 0 20 12"/></svg>
               </button>
-              <button className="pmx-icon-btn" title="Ajuda" style={{width:36,height:36,borderRadius:8,background:'transparent',border:'none',display:'flex',alignItems:'center',justifyContent:'center',color:'#4F5868',cursor:'pointer'}}>
+              <button onClick={()=>setShowNotifications(v=>!v)} className="pmx-icon-btn" title="Notificações" style={{width:36,height:36,borderRadius:8,background:showNotifications?T.primaryLight:'transparent',border:'none',display:'flex',alignItems:'center',justifyContent:'center',color:showNotifications?T.primary:'#4F5868',cursor:'pointer',position:'relative'}}>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+                {notifications.length>0 && <span style={{position:'absolute',top:4,right:4,minWidth:15,height:15,borderRadius:20,background:'#F15A24',color:'#fff',fontSize:8,fontWeight:800,display:'flex',alignItems:'center',justifyContent:'center',padding:'0 3px',border:'2px solid #fff'}}>{notifications.length}</span>}
+              </button>
+              <button onClick={()=>showToast('Use a busca global, a Fila Protheus e o Modo Protheus para localizar e copiar dados rapidamente.')} className="pmx-icon-btn" title="Ajuda rápida" style={{width:36,height:36,borderRadius:8,background:'transparent',border:'none',display:'flex',alignItems:'center',justifyContent:'center',color:'#4F5868',cursor:'pointer'}}>
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
               </button>
             </div>
           </header>
 
+          {showNotifications && (
+            <div className="pmx-notification-panel">
+              <div className="pmx-notification-panel__header">
+                <div><span className="pmx-eyebrow">Central</span><h3>Notificações</h3></div>
+                <button onClick={()=>setShowNotifications(false)} style={{width:28,height:28,borderRadius:8,border:'1px solid #E2E8F0',background:'#fff',cursor:'pointer',color:'#667085'}}>×</button>
+              </div>
+              <div className="pmx-notification-panel__body">
+                {notifications.map(n => (
+                  <button key={n.id} onClick={()=>{ if(n.item) openOperationalItem(n.item); else if(n.page) navigatePremium(n.page); }} className="pmx-notification-item" style={{width:'100%',border:'none',background:'transparent',textAlign:'left',cursor:'pointer'}}>
+                    <i />
+                    <span><strong>{n.title}</strong><p>{n.description}</p></span>
+                  </button>
+                ))}
+                {notifications.length===0 && <div className="pmx-empty-inline">Nenhuma notificação crítica no momento.</div>}
+              </div>
+            </div>
+          )}
+
+      {page === 'dashboard' && (
+        <OverviewDashboard
+          fornecedores={forn}
+          produtos={produtos}
+          desbloqueios={desbloqueios}
+          kanban={kanban}
+          user={user}
+          onNavigate={navigatePremium}
+          onOpen={openOperationalItem}
+        />
+      )}
+
+      {page === 'fila' && (
+        <ProtheusQueue
+          fornecedores={forn}
+          produtos={produtos}
+          desbloqueios={desbloqueios}
+          usuarios={usuarios}
+          onOpen={openOperationalItem}
+          onToast={showToast}
+        />
+      )}
+
+      {page === 'relatorios' && (
+        <ReportsDashboard
+          fornecedores={forn}
+          produtos={produtos}
+          desbloqueios={desbloqueios}
+          kanban={kanban}
+          usuarios={usuarios}
+        />
+      )}
+
+      {page === 'historico' && (
+        <HistoryTimeline
+          fornecedores={forn}
+          produtos={produtos}
+          desbloqueios={desbloqueios}
+          kanban={kanban}
+          auditLog={auditLog}
+        />
+      )}
 
       {/* ══ PAGE: CADASTROS ══ */}
       {page === 'cadastros' && (
@@ -1216,8 +1387,8 @@ export default function Home() {
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
               <h1 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:22,fontWeight:700,color:'#1A2332',letterSpacing:'-.4px',margin:0}}>Cadastros</h1>
               <div style={{display:'flex',gap:8}}>
-                <span style={{fontSize:12,color:'#8B94A3'}}>Atualizado em tempo real</span>
-                <span style={{width:8,height:8,borderRadius:'50%',background:'#00A650',boxShadow:'0 0 0 4px rgba(0,166,80,.15)',alignSelf:'center'}} />
+                <span style={{fontSize:12,color:'#8B94A3'}}>Dados atualizados nesta sessão</span>
+                <span style={{width:8,height:8,borderRadius:'50%',background:T.primary,boxShadow:'0 0 0 4px rgba(32,85,138,.14)',alignSelf:'center'}} />
               </div>
             </div>
           </div>
@@ -1234,13 +1405,13 @@ export default function Home() {
                 <button key={s.k} className="pmx-subtab" onClick={()=>{ setSubTab(s.k); setSel(null); setShowModal(false); setTab('pendentes'); }} style={{
                   position:'relative',padding:'14px 18px',background:'none',border:'none',
                   fontFamily:'inherit',fontSize:13,fontWeight: active ? 600 : 500,
-                  color: active ? '#008C44' : '#4F5868',
+                  color: active ? T.primary : T.text2,
                   cursor:'pointer',display:'inline-flex',alignItems:'center',gap:8
                 }}>
                   {s.icon}
                   <span>{s.l}</span>
-                  <span style={{fontFamily:'Geist,-apple-system,sans-serif',fontWeight:700,fontSize:10,padding:'1px 7px',background: active ? '#E6F7EE' : '#EEF1F5',color: active ? '#008C44' : '#4F5868',borderRadius:20,minWidth:20,textAlign:'center'}}>{s.n}</span>
-                  {active && <span style={{position:'absolute',bottom:-1,left:12,right:12,height:2,background:'#00A650',borderRadius:'2px 2px 0 0'}} />}
+                  <span style={{fontFamily:'Geist,-apple-system,sans-serif',fontWeight:700,fontSize:10,padding:'1px 7px',background: active ? '#E6F7EE' : '#EEF1F5',color: active ? T.primary : T.text2,borderRadius:20,minWidth:20,textAlign:'center'}}>{s.n}</span>
+                  {active && <span style={{position:'absolute',bottom:-1,left:12,right:12,height:2,background:'#20558A',borderRadius:'2px 2px 0 0'}} />}
                 </button>
               );
             })}
@@ -1303,7 +1474,7 @@ export default function Home() {
                         const stBg = p.status==='aprovado'?'#E6F7EE':p.status==='rejeitado'?'#FEE2E2':p.status==='em_analise'?'#DBEAFE':'#FEF3C7';
                         const isFinal = p.status === 'aprovado' || p.status === 'rejeitado';
                         return (
-                          <tr key={p.id} className="pmx-row" style={{borderBottom:'1px solid #E5E9EF'}}>
+                          <tr key={p.id} className="pmx-row" onClick={()=>openOperationalItem({...p,_type:'produto'})} style={{borderBottom:'1px solid #E5E9EF',cursor:'pointer'}}>
                             <td style={tdSnew()}>
                               <div style={{display:'flex',alignItems:'flex-start',gap:12}}>
                                 <div style={{width:36,height:36,borderRadius:9,background:'#FEF6E0',color:'#B8941F',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
@@ -1337,14 +1508,14 @@ export default function Home() {
                               {!isFinal ? (
                                 <div style={{display:'inline-flex',gap:4}}>
                                   {p.status === 'pendente' && (
-                                    <button className="pmx-act" onClick={()=>pegarProduto(p.id)} title="Pegar para mim" style={actBtn()}>
+                                    <button className="pmx-act" onClick={(e)=>{e.stopPropagation();pegarProduto(p.id)}} title="Pegar para mim" style={actBtn()}>
                                       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>
                                     </button>
                                   )}
-                                  <button className="pmx-act primary" onClick={()=>{const cod = prompt('Código do produto no Protheus:'); if (cod) concluirProduto(p, cod);}} title="Concluir" style={actBtn('primary')}>
+                                  <button className="pmx-act primary" onClick={(e)=>{e.stopPropagation();openOperationalItem({...p,_type:'produto'});}} title="Concluir" style={actBtn('primary')}>
                                     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
                                   </button>
-                                  {isAdmin && <button className="pmx-act danger" onClick={()=>excluirProduto(p.id)} title="Excluir" style={actBtn('danger')}>
+                                  {isAdmin && <button className="pmx-act danger" onClick={(e)=>{e.stopPropagation();excluirProduto(p.id)}} title="Excluir" style={actBtn('danger')}>
                                     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                                   </button>}
                                 </div>
@@ -1413,7 +1584,7 @@ export default function Home() {
                         const statusLabel = d.status==='desbloqueado'?'Desbloqueado':d.status==='rejeitado'?'Rejeitado':d.status==='em_analise'?'Em análise':'Pendente';
                         const isFinal = d.status === 'desbloqueado' || d.status === 'rejeitado';
                         return (
-                          <tr key={d.id} className="pmx-row" style={{borderBottom:'1px solid #E5E9EF'}}>
+                          <tr key={d.id} className="pmx-row" onClick={()=>openOperationalItem({...d,_type:'desbloqueio'})} style={{borderBottom:'1px solid #E5E9EF',cursor:'pointer'}}>
                             <td style={tdSnew()}>
                               <div style={{display:'flex',alignItems:'center',gap:12}}>
                                 <div style={{width:36,height:36,borderRadius:9,background:'#FEF3C7',color:'#B45309',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
@@ -1442,17 +1613,17 @@ export default function Home() {
                               {!isFinal ? (
                                 <div style={{display:'inline-flex',gap:4}}>
                                   {d.status === 'pendente' && (
-                                    <button className="pmx-act" onClick={()=>pegarDesbloqueio(d.id)} title="Pegar para mim" style={actBtn()}>
+                                    <button className="pmx-act" onClick={(e)=>{e.stopPropagation();pegarDesbloqueio(d.id)}} title="Pegar para mim" style={actBtn()}>
                                       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>
                                     </button>
                                   )}
-                                  <button className="pmx-act primary" onClick={()=>concluirDesbloqueio(d)} title="Desbloquear" style={actBtn('primary')}>
+                                  <button className="pmx-act primary" onClick={(e)=>{e.stopPropagation();concluirDesbloqueio(d)}} title="Desbloquear" style={actBtn('primary')}>
                                     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
                                   </button>
-                                  <button className="pmx-act danger" onClick={()=>{const m = prompt('Motivo da rejeição:'); if (m) rejeitarDesbloqueio(d, m);}} title="Rejeitar" style={actBtn('danger')}>
+                                  <button className="pmx-act danger" onClick={(e)=>{e.stopPropagation();setRejectUnlock(d);setRejectUnlockReason('');}} title="Rejeitar" style={actBtn('danger')}>
                                     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></svg>
                                   </button>
-                                  {isAdmin && <button className="pmx-act" onClick={()=>excluirDesbloqueio(d.id)} title="Excluir" style={actBtn()}>
+                                  {isAdmin && <button className="pmx-act" onClick={(e)=>{e.stopPropagation();excluirDesbloqueio(d.id)}} title="Excluir" style={actBtn()}>
                                     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                                   </button>}
                                 </div>
@@ -1501,12 +1672,12 @@ export default function Home() {
                   <button key={t.k} className="pmx-subtab" onClick={()=>{setTab(t.k);setSel(null);setShowModal(false)}} style={{
                     position:'relative',padding:'14px 16px',background:'none',border:'none',
                     fontFamily:'inherit',fontSize:13,fontWeight: active ? 600 : 500,
-                    color: active ? '#008C44' : '#4F5868',
+                    color: active ? T.primary : T.text2,
                     cursor:'pointer',display:'inline-flex',alignItems:'center',gap:7
                   }}>
                     {t.l}
-                    <span style={{fontFamily:'Geist,-apple-system,sans-serif',fontWeight:700,fontSize:10,padding:'1px 7px',background: active ? '#E6F7EE' : '#EEF1F5',color: active ? '#008C44' : '#4F5868',borderRadius:20}}>{t.n}</span>
-                    {active && <span style={{position:'absolute',bottom:-1,left:12,right:12,height:2,background:'#00A650'}} />}
+                    <span style={{fontFamily:'Geist,-apple-system,sans-serif',fontWeight:700,fontSize:10,padding:'1px 7px',background: active ? '#E6F7EE' : '#EEF1F5',color: active ? T.primary : T.text2,borderRadius:20}}>{t.n}</span>
+                    {active && <span style={{position:'absolute',bottom:-1,left:12,right:12,height:2,background:'#20558A'}} />}
                   </button>
                 );
               })}
@@ -1590,7 +1761,7 @@ export default function Home() {
                         <td style={tdSnew()}>
                           {f.atribuido_para ? (
                             <div style={{display:'flex',alignItems:'center',gap:7}}>
-                              <div style={{width:24,height:24,borderRadius:'50%',background:'linear-gradient(135deg,#00A650,#008C44)',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Geist,-apple-system,sans-serif',fontWeight:700,fontSize:10,color:'#fff'}}>{f.atribuido_para.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
+                              <div style={{width:24,height:24,borderRadius:'50%',background:'linear-gradient(135deg,#20558A,#173F69)',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Geist,-apple-system,sans-serif',fontWeight:700,fontSize:10,color:'#fff'}}>{f.atribuido_para.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
                               <span style={{fontSize:12,color:'#4F5868'}}>{f.atribuido_para.split(' ')[0]}</span>
                             </div>
                           ) : (
@@ -1613,10 +1784,24 @@ export default function Home() {
         </div>
       )}
 
+      {showModal && sel && ['produto','desbloqueio'].includes(sel._type) && (
+        <RecordDrawer
+          record={sel}
+          type={sel._type}
+          collection={sel._type==='produto' ? produtos : desbloqueios}
+          onClose={closeDetail}
+          onTake={sel._type==='produto' ? pegarProduto : pegarDesbloqueio}
+          onComplete={sel._type==='produto' ? (record, code)=>{ concluirProduto(record, code); closeDetail(); } : (record)=>{ concluirDesbloqueio(record); closeDetail(); }}
+          onDelete={sel._type==='produto' ? excluirProduto : excluirDesbloqueio}
+          isAdmin={isSubAdmin}
+          onToast={showToast}
+        />
+      )}
+
       {/* ══ MODAL CENTRAL — DETALHE DO CADASTRO ══ */}
-      {showModal && sel && (
-        <div style={{position:'fixed',inset:0,background:'rgba(26,35,50,.55)',backdropFilter:'blur(6px)',WebkitBackdropFilter:'blur(6px)',zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',padding:20,animation:'fadeIn .2s ease'}} onClick={e=>{if(e.target===e.currentTarget)closeDetail()}}>
-          <div style={{background:'#fff',borderRadius:14,width:'100%',maxWidth:760,maxHeight:'90vh',display:'flex',flexDirection:'column',boxShadow:'0 24px 64px rgba(16,24,40,.18),0 8px 16px rgba(16,24,40,.08)',animation:'scaleIn .25s cubic-bezier(.16,1,.3,1)',border:'1px solid #E5E9EF'}}>
+      {showModal && sel && (!sel._type || sel._type === 'fornecedor') && (
+        <div className="pmx-detail-overlay" onClick={e=>{if(e.target===e.currentTarget)closeDetail()}}>
+          <div className="pmx-detail-drawer">
             {/* Header */}
             <div style={{padding:'18px 24px',borderBottom:'1px solid #E5E9EF',display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0,background:'linear-gradient(180deg,#F8F9FB 0%,#fff 100%)'}}>
               <div style={{display:'flex',alignItems:'center',gap:14}}>
@@ -1637,8 +1822,27 @@ export default function Home() {
               </button>
             </div>
 
+            <div style={{padding:'13px 22px',borderBottom:'1px solid #E2E8F0',background:'#fff'}}>
+              <div style={{display:'grid',gridTemplateColumns:'1fr auto',gap:18,alignItems:'center'}}>
+                <div>
+                  <div style={{display:'flex',justifyContent:'space-between',fontSize:11,color:'#8490A3',marginBottom:6}}><span>Dados recebidos para o Protheus</span><strong style={{color:'#20558A'}}>{getCompleteness(sel,'fornecedor').percent}%</strong></div>
+                  <div style={{height:6,background:'#E9EEF4',borderRadius:20,overflow:'hidden'}}><span style={{display:'block',height:'100%',width:`${getCompleteness(sel,'fornecedor').percent}%`,background:'linear-gradient(90deg,#20558A,#4B83B5)',borderRadius:20}} /></div>
+                </div>
+                <button onClick={()=>copySupplierRecord(sel)} style={{padding:'9px 13px',borderRadius:9,border:'1px solid #C7DAED',background:'#EAF2FA',color:'#20558A',fontSize:11,fontWeight:700,cursor:'pointer',display:'inline-flex',alignItems:'center',gap:7}}>
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
+                  Copiar todos os dados
+                </button>
+              </div>
+            </div>
+            <div className="pmx-drawer-tabs">
+              <button className={detailMode==='protheus'?'active':''} onClick={()=>{setDetailMode('protheus');document.getElementById('pmx-protheus-data')?.scrollIntoView({behavior:'smooth'})}}>Dados Protheus</button>
+              <button className={detailMode==='documentos'?'active':''} onClick={()=>{setDetailMode('documentos');document.getElementById('pmx-docs')?.scrollIntoView({behavior:'smooth'})}}>Documentos</button>
+              <button className={detailMode==='observacoes'?'active':''} onClick={()=>{setDetailMode('observacoes');document.getElementById('pmx-obs')?.scrollIntoView({behavior:'smooth'})}}>Observações</button>
+              <button className={detailMode==='historico'?'active':''} onClick={()=>{setDetailMode('historico');document.getElementById('pmx-history')?.scrollIntoView({behavior:'smooth'})}}>Histórico</button>
+            </div>
+
             {/* Scrollable Body */}
-            <div style={{padding:'22px 24px',overflowY:'auto',flex:1,background:'#FAFBFC'}}>
+            <div style={{padding:'22px 24px',overflowY:'auto',flex:1,background:'#F7F9FC'}}>
               {/* Ações principais */}
               <div style={{display:'flex',gap:8,marginBottom:18,flexWrap:'wrap'}}>
                 {sel.status==='pendente' && !sel.atribuido_para && (
@@ -1766,9 +1970,9 @@ export default function Home() {
 
               {/* Painel Concluir — só código (e-mail vem do cadastro) */}
               {showConcluir && (
-                <div style={{padding:20,background:'#fff',borderRadius:12,marginBottom:16,border:'1px solid #A7F3D0',boxShadow:'0 1px 2px rgba(0,166,80,.06)'}}>
+                <div style={{padding:20,background:'#fff',borderRadius:12,marginBottom:16,border:'1px solid #C9DCEE',boxShadow:'0 1px 2px rgba(32,85,138,.07)'}}>
                   <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:6}}>
-                    <div style={{width:32,height:32,borderRadius:8,background:'#00A650',display:'flex',alignItems:'center',justifyContent:'center',color:'#fff'}}>
+                    <div style={{width:32,height:32,borderRadius:8,background:'#20558A',display:'flex',alignItems:'center',justifyContent:'center',color:'#fff'}}>
                       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
                     </div>
                     <div style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:15,fontWeight:700,color:'#1A2332'}}>Concluir Cadastro</div>
@@ -1778,7 +1982,7 @@ export default function Home() {
                   <div style={{display:'grid',gap:12}}>
                     <div>
                       <label style={{fontSize:11,fontWeight:700,color:'#008C44',textTransform:'uppercase',letterSpacing:'.4px',marginBottom:5,display:'block'}}>Código do Fornecedor *</label>
-                      <input value={concluirData.codigo} onChange={e=>setConcluirData({...concluirData,codigo:e.target.value})} placeholder="Ex: FORN-00451" style={{width:'100%',padding:'12px 14px',borderRadius:9,border:'1px solid #A7F3D0',fontSize:14,fontWeight:600,outline:'none',fontFamily:'Geist Mono,SF Mono,Consolas,monospace',background:'#F0FDF4',letterSpacing:'.5px',color:'#1A2332'}} autoFocus />
+                      <input value={concluirData.codigo} onChange={e=>setConcluirData({...concluirData,codigo:e.target.value})} placeholder="Ex: FORN-00451" style={{width:'100%',padding:'12px 14px',borderRadius:9,border:'1px solid #C9DCEE',fontSize:14,fontWeight:600,outline:'none',fontFamily:'Geist Mono,SF Mono,Consolas,monospace',background:'#F0FDF4',letterSpacing:'.5px',color:'#1A2332'}} autoFocus />
                     </div>
 
                     {/* Dados do solicitante (vindos do cadastro) */}
@@ -1786,7 +1990,7 @@ export default function Home() {
                       <div style={{fontSize:10,color:'#8B94A3',fontWeight:700,textTransform:'uppercase',letterSpacing:'.5px',marginBottom:6}}>Será enviado para</div>
                       {(sel?.email_solicitante) ? (
                         <div style={{fontSize:13,color:'#1A2332',display:'flex',alignItems:'center',gap:10}}>
-                          <div style={{width:32,height:32,borderRadius:'50%',background:'linear-gradient(135deg,#00A650,#008C44)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Geist,-apple-system,sans-serif',fontWeight:700,fontSize:12}}>{(sel.nome_solicitante || 'S').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
+                          <div style={{width:32,height:32,borderRadius:'50%',background:'linear-gradient(135deg,#20558A,#173F69)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Geist,-apple-system,sans-serif',fontWeight:700,fontSize:12}}>{(sel.nome_solicitante || 'S').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
                           <div>
                             <div style={{fontWeight:600}}>{sel.nome_solicitante || 'Solicitante'}</div>
                             <div style={{color:'#8B94A3',fontSize:12,marginTop:1}}>{sel.email_solicitante}</div>
@@ -1815,7 +2019,7 @@ export default function Home() {
                     </div>
 
                     <div style={{display:'flex',gap:10,marginTop:4}}>
-                      <button onClick={concluirCadastro} disabled={sendingEmail || !sel?.email_solicitante} style={{flex:1,padding:'13px',borderRadius:10,border:'none',background: (sendingEmail || !sel?.email_solicitante) ? '#B5BCC6' : '#00A650',color:'#fff',fontFamily:'inherit',fontWeight:600,fontSize:14,cursor: (sendingEmail || !sel?.email_solicitante) ? 'not-allowed' : 'pointer',transition:'.15s',display:'inline-flex',alignItems:'center',justifyContent:'center',gap:8,boxShadow: (sendingEmail || !sel?.email_solicitante) ? 'none' : '0 1px 2px rgba(0,166,80,.3),inset 0 1px 0 rgba(255,255,255,.15)'}}>
+                      <button onClick={concluirCadastro} disabled={sendingEmail || !sel?.email_solicitante} style={{flex:1,padding:'13px',borderRadius:10,border:'none',background: (sendingEmail || !sel?.email_solicitante) ? '#B5BCC6' : '#20558A',color:'#fff',fontFamily:'inherit',fontWeight:600,fontSize:14,cursor: (sendingEmail || !sel?.email_solicitante) ? 'not-allowed' : 'pointer',transition:'.15s',display:'inline-flex',alignItems:'center',justifyContent:'center',gap:8,boxShadow: (sendingEmail || !sel?.email_solicitante) ? 'none' : '0 1px 2px rgba(32,85,138,.3),inset 0 1px 0 rgba(255,255,255,.15)'}}>
                         {sendingEmail ? (
                           <>⏳ Enviando...</>
                         ) : (
@@ -1842,20 +2046,25 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Dados do Cadastro — Layout Profissional */}
-              {(sel.tipo_cadastro === 'pj' || !sel.tipo_cadastro) ? (
-                <DataSection title="Dados da Empresa" icon="🏢" items={[['Razão Social',sel.razao_social],['Nome Fantasia',sel.nome_fantasia],['CNPJ',sel.cnpj],['Inscrição Estadual',sel.inscricao_estadual_isento?'ISENTO':sel.inscricao_estadual],['Ramo de Atividade',sel.ramo_atividade],['Produtos/Serviços',sel.produtos_servicos]]} onCopy={cp} />
-              ) : (
-                <DataSection title={sel.tipo_cadastro==='motorista'?'Dados do Motorista':'Dados Pessoais'} icon={sel.tipo_cadastro==='motorista'?'🚛':'👤'} items={[['Nome Completo',sel.nome_completo],['CPF',sel.cpf],['RG',sel.rg],...(sel.tipo_cadastro==='motorista'?[['CNH',sel.cnh_categoria],['ANTT',sel.antt]]:[])]} onCopy={cp} />
+              <div id="pmx-protheus-data" style={{scrollMarginTop:16}} />
+              {getDuplicateCandidates(sel, 'fornecedor', forn).length > 0 && (
+                <div className="pmx-duplicate-alert">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="13" height="13" rx="2"/><rect x="8" y="8" width="13" height="13" rx="2"/></svg>
+                  <div><strong>Possível cadastro duplicado</strong><p>Confira antes de lançar no Protheus: {getDuplicateCandidates(sel, 'fornecedor', forn).slice(0,3).map(item=>item.razao_social || item.nome_completo || item.nome_fantasia).join(', ')}.</p></div>
+                </div>
               )}
-              <DataSection title="Contato" icon="📞" items={[['Responsável',sel.responsavel_nome],['Cargo',sel.responsavel_cargo],['Telefone',sel.telefone],['Celular',sel.celular],['E-mail',sel.email],['Website',sel.website]]} onCopy={cp} />
-              <DataSection title="Endereço" icon="📍" items={[['CEP',sel.cep],['Logradouro',`${sel.logradouro||''}, ${sel.numero||''}`],['Complemento',sel.complemento],['Bairro',sel.bairro],['Cidade',sel.cidade],['Estado',sel.estado]]} onCopy={cp} />
-              {sel.tipo_cadastro !== 'motorista' && <DataSection title="Dados Bancários" icon="🏦" items={[['Banco',sel.banco],['Agência',sel.agencia],['Conta',`${sel.conta||''} (${sel.tipo_conta||''})`],['Titular',sel.titular_conta],['CPF/CNPJ Titular',sel.cpf_cnpj_titular],['PIX',sel.pix]]} onCopy={cp} />}
+              {/* Todos os dados recebidos são necessários para o cadastro no Protheus. */}
+              <DataSection
+                title="Dados recebidos para o Protheus"
+                icon=""
+                items={fieldsForType(sel, 'fornecedor')}
+                onCopy={cp}
+              />
 
               {/* Documentos */}
-              <div style={{marginBottom:20}}>
+              <div id="pmx-docs" style={{marginBottom:20,scrollMarginTop:16}}>
                 <div style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:13,fontWeight:700,color:'#1A2332',marginBottom:10,display:'flex',alignItems:'center',gap:8}}>
-                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#00A650" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#20558A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
                   Documentos anexados
                 </div>
                 <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
@@ -1871,13 +2080,23 @@ export default function Home() {
                 </div>
               </div>
 
+              <section id="pmx-history" className="pmx-data-block" style={{scrollMarginTop:16}}>
+                <header><div><span className="pmx-eyebrow">Governança</span><h3>Histórico do cadastro</h3></div></header>
+                <div className="pmx-record-timeline" style={{padding:16}}>
+                  <div><i className="success"/><span><strong>Solicitação recebida</strong><small>{sel.created_at ? new Date(sel.created_at).toLocaleString('pt-BR') : 'Data não informada'}</small></span></div>
+                  {sel.atribuido_para && <div><i className="info"/><span><strong>Atribuída a {sel.atribuido_para}</strong><small>Status: {ST[sel.status]?.l || sel.status}</small></span></div>}
+                  {sel.motivo_devolucao && <div><i className="danger"/><span><strong>Devolvida para correção</strong><small>{sel.motivo_devolucao}</small></span></div>}
+                  {sel.data_finalizacao && <div><i className="success"/><span><strong>Cadastro concluído no Protheus</strong><small>{new Date(sel.data_finalizacao).toLocaleString('pt-BR')} · {sel.finalizado_por || 'Equipe'}{sel.codigo_fornecedor ? ` · Código ${sel.codigo_fornecedor}` : ''}</small></span></div>}
+                </div>
+              </section>
+
               {/* Observações */}
-              <div>
+              <div id="pmx-obs" style={{scrollMarginTop:16}}>
                 <div style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:13,fontWeight:700,color:'#1A2332',marginBottom:8,display:'flex',alignItems:'center',gap:8}}>
-                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#00A650" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#20558A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                   Observações internas
                 </div>
-                <textarea ref={obsRef} defaultValue={sel.observacoes_internas||''} key={sel.id} placeholder="Adicione anotações internas aqui... (apenas a equipe do Núcleo Fiscal vê)" onBlur={()=>saveObs(sel.id)} style={{width:'100%',padding:'12px 14px',borderRadius:9,border:'1px solid #E5E9EF',fontSize:13,minHeight:80,resize:'vertical',outline:'none',fontFamily:'inherit',background:'#fff',transition:'.15s',color:'#1A2332',lineHeight:1.5}} onFocus={e=>{e.target.style.borderColor='#00A650';e.target.style.boxShadow='0 0 0 3px #E6F7EE';}} onBlurCapture={e=>{e.target.style.borderColor='#E5E9EF';e.target.style.boxShadow='none';}} />
+                <textarea ref={obsRef} defaultValue={sel.observacoes_internas||''} key={sel.id} placeholder="Adicione anotações internas aqui... (apenas a equipe do Núcleo Fiscal vê)" onBlur={()=>saveObs(sel.id)} style={{width:'100%',padding:'12px 14px',borderRadius:9,border:'1px solid #E5E9EF',fontSize:13,minHeight:80,resize:'vertical',outline:'none',fontFamily:'inherit',background:'#fff',transition:'.15s',color:'#1A2332',lineHeight:1.5}} onFocus={e=>{e.target.style.borderColor='#20558A';e.target.style.boxShadow='0 0 0 3px #EAF2FA';}} onBlurCapture={e=>{e.target.style.borderColor='#E5E9EF';e.target.style.boxShadow='none';}} />
               </div>
             </div>
           </div>
@@ -1904,10 +2123,17 @@ export default function Home() {
                 <PillBtn key={u.id} active={kanView===u.nome} onClick={()=>setKanView(u.nome)}>{u.nome.split(' ')[0]}</PillBtn>
               ))}
             </div>
-            <button className="pmx-cta" onClick={()=>setShowNewTask(true)} style={{padding:'10px 18px',borderRadius:9,border:'none',background:'#00A650',color:'#fff',fontFamily:'inherit',fontSize:13,fontWeight:600,cursor:'pointer',boxShadow:'0 1px 2px rgba(0,166,80,.3),inset 0 1px 0 rgba(255,255,255,.15)',display:'inline-flex',alignItems:'center',gap:7}}>
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Nova Tarefa
-            </button>
+            <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
+              <div className="pmx-view-switch" aria-label="Visualização das tarefas">
+                <button className={kanLayout==='board'?'active':''} onClick={()=>setKanLayout('board')}>Quadro</button>
+                <button className={kanLayout==='list'?'active':''} onClick={()=>setKanLayout('list')}>Lista</button>
+                <button className={kanLayout==='calendar'?'active':''} onClick={()=>setKanLayout('calendar')}>Prazos</button>
+              </div>
+              <button className="pmx-cta" onClick={()=>setShowNewTask(true)} style={{padding:'10px 18px',borderRadius:9,border:'none',background:'#20558A',color:'#fff',fontFamily:'inherit',fontSize:13,fontWeight:600,cursor:'pointer',boxShadow:'0 1px 2px rgba(32,85,138,.3),inset 0 1px 0 rgba(255,255,255,.15)',display:'inline-flex',alignItems:'center',gap:7}}>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Nova Tarefa
+              </button>
+            </div>
           </div>
 
           {/* New Task Form */}
@@ -1929,7 +2155,7 @@ export default function Home() {
                   {KAN_COLS.map(c=><option key={c.k} value={c.k}>{c.l}</option>)}
                 </select>
                 <div style={{gridColumn:'1/-1',display:'flex',gap:10,marginTop:4}}>
-                  <button onClick={addKanTask} className="pmx-cta" style={{padding:'10px 20px',borderRadius:9,border:'none',background:'#00A650',color:'#fff',fontFamily:'inherit',fontWeight:600,fontSize:13,cursor:'pointer',boxShadow:'0 1px 2px rgba(0,166,80,.3),inset 0 1px 0 rgba(255,255,255,.15)',display:'inline-flex',alignItems:'center',gap:7}}>
+                  <button onClick={addKanTask} className="pmx-cta" style={{padding:'10px 20px',borderRadius:9,border:'none',background:'#20558A',color:'#fff',fontFamily:'inherit',fontWeight:600,fontSize:13,cursor:'pointer',boxShadow:'0 1px 2px rgba(32,85,138,.3),inset 0 1px 0 rgba(255,255,255,.15)',display:'inline-flex',alignItems:'center',gap:7}}>
                     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
                     Criar Tarefa
                   </button>
@@ -1940,11 +2166,11 @@ export default function Home() {
           )}
 
           {/* Colunas */}
-          <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:14,alignItems:'flex-start'}}>
+          <div className="pmx-kanban-board" style={{display:kanLayout==='board'?'grid':'none',gridTemplateColumns:'repeat(4,minmax(260px,1fr))',gap:14,alignItems:'flex-start'}}>
             {KAN_COLS.map(col => {
               const tasks = kanFiltered.filter(t => t.status === col.k);
               return (
-                <div key={col.k} style={{background:'#fff',borderRadius:12,padding:10,minHeight:300,border:'1px solid #E5E9EF',boxShadow:'0 1px 2px rgba(16,24,40,.04)'}}>
+                <div key={col.k} className={`pmx-kanban-column ${dragTaskId ? 'is-drop-ready' : ''}`} onDragOver={(e)=>{e.preventDefault();e.dataTransfer.dropEffect='move';}} onDrop={()=>dropKanTask(col.k)} style={{background:'#fff',borderRadius:12,padding:10,minHeight:300,border:'1px solid #DDE5ED',boxShadow:'0 1px 2px rgba(16,24,40,.04)'}}>
                   <div style={{padding:'4px 8px 12px 8px',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:'1px solid #E5E9EF',marginBottom:10}}>
                     <div style={{display:'flex',alignItems:'center',gap:7}}>
                       <span style={{width:8,height:8,borderRadius:'50%',background:col.c}} />
@@ -1957,9 +2183,9 @@ export default function Home() {
                       const p = PRI[t.prioridade] || PRI.media;
                       const progress = calcProgress(t.checklist);
                       return (
-                        <div key={t.id} onClick={()=>setEditTask(t)} style={{background:'#fff',borderRadius:9,padding:'12px 14px',border:'1px solid #E5E9EF',cursor:'pointer',transition:'all .15s'}}
-                          onMouseEnter={e=>{e.currentTarget.style.borderColor='#00A650';e.currentTarget.style.boxShadow='0 4px 12px rgba(0,166,80,.1)';e.currentTarget.style.transform='translateY(-1px)';}}
-                          onMouseLeave={e=>{e.currentTarget.style.borderColor='#E5E9EF';e.currentTarget.style.boxShadow='none';e.currentTarget.style.transform='translateY(0)';}}>
+                        <div key={t.id} className={`pmx-kanban-card ${dragTaskId === t.id ? 'is-dragging' : ''}`} draggable onDragStart={(e)=>{setDragTaskId(t.id);e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',String(t.id));}} onDragEnd={()=>setDragTaskId(null)} onClick={()=>setEditTask(t)} style={{background:'#fff',borderRadius:9,padding:'12px 14px',border:'1px solid #DDE5ED',cursor:'grab',transition:'all .15s'}}
+                          onMouseEnter={e=>{if(!dragTaskId){e.currentTarget.style.borderColor='#20558A';e.currentTarget.style.boxShadow='0 4px 12px rgba(32,85,138,.1)';e.currentTarget.style.transform='translateY(-1px)';}}}
+                          onMouseLeave={e=>{e.currentTarget.style.borderColor='#DDE5ED';e.currentTarget.style.boxShadow='none';e.currentTarget.style.transform='translateY(0)';}}>
                           <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:6}}>
                             <div style={{fontSize:13,fontWeight:600,lineHeight:1.3,flex:1,color:'#1A2332'}}>{sanitize(t.titulo)}</div>
                             <span style={{padding:'2px 7px',borderRadius:5,fontSize:9,fontWeight:700,background:p.bg,color:p.c,flexShrink:0,textTransform:'uppercase',letterSpacing:'.3px'}}>{p.l}</span>
@@ -1978,7 +2204,7 @@ export default function Home() {
                           )}
                           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',fontSize:11,color:'#8B94A3',marginTop:10}}>
                             <div style={{display:'flex',alignItems:'center',gap:5}}>
-                              <div style={{width:18,height:18,borderRadius:'50%',background:'linear-gradient(135deg,#00A650,#008C44)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Geist,-apple-system,sans-serif',fontWeight:700,fontSize:8}}>{(t.atribuido_para||'??').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
+                              <div style={{width:18,height:18,borderRadius:'50%',background:'linear-gradient(135deg,#20558A,#173F69)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Geist,-apple-system,sans-serif',fontWeight:700,fontSize:8}}>{(t.atribuido_para||'??').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
                               <span>{(t.atribuido_para||'').split(' ')[0]}</span>
                             </div>
                             {t.prazo && <span style={{display:'inline-flex',alignItems:'center',gap:4}}>
@@ -1995,6 +2221,24 @@ export default function Home() {
               );
             })}
           </div>
+
+          {kanLayout === 'list' && (
+            <div className="pmx-card pmx-card--flush pmx-task-list-view">
+              <div className="pmx-table-wrap"><table className="pmx-premium-table"><thead><tr><th>Tarefa</th><th>Responsável</th><th>Prioridade</th><th>Status</th><th>Checklist</th><th>Prazo</th><th /></tr></thead><tbody>
+                {kanFiltered.map(t => { const p=PRI[t.prioridade]||PRI.media; const col=KAN_COLS.find(c=>c.k===t.status); const progress=calcProgress(t.checklist); return <tr key={t.id} onClick={()=>setEditTask(t)}><td><strong>{sanitize(t.titulo)}</strong><small>{sanitize(t.descricao||'Sem descrição')}</small></td><td>{t.atribuido_para||'Não atribuído'}</td><td><span className="pmx-task-priority" style={{background:p.bg,color:p.c}}>{p.l}</span></td><td><span className="pmx-status pmx-status--info">{col?.l||t.status}</span></td><td><strong>{progress}%</strong><small>{(t.checklist||[]).filter(i=>i.feito).length}/{(t.checklist||[]).length} itens</small></td><td>{t.prazo ? fmtDateShort(t.prazo) : 'Sem prazo'}</td><td><span className="pmx-row-arrow">›</span></td></tr>; })}
+                {!kanFiltered.length && <tr><td colSpan="7"><div className="pmx-empty-inline">Nenhuma tarefa nesta visão.</div></td></tr>}
+              </tbody></table></div>
+            </div>
+          )}
+
+          {kanLayout === 'calendar' && (
+            <div className="pmx-task-calendar-view">
+              {Object.entries(kanFiltered.reduce((groups, task) => { const key=task.prazo||'sem-prazo'; (groups[key] ||= []).push(task); return groups; }, {})).sort(([a],[b]) => a==='sem-prazo'?1:b==='sem-prazo'?-1:a.localeCompare(b)).map(([date,tasks]) => (
+                <section key={date} className="pmx-card pmx-task-date-group"><header><div><span className="pmx-eyebrow">{date==='sem-prazo'?'Planejamento':'Prazo'}</span><h3>{date==='sem-prazo'?'Sem prazo definido':new Date(`${date}T00:00:00`).toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'})}</h3></div><strong>{tasks.length}</strong></header><div>{tasks.map(t=>{const p=PRI[t.prioridade]||PRI.media;return <button key={t.id} onClick={()=>setEditTask(t)}><span style={{background:p.c}}/><div><strong>{sanitize(t.titulo)}</strong><small>{t.atribuido_para||'Não atribuído'} · {KAN_COLS.find(c=>c.k===t.status)?.l||t.status}</small></div><em>{p.l}</em></button>})}</div></section>
+              ))}
+              {!kanFiltered.length && <div className="pmx-card"><div className="pmx-empty-inline">Nenhuma tarefa nesta visão.</div></div>}
+            </div>
+          )}
 
           {/* Task Edit Modal */}
           {editTask && (
@@ -2043,6 +2287,15 @@ export default function Home() {
                     </div>
                   </div>
 
+                  <div className="pmx-task-comments">
+                    <div className="pmx-task-comments__title"><span>Comentários</span><strong>{(editTask.comentarios||[]).length}</strong></div>
+                    <div className="pmx-task-comments__list">
+                      {(editTask.comentarios||[]).map(comment => <div key={comment.id||comment.criado_em}><span>{(comment.autor||'?').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</span><div><strong>{comment.autor||'Equipe'}</strong><p>{sanitize(comment.texto||'')}</p><small>{comment.criado_em ? new Date(comment.criado_em).toLocaleString('pt-BR') : ''}</small></div></div>)}
+                      {!(editTask.comentarios||[]).length && <p className="pmx-empty-inline">Nenhum comentário ainda.</p>}
+                    </div>
+                    <div className="pmx-task-comments__composer"><textarea value={newTaskComment} onChange={e=>setNewTaskComment(e.target.value)} placeholder="Registrar atualização, contexto ou orientação..."/><button onClick={addTaskComment} disabled={!newTaskComment.trim()}>Comentar</button></div>
+                  </div>
+
                   <div style={{display:'flex',gap:8,marginTop:8,paddingTop:16,borderTop:'1px solid #e2e8f0'}}>
                     <button onClick={()=>{
                       updateKanTask(editTask.id,{
@@ -2084,7 +2337,7 @@ export default function Home() {
               <h2 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:16,fontWeight:700,color:'#1A2332',margin:0}}>Gestão da Equipe</h2>
               <p style={{fontSize:13,color:'#8B94A3',marginTop:2}}>Gerencie acessos, perfis e permissões</p>
             </div>
-            <button className="pmx-cta" onClick={()=>setShowNewUser(true)} style={{padding:'10px 18px',borderRadius:9,border:'none',background:'#00A650',color:'#fff',fontFamily:'inherit',fontSize:13,fontWeight:600,cursor:'pointer',boxShadow:'0 1px 2px rgba(0,166,80,.3),inset 0 1px 0 rgba(255,255,255,.15)',display:'inline-flex',alignItems:'center',gap:7}}>
+            <button className="pmx-cta" onClick={()=>setShowNewUser(true)} style={{padding:'10px 18px',borderRadius:9,border:'none',background:'#20558A',color:'#fff',fontFamily:'inherit',fontSize:13,fontWeight:600,cursor:'pointer',boxShadow:'0 1px 2px rgba(32,85,138,.3),inset 0 1px 0 rgba(255,255,255,.15)',display:'inline-flex',alignItems:'center',gap:7}}>
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
               Novo Usuário
             </button>
@@ -2103,7 +2356,7 @@ export default function Home() {
                 </select>
                 <div style={{fontSize:11,color:'#94a3b8',padding:'8px 0'}}>A senha temporária será gerada automaticamente e exibida após criar.</div>
                 <div style={{gridColumn:'1/-1',display:'flex',gap:10,marginTop:4}}>
-                  <button onClick={addUser} className="pmx-cta" style={{padding:'10px 20px',borderRadius:9,border:'none',background:'#00A650',color:'#fff',fontFamily:'inherit',fontWeight:600,fontSize:13,cursor:'pointer',boxShadow:'0 1px 2px rgba(0,166,80,.3),inset 0 1px 0 rgba(255,255,255,.15)'}}>Criar Usuário</button>
+                  <button onClick={addUser} className="pmx-cta" style={{padding:'10px 20px',borderRadius:9,border:'none',background:'#20558A',color:'#fff',fontFamily:'inherit',fontWeight:600,fontSize:13,cursor:'pointer',boxShadow:'0 1px 2px rgba(32,85,138,.3),inset 0 1px 0 rgba(255,255,255,.15)'}}>Criar Usuário</button>
                   <button onClick={()=>setShowNewUser(false)} style={{padding:'10px 20px',borderRadius:9,border:'1px solid #E5E9EF',background:'#fff',fontFamily:'inherit',fontWeight:500,fontSize:13,cursor:'pointer',color:'#4F5868'}}>Cancelar</button>
                 </div>
               </div>
@@ -2128,7 +2381,7 @@ export default function Home() {
                       <td style={tdSnew()}>
                         {editing ? <input defaultValue={u.nome} id={`u-nome-${u.id}`} style={fieldStyle()} /> :
                         <div style={{display:'flex',alignItems:'center',gap:10}}>
-                          <div style={{width:32,height:32,borderRadius:'50%',background:'linear-gradient(135deg,#00A650,#008C44)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Geist,-apple-system,sans-serif',fontWeight:700,fontSize:11,flexShrink:0}}>{u.nome.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
+                          <div style={{width:32,height:32,borderRadius:'50%',background:'linear-gradient(135deg,#20558A,#173F69)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Geist,-apple-system,sans-serif',fontWeight:700,fontSize:11,flexShrink:0}}>{u.nome.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
                           <div><div style={{fontWeight:600,fontSize:13,color:'#1A2332'}}>{u.nome}</div>{u.telefone && <div style={{fontSize:11,color:'#8B94A3'}}>{u.telefone}</div>}</div>
                         </div>}
                       </td>
@@ -2147,7 +2400,7 @@ export default function Home() {
                       <td style={tdSnew()}>
                         {editing ? (
                           <div style={{display:'flex',gap:6}}>
-                            <button onClick={()=>updateUser(u.id,{nome:document.getElementById(`u-nome-${u.id}`).value,email:document.getElementById(`u-email-${u.id}`).value.toLowerCase(),cargo:document.getElementById(`u-cargo-${u.id}`).value,role:document.getElementById(`u-role-${u.id}`).value})} style={{padding:'6px 12px',borderRadius:7,border:'none',background:'#00A650',color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer'}}>Salvar</button>
+                            <button onClick={()=>updateUser(u.id,{nome:document.getElementById(`u-nome-${u.id}`).value,email:document.getElementById(`u-email-${u.id}`).value.toLowerCase(),cargo:document.getElementById(`u-cargo-${u.id}`).value,role:document.getElementById(`u-role-${u.id}`).value})} style={{padding:'6px 12px',borderRadius:7,border:'none',background:'#20558A',color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer'}}>Salvar</button>
                             <button onClick={()=>setEditUser(null)} style={{padding:'6px 12px',borderRadius:7,border:'1px solid #E5E9EF',background:'#fff',fontSize:11,cursor:'pointer',color:'#8B94A3'}}>Cancelar</button>
                           </div>
                         ) : (
@@ -2192,205 +2445,74 @@ export default function Home() {
         </div>
       )}
 
-      {/* ══ PAGE: APARÊNCIA — Temas, Cores, Wallpapers ══ */}
+      {/* ══ PAGE: APARÊNCIA INSTITUCIONAL ══ */}
       {page === 'aparencia' && (
-        <div className="pmx-fade-in">
-          <div className="pmx-themed-bg" style={{background:T.surface,padding:'16px 28px',borderBottom:`1px solid ${T.border}`}}>
-            <div style={{fontSize:12,color:'#8B94A3',marginBottom:6,display:'flex',alignItems:'center',gap:6}}>
-              <span style={{cursor:'pointer'}}>Núcleo Fiscal</span>
-              <span>›</span>
-              <span style={{color:'#1A2332',fontWeight:500}}>Temas & Cores</span>
+        <div className="pmx-page pmx-fade-in">
+          <header className="pmx-page-heading">
+            <div>
+              <span className="pmx-eyebrow">Sistema</span>
+              <h1>Aparência institucional</h1>
+              <p>A identidade Premix permanece fixa. Você pode alternar apenas o modo de exibição e a densidade operacional.</p>
             </div>
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-              <div>
-                <h1 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:22,fontWeight:700,color:'#1A2332',letterSpacing:'-.4px',margin:0}}>Aparência</h1>
-                <p style={{fontSize:13,color:'#8B94A3',marginTop:2}}>Personalize a aparência do painel. Mudanças são salvas automaticamente.</p>
+            {prefsLoaded && <span className="pmx-save-status"><span /> Preferências sincronizadas</span>}
+          </header>
+
+          <section className="pmx-settings-grid">
+            <article className="pmx-card pmx-settings-card">
+              <div className="pmx-settings-card__heading">
+                <div><span className="pmx-eyebrow">Tema</span><h2>Modo de exibição</h2></div>
+                <span className="pmx-brand-lock">Identidade Premix</span>
               </div>
-              {prefsLoaded && (
-                <div style={{display:'inline-flex',alignItems:'center',gap:7,padding:'8px 14px',background:'#E6F7EE',color:'#008C44',borderRadius:20,fontSize:12,fontWeight:600}}>
-                  <span style={{width:8,height:8,borderRadius:'50%',background:'#00A650',boxShadow:'0 0 0 3px rgba(0,166,80,.2)'}} />
-                  Salvando automaticamente
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div style={{padding:'22px 28px 40px'}}>
-
-            {/* SEÇÃO 1: TEMAS */}
-            <section style={{marginBottom:32}}>
-              <h2 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:15,fontWeight:700,color:'#1A2332',marginBottom:4}}>Tema</h2>
-              <p style={{fontSize:12,color:'#8B94A3',marginBottom:14}}>Escolha um conjunto de cores para o painel. As mudanças aparecem em tempo real.</p>
-              <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))',gap:12}}>
-                {Object.entries(TEMAS).map(([k, t]) => {
-                  const ativo = tema === k;
+              <p>Azul institucional para estrutura e ações, laranja para destaques e cores semânticas somente para status.</p>
+              <div className="pmx-theme-grid">
+                {['premix_claro', 'premix_escuro'].map((key) => {
+                  const item = TEMAS[key];
+                  const ativo = tema === key;
                   return (
-                    <button key={k} onClick={()=>{setTema(k);savePrefs({tema:k});}} style={{
-                      textAlign:'left',padding:14,borderRadius:12,
-                      border: ativo ? '2px solid #00A650' : '2px solid transparent',
-                      background:'#fff',cursor:'pointer',fontFamily:'inherit',
-                      boxShadow: ativo ? '0 4px 12px rgba(0,166,80,.2)' : '0 1px 2px rgba(16,24,40,.04)',
-                      transition:'all .15s',position:'relative'
-                    }}>
-                      {/* Preview do tema */}
-                      <div style={{display:'flex',gap:0,height:60,borderRadius:8,overflow:'hidden',marginBottom:10,border:'1px solid '+t.border}}>
-                        <div style={{flex:'0 0 30%',background:t.surface,borderRight:'1px solid '+t.border,position:'relative'}}>
-                          <div style={{position:'absolute',top:6,left:6,right:6,height:4,background:t.primary,borderRadius:2}} />
-                          <div style={{position:'absolute',top:14,left:6,width:'70%',height:3,background:t.text2,borderRadius:2,opacity:.4}} />
-                          <div style={{position:'absolute',top:22,left:6,width:'50%',height:3,background:t.text2,borderRadius:2,opacity:.3}} />
-                        </div>
-                        <div style={{flex:1,background:t.bg,padding:6,display:'flex',gap:4,alignItems:'flex-start'}}>
-                          <div style={{flex:1,background:t.surface,borderRadius:4,padding:5}}>
-                            <div style={{height:3,background:t.primary,borderRadius:2,marginBottom:3,width:'40%'}} />
-                            <div style={{height:2,background:t.text2,borderRadius:2,opacity:.3}} />
-                          </div>
-                          <div style={{width:18,height:18,borderRadius:4,background:t.primary}} />
-                        </div>
-                      </div>
-                      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-                        <div>
-                          <div style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:14,fontWeight:700,color:'#1A2332'}}>{t.nome}</div>
-                          <div style={{fontSize:11,color:'#8B94A3',marginTop:1}}>{t.descricao}</div>
-                        </div>
-                        {ativo && (
-                          <div style={{width:22,height:22,borderRadius:'50%',background:'#00A650',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-                          </div>
-                        )}
-                      </div>
+                    <button key={key} className={`pmx-theme-option ${ativo ? 'is-active' : ''}`} onClick={() => { setTema(key); savePrefs({ tema:key }); }}>
+                      <span className="pmx-theme-option__preview" style={{background:item.bg}}>
+                        <i style={{background:'#173F69'}} />
+                        <b style={{background:item.surface,borderColor:item.border}}><em style={{background:'#20558A'}} /><em style={{background:'#F15A24'}} /></b>
+                      </span>
+                      <span><strong>{item.nome}</strong><small>{item.descricao}</small></span>
+                      {ativo && <span className="pmx-theme-check">✓</span>}
                     </button>
                   );
                 })}
               </div>
-            </section>
+            </article>
 
-            {/* SEÇÃO 2: COR PRIMÁRIA */}
-            <section style={{marginBottom:32}}>
-              <h2 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:15,fontWeight:700,color:'#1A2332',marginBottom:4}}>Cor primária</h2>
-              <p style={{fontSize:12,color:'#8B94A3',marginBottom:14}}>Cor de destaque usada em botões, links e elementos ativos.</p>
-              <div style={{background:'#fff',padding:18,borderRadius:12,border:'1px solid #E5E9EF',boxShadow:'0 1px 2px rgba(16,24,40,.04)'}}>
-                <div style={{display:'flex',flexWrap:'wrap',gap:10,marginBottom:16}}>
-                  {CORES_SUGERIDAS.map(cor => (
-                    <button key={cor} onClick={()=>{setCorPrimaria(cor);savePrefs({cor_primaria:cor});}} title={cor} style={{
-                      width:38,height:38,borderRadius:10,border: corPrimaria===cor ? '3px solid #1A2332' : '2px solid #E5E9EF',
-                      background:cor,cursor:'pointer',padding:0,transition:'all .15s',
-                      boxShadow: corPrimaria===cor ? `0 4px 12px ${cor}66` : '0 1px 2px rgba(16,24,40,.06)',
-                      transform: corPrimaria===cor ? 'scale(1.1)' : 'scale(1)'
-                    }} />
-                  ))}
-                </div>
-                <div style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap',borderTop:'1px solid #E5E9EF',paddingTop:14}}>
-                  <label style={{fontSize:11,fontWeight:600,color:'#8B94A3',textTransform:'uppercase',letterSpacing:'.5px'}}>Personalizada:</label>
-                  <input type="color" value={corPrimaria} onChange={e=>setCorPrimaria(e.target.value)} onBlur={()=>savePrefs({})} style={{width:42,height:36,padding:2,border:'1px solid #E5E9EF',borderRadius:8,cursor:'pointer'}} />
-                  <input type="text" value={corPrimaria} onChange={e=>setCorPrimaria(e.target.value)} onBlur={()=>savePrefs({})} placeholder="#00A650" style={{padding:'9px 12px',borderRadius:8,border:'1px solid #E5E9EF',fontSize:13,fontFamily:'Geist Mono,monospace',color:'#1A2332',outline:'none',width:110,background:'#F8F9FB'}} />
-                  {/* Preview do botão (próximo do input) */}
-                  <div style={{display:'inline-flex',alignItems:'center',gap:8,padding:'4px 10px 4px 14px',background:'#F8F9FB',borderRadius:20,border:'1px solid #E5E9EF'}}>
-                    <span style={{fontSize:11,color:'#8B94A3',fontWeight:600}}>Preview:</span>
-                    <button style={{padding:'7px 14px',borderRadius:7,border:'none',background:corPrimaria,color:'#fff',fontFamily:'inherit',fontSize:12,fontWeight:600,cursor:'default',boxShadow:`0 1px 2px ${corPrimaria}66, inset 0 1px 0 rgba(255,255,255,.15)`}}>Botão</button>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* SEÇÃO 3: WALLPAPER */}
-            <section style={{marginBottom:32}}>
-              <h2 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:15,fontWeight:700,color:'#1A2332',marginBottom:4}}>Wallpaper</h2>
-              <p style={{fontSize:12,color:'#8B94A3',marginBottom:14}}>Imagem de fundo sutil. Use opacidade baixa para não distrair durante o trabalho.</p>
-              <div style={{background:'#fff',padding:18,borderRadius:12,border:'1px solid #E5E9EF',boxShadow:'0 1px 2px rgba(16,24,40,.04)'}}>
-
-                {/* Categorias */}
-                <div style={{display:'flex',gap:6,marginBottom:14,flexWrap:'wrap'}}>
-                  {['Agro','Natureza','Abstrato','Minimalista','Textura'].map(c => (
-                    <button key={c} onClick={()=>setApCat(c)} style={{
-                      padding:'6px 14px',borderRadius:20,border:'1px solid '+ (apCat===c ? '#00A650' : '#E5E9EF'),
-                      background: apCat===c ? '#E6F7EE' : '#fff',
-                      color: apCat===c ? '#008C44' : '#4F5868',
-                      fontFamily:'inherit',fontSize:12,fontWeight:600,cursor:'pointer',transition:'all .15s'
-                    }}>{c}</button>
-                  ))}
-                </div>
-
-                {/* Grade de wallpapers */}
-                <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))',gap:10,marginBottom:18}}>
-                  {/* Opção "Sem wallpaper" */}
-                  <button onClick={()=>{setWallpaper(null);savePrefs({wallpaper:null});}} style={{
-                    aspectRatio:'3/2',borderRadius:10,
-                    border: !wallpaper ? '3px solid #00A650' : '1px solid #E5E9EF',
-                    background:'linear-gradient(135deg,#F8F9FB 0%,#EEF1F5 100%)',cursor:'pointer',padding:0,
-                    display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:6,
-                    transition:'all .15s',position:'relative'
-                  }}>
-                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#8B94A3" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
-                    <span style={{fontSize:11,color:'#4F5868',fontWeight:600}}>Sem wallpaper</span>
-                    {!wallpaper && <div style={{position:'absolute',top:6,right:6,width:20,height:20,borderRadius:'50%',background:'#00A650',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center'}}><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>}
-                  </button>
-
-                  {WALLPAPERS.filter(w=>w.cat===apCat).map(w => {
-                    const ativo = wallpaper === w.url;
-                    return (
-                      <button key={w.id} onClick={()=>{setWallpaper(w.url);savePrefs({wallpaper:w.url});}} title={`Foto por ${w.autor} no Unsplash`} style={{
-                        aspectRatio:'3/2',borderRadius:10,
-                        border: ativo ? '3px solid #00A650' : '1px solid #E5E9EF',
-                        background:`url(${w.url}) center/cover no-repeat,#F8F9FB`,
-                        cursor:'pointer',padding:0,transition:'all .15s',position:'relative',overflow:'hidden'
-                      }}>
-                        {ativo && <div style={{position:'absolute',top:6,right:6,width:22,height:22,borderRadius:'50%',background:'#00A650',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 2px 6px rgba(0,0,0,.3)'}}><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>}
-                        <div style={{position:'absolute',bottom:0,left:0,right:0,padding:'4px 8px',background:'linear-gradient(180deg,transparent,rgba(0,0,0,.6))',color:'#fff',fontSize:9,fontWeight:500,opacity:.9,textAlign:'left'}}>📷 {w.autor}</div>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Opacidade do wallpaper */}
-                {wallpaper && (
-                  <div style={{borderTop:'1px solid #E5E9EF',paddingTop:14}}>
-                    <label style={{fontSize:12,fontWeight:600,color:'#4F5868',marginBottom:6,display:'block'}}>Opacidade: <strong style={{color:'#00A650'}}>{wallpaperOpacidade}%</strong> <span style={{fontWeight:400,color:'#8B94A3'}}>· menor = mais sutil</span></label>
-                    <input type="range" min="3" max="40" step="1" value={wallpaperOpacidade} onChange={e=>setWallpaperOpacidade(parseInt(e.target.value))} onMouseUp={()=>savePrefs({})} onTouchEnd={()=>savePrefs({})} style={{width:'100%',accentColor:'#00A650',cursor:'pointer'}} />
-                  </div>
-                )}
-
-                {/* Upload próprio (placeholder) */}
-                <div style={{borderTop:'1px solid #E5E9EF',marginTop:14,paddingTop:14,fontSize:12,color:'#8B94A3',display:'flex',alignItems:'center',gap:8}}>
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                  <span>Upload de imagem própria — disponível em breve (precisamos configurar o Storage do Supabase para isso).</span>
-                </div>
-              </div>
-            </section>
-
-            {/* SEÇÃO 4: DENSIDADE */}
-            <section style={{marginBottom:32}}>
-              <h2 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:15,fontWeight:700,color:'#1A2332',marginBottom:4}}>Densidade</h2>
-              <p style={{fontSize:12,color:'#8B94A3',marginBottom:14}}>Ajuste o espaçamento entre elementos.</p>
-              <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10}}>
+            <article className="pmx-card pmx-settings-card">
+              <div className="pmx-settings-card__heading"><div><span className="pmx-eyebrow">Layout</span><h2>Densidade da informação</h2></div></div>
+              <p>Ajuste o espaçamento sem alterar os dados ou a ordem operacional.</p>
+              <div className="pmx-density-grid">
                 {[
-                  { k:'compacto',     l:'Compacto',     d:'Mais informação na tela' },
-                  { k:'normal',       l:'Normal',       d:'Equilíbrio padrão' },
-                  { k:'confortavel',  l:'Confortável',  d:'Mais respiração visual' },
-                ].map(d => {
-                  const ativo = densidade === d.k;
-                  return (
-                    <button key={d.k} onClick={()=>{setDensidade(d.k);savePrefs({densidade:d.k});}} style={{
-                      textAlign:'left',padding:'14px 16px',borderRadius:10,
-                      border: ativo ? '2px solid #00A650' : '1px solid #E5E9EF',
-                      background: ativo ? '#E6F7EE' : '#fff',
-                      cursor:'pointer',fontFamily:'inherit',transition:'all .15s'
-                    }}>
-                      <div style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:13,fontWeight:700,color: ativo ? '#008C44' : '#1A2332',marginBottom:2}}>{d.l}</div>
-                      <div style={{fontSize:11,color:'#8B94A3'}}>{d.d}</div>
-                    </button>
-                  );
-                })}
+                  { k:'compacto', l:'Compacto', d:'Mais registros por tela' },
+                  { k:'normal', l:'Equilibrado', d:'Padrão recomendado' },
+                  { k:'confortavel', l:'Confortável', d:'Mais espaço visual' },
+                ].map((item) => (
+                  <button key={item.k} className={`pmx-density-option ${densidade === item.k ? 'is-active' : ''}`} onClick={() => { setDensidade(item.k); savePrefs({ densidade:item.k }); }}>
+                    <span className={`pmx-density-lines pmx-density-lines--${item.k}`}><i/><i/><i/></span>
+                    <strong>{item.l}</strong><small>{item.d}</small>
+                  </button>
+                ))}
               </div>
-            </section>
+            </article>
 
-            {/* Disclaimer/créditos */}
-            <div style={{background:'#fff',padding:14,borderRadius:10,border:'1px solid #E5E9EF',fontSize:12,color:'#8B94A3',display:'flex',alignItems:'flex-start',gap:10}}>
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#00A650" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:1}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-              <div>
-                <strong style={{color:'#1A2332'}}>Sobre as imagens:</strong> wallpapers cortesia do <a href="https://unsplash.com" target="_blank" rel="noopener noreferrer" style={{color:'#00A650',fontWeight:600,textDecoration:'none'}}>Unsplash</a>, fotografias profissionais de uso livre. Os créditos aparecem em cada miniatura.
+            <article className="pmx-card pmx-settings-card pmx-settings-card--wide">
+              <div className="pmx-settings-card__heading"><div><span className="pmx-eyebrow">Navegação</span><h2>Barra lateral</h2></div></div>
+              <div className="pmx-sidebar-options">
+                <button className={!sidebarCol ? 'is-active' : ''} onClick={() => setSidebarCol(false)}><span className="pmx-sidebar-preview"><i/><b/></span><strong>Expandida</strong><small>Ícones e nomes visíveis</small></button>
+                <button className={sidebarCol ? 'is-active' : ''} onClick={() => setSidebarCol(true)}><span className="pmx-sidebar-preview pmx-sidebar-preview--compact"><i/><b/></span><strong>Compacta</strong><small>Mais área de trabalho</small></button>
               </div>
-            </div>
-          </div>
+            </article>
+
+            <article className="pmx-card pmx-brand-guideline pmx-settings-card--wide">
+              <div className="pmx-brand-guideline__mark">P</div>
+              <div><span className="pmx-eyebrow">Padrão visual</span><h2>Premix, sem distrações</h2><p>Wallpapers e cores livres foram removidos da área operacional. O painel mantém azul e laranja da organização, com fundo neutro, tipografia consistente e contraste adequado.</p></div>
+              <button className="pmx-button pmx-button--secondary" onClick={() => { setTema('premix_claro'); setDensidade('normal'); setSidebarCol(false); savePrefs({ tema:'premix_claro', densidade:'normal', cor_primaria:'#20558A', wallpaper:null, wallpaper_opacidade:0 }); showToast('Padrão Premix restaurado'); }}>Restaurar padrão</button>
+            </article>
+          </section>
         </div>
       )}
 
@@ -2402,6 +2524,16 @@ export default function Home() {
         </div>{/* end main */}
       </div>{/* end grid */}
       </div>{/* end z-index wrapper */}
+
+      {rejectUnlock && (
+        <div className="pmx-detail-overlay" style={{zIndex:8800}} onClick={(event)=>{if(event.target===event.currentTarget){setRejectUnlock(null);setRejectUnlockReason('');}}}>
+          <form onSubmit={async (event)=>{event.preventDefault();const reason=rejectUnlockReason.trim();if(!reason){showToast('Informe o motivo da rejeição');return;}await rejeitarDesbloqueio(rejectUnlock, reason);setRejectUnlock(null);setRejectUnlockReason('');}} style={{background:'#fff',borderRadius:16,width:'min(520px,100%)',boxShadow:'0 24px 64px rgba(16,24,40,.20)',border:'1px solid #E5E9EF',overflow:'hidden'}}>
+            <div style={{padding:'20px 22px',borderBottom:'1px solid #E5E9EF'}}><span className="pmx-eyebrow">Desbloqueio</span><h3 style={{margin:'3px 0 4px',fontSize:18,color:'#1A2332'}}>Devolver solicitação</h3><p style={{margin:0,fontSize:13,color:'#667085'}}>Registre claramente o motivo para manter o histórico operacional.</p></div>
+            <div style={{padding:22}}><label style={{display:'grid',gap:7,fontSize:12,fontWeight:650,color:'#344054'}}>Motivo da rejeição<textarea autoFocus value={rejectUnlockReason} onChange={(event)=>setRejectUnlockReason(event.target.value)} rows={5} maxLength={1200} placeholder="Descreva o que precisa ser corrigido..." style={{...fieldStyle(),minHeight:120,resize:'vertical',fontWeight:400}} /></label></div>
+            <div style={{padding:'14px 22px',display:'flex',justifyContent:'flex-end',gap:9,background:'#F8F9FB',borderTop:'1px solid #E5E9EF'}}><button type="button" className="pmx-button pmx-button--secondary" onClick={()=>{setRejectUnlock(null);setRejectUnlockReason('');}}>Cancelar</button><button type="submit" className="pmx-button" style={{background:'#E63946',color:'#fff'}}>Devolver solicitação</button></div>
+          </form>
+        </div>
+      )}
 
       {/* ══ MODAL DE CONFIRMAÇÃO CUSTOMIZADO ══ */}
       {confirmModal && (
@@ -2422,7 +2554,7 @@ export default function Home() {
             </div>
             <div style={{padding:'14px 24px 18px',display:'flex',gap:10,justifyContent:'flex-end',background:'#F8F9FB',borderTop:'1px solid #E5E9EF'}}>
               <button onClick={()=>setConfirmModal(null)} style={{padding:'10px 18px',borderRadius:9,border:'1px solid #E5E9EF',background:'#fff',fontFamily:'inherit',fontSize:13,fontWeight:500,cursor:'pointer',color:'#4F5868'}}>Cancelar</button>
-              <button onClick={async ()=>{ const fn = confirmModal.onConfirm; setConfirmModal(null); try { await fn(); } catch(e) { console.error('[confirmModal]', e); showToast('Erro inesperado'); } }} autoFocus style={{padding:'10px 18px',borderRadius:9,border:'none',background: confirmModal.danger ? '#E63946' : '#00A650',color:'#fff',fontFamily:'inherit',fontSize:13,fontWeight:600,cursor:'pointer',boxShadow:`0 1px 2px ${confirmModal.danger?'rgba(230,57,70,.3)':'rgba(0,166,80,.3)'}, inset 0 1px 0 rgba(255,255,255,.15)`}}>
+              <button onClick={async ()=>{ const fn = confirmModal.onConfirm; setConfirmModal(null); try { await fn(); } catch(e) { console.error('[confirmModal]', e); showToast('Erro inesperado'); } }} autoFocus style={{padding:'10px 18px',borderRadius:9,border:'none',background: confirmModal.danger ? '#E63946' : '#20558A',color:'#fff',fontFamily:'inherit',fontSize:13,fontWeight:600,cursor:'pointer',boxShadow:`0 1px 2px ${confirmModal.danger?'rgba(230,57,70,.3)':'rgba(32,85,138,.3)'}, inset 0 1px 0 rgba(255,255,255,.15)`}}>
                 {confirmModal.danger ? 'Excluir' : 'Confirmar'}
               </button>
             </div>

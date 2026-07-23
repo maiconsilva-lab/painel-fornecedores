@@ -61,6 +61,13 @@ export async function GET(req) {
   }
 
   try {
+    const requiredEnv = ['GOOGLE_SERVICE_ACCOUNT_EMAIL', 'GOOGLE_PRIVATE_KEY', 'GOOGLE_SHEET_ID', 'NEXT_PUBLIC_SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
+    const missingEnv = requiredEnv.filter((name) => !process.env[name]);
+    if (missingEnv.length) {
+      console.error('[sync-sheets] Variáveis ausentes:', missingEnv.join(', '));
+      return NextResponse.json({ error: 'Configuração da sincronização incompleta.' }, { status: 503 });
+    }
+
     // 1) Google Sheets auth
     const auth = new google.auth.JWT({
       email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
@@ -110,6 +117,7 @@ export async function GET(req) {
 
     const monitorRows = monitorRes.data.values || [];
     const monitorData = [];
+    const syncTimestamp = new Date().toISOString();
 
     for (const r of monitorRows) {
       const descFilial = (r[3] || '').trim();
@@ -137,11 +145,13 @@ export async function GET(req) {
         valor_unitario: parseNum(r[19]),
         valor_total: parseNum(r[20]),
         sla_categoria: slaCat(sla),
+        atualizado_em: syncTimestamp,
       });
     }
 
     // Truncate + insert monitor_xml
-    await supa.from('monitor_xml').delete().neq('id', 0);
+    const { error: clearMonitorError } = await supa.from('monitor_xml').delete().not('id', 'is', null);
+    if (clearMonitorError) throw new Error(`monitor_xml limpeza: ${clearMonitorError.message}`);
 
     if (monitorData.length > 0) {
       for (let i = 0; i < monitorData.length; i += 500) {
@@ -208,7 +218,8 @@ export async function GET(req) {
     }
 
     // Truncate + insert pre_notas
-    await supa.from('pre_notas').delete().neq('id', 0);
+    const { error: clearPreNotasError } = await supa.from('pre_notas').delete().not('id', 'is', null);
+    if (clearPreNotasError) throw new Error(`pre_notas limpeza: ${clearPreNotasError.message}`);
 
     if (preNotasData.length > 0) {
       for (let i = 0; i < preNotasData.length; i += 500) {
@@ -228,7 +239,7 @@ export async function GET(req) {
   } catch (err) {
     console.error('Sync error:', err);
     return NextResponse.json(
-      { error: err.message, detail: err.stack },
+      { error: process.env.NODE_ENV === 'production' ? 'Falha na sincronização.' : err.message },
       { status: 500 }
     );
   }
