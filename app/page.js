@@ -931,7 +931,7 @@ export default function Home() {
     if (filterAssign !== 'todos' && f.atribuido_para !== filterAssign) return false;
     if (searchTerm) {
       const s = searchTerm.toLowerCase();
-      return (f.razao_social||'').toLowerCase().includes(s) || (f.cnpj||'').includes(s) || (f.nome_fantasia||'').toLowerCase().includes(s) || (f.email||'').toLowerCase().includes(s) || (f.nome_completo||'').toLowerCase().includes(s) || (f.cpf||'').includes(s);
+      return (f.razao_social||'').toLowerCase().includes(s) || (f.cnpj||'').includes(s) || (f.nome_fantasia||'').toLowerCase().includes(s) || (f.email||'').toLowerCase().includes(s) || (f.nome_completo||'').toLowerCase().includes(s) || (f.cpf||'').includes(s) || (f.razao_social_atu||'').toLowerCase().includes(s) || (f.cnpj_cpf_atu||'').includes(s);
     }
     return true;
   });
@@ -1277,7 +1277,7 @@ export default function Home() {
               {/* Dropdown de resultados */}
               {searchGlobal && searchGlobalDeb.length >= 2 && (() => {
                 const q = searchGlobalDeb.toLowerCase();
-                const hitsForn = forn.filter(f => (f.razao_social||f.nome_completo||'').toLowerCase().includes(q) || (f.cnpj||f.cpf||'').includes(q) || (f.email||'').toLowerCase().includes(q) || (f.codigo_fornecedor||'').toLowerCase().includes(q)).slice(0,5);
+                const hitsForn = forn.filter(f => (f.razao_social||f.nome_completo||f.razao_social_atu||'').toLowerCase().includes(q) || (f.cnpj||f.cpf||f.cnpj_cpf_atu||'').includes(q) || (f.email||'').toLowerCase().includes(q) || (f.codigo_fornecedor||'').toLowerCase().includes(q)).slice(0,5);
                 const hitsProd = produtos.filter(p => (p.descricao||'').toLowerCase().includes(q) || (p.codigo_protheus||'').toLowerCase().includes(q) || (p.ncm||'').includes(q)).slice(0,5);
                 const hitsDesb = desbloqueios.filter(d => (d.nome_produto||'').toLowerCase().includes(q) || (d.codigo_produto||'').toLowerCase().includes(q)).slice(0,5);
                 const total = hitsForn.length + hitsProd.length + hitsDesb.length;
@@ -1751,7 +1751,7 @@ export default function Home() {
               </div>
               <select value={filterTipo} onChange={e=>setFilterTipo(e.target.value)} style={selectStyle()}>
                 <option value="todos">Todos os tipos</option>
-                <option value="pj">PJ</option><option value="pf">PF</option><option value="motorista">Motorista</option>
+                <option value="pj">PJ</option><option value="pf">PF</option><option value="motorista">Motorista</option><option value="atualizacao_bancaria">Atualização Bancária</option>
               </select>
               <select value={filterAssign} onChange={e=>setFilterAssign(e.target.value)} style={selectStyle()}>
                 <option value="todos">Todos os responsáveis</option>
