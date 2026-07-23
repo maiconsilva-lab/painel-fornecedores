@@ -83,6 +83,25 @@ export default function Home() {
   const [searchGlobal, setSearchGlobal] = useState(''); // busca global da topbar
   const [searchGlobalDeb, setSearchGlobalDeb] = useState(''); // versão "debounced" (250ms)
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notifPermission, setNotifPermission] = useState('default');
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) setNotifPermission(Notification.permission);
+  }, []);
+  const pedirPermissaoNotificacao = () => {
+    if (typeof window === 'undefined' || !('Notification' in window)) { showToast('Seu navegador não suporta notificações do sistema.'); return; }
+    Notification.requestPermission().then(perm => {
+      setNotifPermission(perm);
+      if (perm === 'granted') showToast('Notificações ativadas! Você vai receber avisos do Windows quando chegar cadastro novo.');
+      else if (perm === 'denied') showToast('Notificações bloqueadas. Pra ativar depois, libere nas permissões do site no navegador.');
+    });
+  };
+  const notifyOS = (title, body) => {
+    if (typeof window === 'undefined' || !('Notification' in window) || Notification.permission !== 'granted') return;
+    try {
+      const n = new Notification(title, { body, icon: 'https://premix.com.br/wp-content/uploads/2023/05/icon_premix-300x300-1.png', tag: title });
+      n.onclick = () => { window.focus(); n.close(); };
+    } catch {}
+  };
   const [detailMode, setDetailMode] = useState('protheus');
 
 
@@ -245,8 +264,10 @@ export default function Home() {
       if (novos.length === 1) {
         const nome = novos[0].razao_social || novos[0].nome_completo || novos[0].razao_social_atu || novos[0].nome_solicitante || novos[0].descricao || novos[0].codigo_produto || 'sem nome';
         showToast(`📥 Novo ${labelSingular}: ${nome}`, 5000);
+        notifyOS('Premix — Central de Cadastros', `Novo ${labelSingular}: ${nome}`);
       } else if (novos.length > 1) {
         showToast(`📥 ${novos.length} novos ${labelSingular}s recebidos`, 5000);
+        notifyOS('Premix — Central de Cadastros', `${novos.length} novos ${labelSingular}s recebidos`);
       }
     }
     knownIdsRef.current[chave] = atuais;
@@ -1335,6 +1356,12 @@ export default function Home() {
             </div>
 
             <div style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:6}}>
+              {notifPermission === 'default' && (
+                <button onClick={pedirPermissaoNotificacao} className="pmx-icon-btn" title="Ativar notificações do Windows" aria-label="Ativar notificações do Windows" style={{padding:'0 12px',height:36,borderRadius:8,background:T.primaryLight,border:`1px solid ${T.primary}33`,display:'flex',alignItems:'center',gap:6,color:T.primary,cursor:'pointer',fontSize:12,fontWeight:700,whiteSpace:'nowrap'}}>
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+                  Ativar avisos do Windows
+                </button>
+              )}
               <button onClick={()=>fetchAll(true)} disabled={refreshing} className="pmx-icon-btn" title="Atualizar dados" aria-label="Atualizar dados" style={{width:36,height:36,borderRadius:8,background:'transparent',border:'none',display:'flex',alignItems:'center',justifyContent:'center',color:'#4F5868',cursor:refreshing?'wait':'pointer',opacity:refreshing?.65:1}}>
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{animation:refreshing?'pmxSpin .8s linear infinite':'none'}}><path d="M20 7h-5V2"/><path d="M20 2 16.5 5.5A8 8 0 1 0 20 12"/></svg>
               </button>
