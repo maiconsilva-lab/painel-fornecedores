@@ -232,6 +232,26 @@ export default function Home() {
     } catch { return []; }
   }, [user]);
 
+  /* Guarda os IDs já vistos de cada coleção pra detectar chegadas novas
+     entre um fetch e outro. null = ainda não carregou (evita notificar
+     o dataset inteiro no primeiro load). */
+  const knownIdsRef = useRef({ fornecedores: null, produtos: null, desbloqueios: null });
+
+  const detectarNovos = (chave, lista, labelSingular) => {
+    const prev = knownIdsRef.current[chave];
+    const atuais = new Set(lista.map(r => r.id));
+    if (prev) {
+      const novos = lista.filter(r => !prev.has(r.id));
+      if (novos.length === 1) {
+        const nome = novos[0].razao_social || novos[0].nome_completo || novos[0].razao_social_atu || novos[0].nome_solicitante || novos[0].descricao || novos[0].codigo_produto || 'sem nome';
+        showToast(`📥 Novo ${labelSingular}: ${nome}`, 5000);
+      } else if (novos.length > 1) {
+        showToast(`📥 ${novos.length} novos ${labelSingular}s recebidos`, 5000);
+      }
+    }
+    knownIdsRef.current[chave] = atuais;
+  };
+
   const fetchAll = useCallback(async (silent = false) => {
     if (!user) return;
     if (silent) setRefreshing(true); else setLoad(true);
@@ -245,6 +265,9 @@ export default function Home() {
         listTable(user.id, 'desbloqueios', { orderCol: 'created_at', ascending: false }),
         fetch('/api/audit?limit=700', { credentials:'same-origin', cache:'no-store' }).then(r => r.ok ? r.json() : { logs:[] }).then(j => j.logs || []).catch(() => []),
       ]);
+      detectarNovos('fornecedores', f, 'cadastro de fornecedor');
+      detectarNovos('produtos', p, 'cadastro de produto');
+      detectarNovos('desbloqueios', d, 'pedido de desbloqueio');
       setForn(f); setUsu(uList); setKanban(k); setProdutos(p); setDesbloqueios(d); setAuditLog(auditRows);
     } catch (error) {
       console.error('[fetchAll]', error);
@@ -255,6 +278,17 @@ export default function Home() {
   }, [user, fetchUsuarios]);
 
   useEffect(() => { fetchAll(false); }, [fetchAll]);
+
+  /* Polling: sem isso, cadastros novos vindos dos formulários públicos só
+     apareceriam no próximo login/refresh manual (não dá pra usar realtime
+     do Supabase aqui — ver commit de correção de RLS). */
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') fetchAll(true);
+    }, 20000);
+    return () => clearInterval(interval);
+  }, [user, fetchAll]);
 
   /* ── Aparência: carregar e salvar preferências do usuário ── */
   const loadPrefs = useCallback(async () => {
@@ -862,7 +896,7 @@ export default function Home() {
   const fmtDate = d => { if (!d) return '-'; return new Date(d).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }); };
   const fmtDateShort = d => { if (!d) return ''; return new Date(d).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' }); };
   const cp = t => { navigator.clipboard.writeText(t || ''); showToast('Copiado!'); };
-  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2500); };
+  const showToast = (msg, duration = 2500) => { setToast(msg); setTimeout(() => setToast(''), duration); };
 
   const openDetail = (f) => { setSel(f); setShowModal(true); };
   const closeDetail = () => { setShowModal(false); setTimeout(() => setSel(null), 200); };
