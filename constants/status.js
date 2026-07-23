@@ -6,7 +6,7 @@ export const ST = {
   rejeitado:  { l:'Devolvido',  c:'#DC2626', bg:'#FEF2F2', i:'arrow-uturn-left' },
 };
 
-export const TL = { pj:'PJ', pf:'PF', motorista:'Motorista' };
+export const TL = { pj:'PJ', pf:'PF', motorista:'Motorista', atualizacao_bancaria:'Atualização Bancária' };
 
 export const PRI = {
   urgente: { l:'Urgente', c:'#DC2626', bg:'#FEF2F2' },

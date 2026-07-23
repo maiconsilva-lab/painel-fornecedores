@@ -1240,13 +1240,14 @@ export default function Home() {
                             {hitsForn.map(f => (
                               <button key={f.id} onClick={()=>{setSearchGlobal('');setPage('cadastros');setSubTab('fornecedores');openDetail(f);}} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',width:'100%',border:'none',background:'#fff',cursor:'pointer',textAlign:'left',borderBottom:'1px solid #F4F6F8'}}
                                 onMouseEnter={e=>e.currentTarget.style.background='#F8F9FB'} onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
-                                <div style={{width:32,height:32,borderRadius:8,background: f.tipo_cadastro==='pf'?'#EDE9FE':f.tipo_cadastro==='motorista'?'#FEE2E2':'#DBEAFE',color: f.tipo_cadastro==='pf'?'#7C3AED':f.tipo_cadastro==='motorista'?'#E63946':'#2563EB',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                                <div style={{width:32,height:32,borderRadius:8,background: f.tipo_cadastro==='pf'?'#EDE9FE':f.tipo_cadastro==='motorista'?'#FEE2E2':f.tipo_cadastro==='atualizacao_bancaria'?'#FEF3C7':'#DBEAFE',color: f.tipo_cadastro==='pf'?'#7C3AED':f.tipo_cadastro==='motorista'?'#E63946':f.tipo_cadastro==='atualizacao_bancaria'?'#D97706':'#2563EB',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                                   {f.tipo_cadastro==='pf' ? <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>
                                   : f.tipo_cadastro==='motorista' ? <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                                  : f.tipo_cadastro==='atualizacao_bancaria' ? <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
                                   : <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/></svg>}
                                 </div>
                                 <div style={{minWidth:0,flex:1}}>
-                                  <div style={{fontSize:13,fontWeight:600,color:'#1A2332',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{f.razao_social || f.nome_completo}</div>
+                                  <div style={{fontSize:13,fontWeight:600,color:'#1A2332',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{f.razao_social || f.nome_completo || f.razao_social_atu}</div>
                                   <div style={{fontSize:11,color:'#8B94A3'}}>{f.cnpj || f.cpf} · {TL[f.tipo_cadastro] || 'PJ'}</div>
                                 </div>
                                 <span style={{padding:'2px 8px',borderRadius:20,fontSize:10,fontWeight:600,color: f.status==='aprovado'?'#008C44':f.status==='rejeitado'?'#E63946':f.status==='em_analise'?'#2563EB':'#D97706',background: f.status==='aprovado'?'#E6F7EE':f.status==='rejeitado'?'#FEE2E2':f.status==='em_analise'?'#DBEAFE':'#FEF3C7'}}>{ST[f.status]?.l || 'Pendente'}</span>
@@ -1729,12 +1730,14 @@ export default function Home() {
                     const st = ST[f.status] || ST.pendente;
                     const stColor = f.status==='aprovado'?'#008C44':f.status==='rejeitado'?'#E63946':f.status==='em_analise'?'#2563EB':'#D97706';
                     const stBg = f.status==='aprovado'?'#E6F7EE':f.status==='rejeitado'?'#FEE2E2':f.status==='em_analise'?'#DBEAFE':'#FEF3C7';
-                    const tipoColors = { pf:{bg:'#EDE9FE',c:'#7C3AED'}, motorista:{bg:'#FEE2E2',c:'#E63946'}, atualizacao:{bg:'#FEF3C7',c:'#B45309'}, default:{bg:'#DBEAFE',c:'#2563EB'} };
+                    const tipoColors = { pf:{bg:'#EDE9FE',c:'#7C3AED'}, motorista:{bg:'#FEE2E2',c:'#E63946'}, atualizacao_bancaria:{bg:'#FEF3C7',c:'#B45309'}, default:{bg:'#DBEAFE',c:'#2563EB'} };
                     const tipo = tipoColors[f.tipo_cadastro] || tipoColors.default;
                     const tipoIcon = f.tipo_cadastro==='pf'
                       ? <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                       : f.tipo_cadastro==='motorista'
                       ? <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                      : f.tipo_cadastro==='atualizacao_bancaria'
+                      ? <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
                       : <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/></svg>;
                     return (
                       <tr key={f.id} className="pmx-row" onClick={()=>openDetail(f)} style={{borderBottom:'1px solid #E5E9EF',cursor:'pointer',background: sel?.id===f.id ? '#F0FDF4' : 'transparent'}}>
@@ -1743,7 +1746,7 @@ export default function Home() {
                             <div style={{width:36,height:36,borderRadius:9,background:tipo.bg,color:tipo.c,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{tipoIcon}</div>
                             <div style={{minWidth:0}}>
                               <div style={{fontWeight:600,color:'#1A2332',fontSize:13,display:'flex',alignItems:'center',gap:6,flexWrap:'wrap'}}>
-                                {sanitize(f.razao_social || f.nome_completo || 'Sem nome')}
+                                {sanitize(f.razao_social || f.nome_completo || f.razao_social_atu || 'Sem nome')}
                                 <span style={{display:'inline-block',fontSize:9,fontWeight:700,textTransform:'uppercase',letterSpacing:'.4px',padding:'1px 6px',borderRadius:3,background:tipo.bg,color:tipo.c}}>{TL[f.tipo_cadastro]||'PJ'}</span>
                               </div>
                               <div style={{fontSize:11,color:'#8B94A3',marginTop:1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',maxWidth:280}}>{f.email || '-'}</div>
@@ -1805,15 +1808,17 @@ export default function Home() {
             {/* Header */}
             <div style={{padding:'18px 24px',borderBottom:'1px solid #E5E9EF',display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0,background:'linear-gradient(180deg,#F8F9FB 0%,#fff 100%)'}}>
               <div style={{display:'flex',alignItems:'center',gap:14}}>
-                <div style={{width:44,height:44,borderRadius:11,background: sel.tipo_cadastro==='pf'?'#EDE9FE':sel.tipo_cadastro==='motorista'?'#FEE2E2':'#DBEAFE', color: sel.tipo_cadastro==='pf'?'#7C3AED':sel.tipo_cadastro==='motorista'?'#E63946':'#2563EB', display:'flex',alignItems:'center',justifyContent:'center'}}>
+                <div style={{width:44,height:44,borderRadius:11,background: sel.tipo_cadastro==='pf'?'#EDE9FE':sel.tipo_cadastro==='motorista'?'#FEE2E2':sel.tipo_cadastro==='atualizacao_bancaria'?'#FEF3C7':'#DBEAFE', color: sel.tipo_cadastro==='pf'?'#7C3AED':sel.tipo_cadastro==='motorista'?'#E63946':sel.tipo_cadastro==='atualizacao_bancaria'?'#B45309':'#2563EB', display:'flex',alignItems:'center',justifyContent:'center'}}>
                   {sel.tipo_cadastro==='pf'
                     ? <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     : sel.tipo_cadastro==='motorista'
                     ? <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                    : sel.tipo_cadastro==='atualizacao_bancaria'
+                    ? <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
                     : <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/></svg>}
                 </div>
                 <div>
-                  <h2 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:16,fontWeight:700,color:'#1A2332',margin:0,letterSpacing:'-.3px'}}>{sanitize(sel.razao_social || sel.nome_completo)}</h2>
+                  <h2 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:16,fontWeight:700,color:'#1A2332',margin:0,letterSpacing:'-.3px'}}>{sanitize(sel.razao_social || sel.nome_completo || sel.razao_social_atu || 'Atualização bancária')}</h2>
                   <span style={{fontSize:12,color:'#8B94A3'}}>{TL[sel.tipo_cadastro]||'PJ'} · {fmtDate(sel.created_at)}</span>
                 </div>
               </div>
@@ -2068,7 +2073,7 @@ export default function Home() {
                   Documentos anexados
                 </div>
                 <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-                  {[[sel.comprovante_cnpj_url,'CNPJ'],[sel.contrato_social_url,'Contrato Social'],[sel.comprovante_bancario_url,'Comp. Bancário'],[sel.documento_identidade_url,'Doc. Identidade']].filter(([u])=>u).map(([u,l],i) => (
+                  {[[sel.comprovante_cnpj_url,'CNPJ'],[sel.contrato_social_url,'Contrato Social'],[sel.comprovante_bancario_url,'Comp. Bancário'],[sel.comprovante_bancario_atu_url,'Comp. Bancário (atualização)'],[sel.documento_identidade_url,'Doc. Identidade']].filter(([u])=>u).map(([u,l],i) => (
                     <a key={i} href={u} target="_blank" rel="noreferrer noopener" style={{padding:'9px 14px',background:'#fff',borderRadius:8,color:'#2563EB',fontSize:12,fontWeight:600,textDecoration:'none',transition:'.15s',border:'1px solid #BFDBFE',display:'inline-flex',alignItems:'center',gap:7,boxShadow:'0 1px 2px rgba(16,24,40,.04)'}}
                       onMouseEnter={e=>{e.currentTarget.style.background='#F0F7FF';e.currentTarget.style.transform='translateY(-1px)';e.currentTarget.style.boxShadow='0 4px 8px rgba(37,99,235,.15)';}} onMouseLeave={e=>{e.currentTarget.style.background='#fff';e.currentTarget.style.transform='translateY(0)';e.currentTarget.style.boxShadow='0 1px 2px rgba(16,24,40,.04)';}}>
                       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -2076,7 +2081,7 @@ export default function Home() {
                       <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{opacity:.5}}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                     </a>
                   ))}
-                  {![[sel.comprovante_cnpj_url],[sel.contrato_social_url],[sel.comprovante_bancario_url],[sel.documento_identidade_url]].some(([u])=>u) && <span style={{fontSize:13,color:'#8B94A3',fontStyle:'italic'}}>Nenhum documento anexado</span>}
+                  {![[sel.comprovante_cnpj_url],[sel.contrato_social_url],[sel.comprovante_bancario_url],[sel.comprovante_bancario_atu_url],[sel.documento_identidade_url]].some(([u])=>u) && <span style={{fontSize:13,color:'#8B94A3',fontStyle:'italic'}}>Nenhum documento anexado</span>}
                 </div>
               </div>
 
