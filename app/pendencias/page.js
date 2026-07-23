@@ -139,10 +139,10 @@ export default function PendenciasPage() {
   const [copiedKey, setCopiedKey] = useState('');
 
   /* Essa página é pública (consultada por qualquer colaborador @premix.com.br
-     sem login). O menu de navegação pros outros módulos do painel só faz
-     sentido pra quem já está logado — pra quem não está, clicar num desses
-     links esbarra na tela de login. Checa a sessão só pra decidir se mostra
-     o menu; não bloqueia nada nesta página. */
+     sem login). Links pros outros módulos do painel só fazem sentido pra
+     quem já está logado — pra quem não está, clicar neles esbarra na tela
+     de login. Checa a sessão só pra decidir o que mostrar; não bloqueia
+     nada nesta página. */
   const [authUser, setAuthUser] = useState(null);
   useEffect(() => {
     fetch('/api/auth/session', { credentials: 'same-origin', cache: 'no-store' })
@@ -458,16 +458,16 @@ export default function PendenciasPage() {
      RENDER
   ═══════════════════════════════════════════════════════ */
   return (
-    <div style={{ minHeight: '100vh', background: C.bg, fontFamily: "'Geist', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif", color: C.text }}>
+    <div className="fiscal-shell" style={{ minHeight: '100vh', background: C.bg, fontFamily: "'Geist', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif", color: C.text }}>
 
       {/* TOPBAR */}
-      <header style={{
+      <header className="fiscal-topbar" style={{
         background: C.surface, borderBottom: `1px solid ${C.border}`,
         position: 'sticky', top: 0, zIndex: 50, backdropFilter: 'blur(8px)',
       }}>
-        <div style={{ maxWidth: 1440, margin: '0 auto', padding: '12px 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
-          <a href="/" aria-label="Voltar ao painel" style={{display:'inline-flex',alignItems:'center',gap:9,textDecoration:'none'}}>
-            <img src="https://premix.com.br/wp-content/uploads/2023/06/Logotipo_Premix_Positivo_Com-Bandeira.png" alt="Premix" style={{ height: 28 }} />
+        <div className="fiscal-topbar__inner" style={{ maxWidth: 1520, margin: '0 auto', padding: '14px 32px', display: 'flex', alignItems: 'center', gap: 18 }}>
+          <a href={authUser ? '/' : undefined} aria-label={authUser ? 'Voltar ao painel' : 'Premix'} style={{display:'inline-flex',alignItems:'center',gap:9,textDecoration:'none',cursor:authUser?'pointer':'default'}}>
+            <img className="fiscal-topbar__logo" src="https://premix.com.br/wp-content/uploads/2023/06/Logotipo_Premix_Positivo_Com-Bandeira.png" alt="Premix" style={{ height: 30 }} />
           </a>
           <div style={{ width: 1, height: 24, background: C.border }} />
           <div style={{ flex: 1 }}>
@@ -497,8 +497,8 @@ export default function PendenciasPage() {
       </header>
 
       {authUser && (
-        <nav aria-label="Módulos do painel" style={{background:'#173F69',borderBottom:'3px solid #F15A24'}}>
-          <div style={{maxWidth:1440,margin:'0 auto',padding:'0 24px',display:'flex',gap:4,overflowX:'auto'}}>
+        <nav className="fiscal-module-nav" aria-label="Módulos do painel" style={{background:'#173F69',borderBottom:'3px solid #F15A24'}}>
+          <div className="fiscal-module-nav__inner" style={{maxWidth:1520,margin:'0 auto',padding:'0 32px',display:'flex',gap:4,overflowX:'auto'}}>
             {[
               ['/?view=dashboard','Visão Geral'],
               ['/?view=fila','Fila Protheus'],
@@ -512,7 +512,12 @@ export default function PendenciasPage() {
         </nav>
       )}
 
-      <main style={{ maxWidth: 1440, margin: '0 auto', padding: '24px' }}>
+      <main className="fiscal-main" style={{ maxWidth: 1520, margin: '0 auto', padding: '32px' }}>
+
+        <section className="fiscal-page-heading">
+          <div><span>Operação fiscal</span><h1>Pendências Fiscais</h1><p>Monitoramento de NF-e, pré-notas e CT-e com visão por filial, SLA e valor financeiro.</p></div>
+          <div className="fiscal-page-heading__status"><i aria-hidden="true" /><span>{ultimaAtt ? `Atualizado ${fmtRelativeTime(ultimaAtt)}` : 'Aguardando atualização'}</span></div>
+        </section>
 
         {loadError && (
           <div role="alert" style={{marginBottom:20,padding:'16px 18px',background:C.redLight,border:`1px solid ${C.red}33`,borderRadius:10,display:'flex',alignItems:'center',gap:12,color:C.redText}}>
@@ -523,7 +528,7 @@ export default function PendenciasPage() {
         )}
 
         {/* DROPDOWN FILIAL */}
-        <div style={{ marginBottom: 24 }}>
+        <div className="fiscal-filial-selector" style={{ marginBottom: 26 }}>
           <label style={{ fontSize: 11, fontWeight: 600, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '.5px', display: 'block', marginBottom: 8 }}>
             Filial {tab === 'cte' && <span style={{ color: C.textSubtle, textTransform: 'none', fontWeight: 500 }}>(aba CT-e ignora esta seleção)</span>}
           </label>
@@ -554,8 +559,8 @@ export default function PendenciasPage() {
         </div>
 
         {/* TABS */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{
+        <div className="fiscal-tabs-wrap" style={{ marginBottom: 24 }}>
+          <div className="fiscal-tabs" style={{
             display: 'flex', gap: 4, padding: 4,
             background: C.surface, border: `1px solid ${C.border}`,
             borderRadius: 10, boxShadow: C.shadow, flexWrap: 'wrap',
@@ -724,6 +729,7 @@ export default function PendenciasPage() {
 function TabButton({ active, onClick, icon, label, badge, badgeColor, disabled, hint }) {
   return (
     <button
+      className={`fiscal-tab-button ${active ? 'is-active' : ''}`}
       onClick={onClick}
       disabled={disabled}
       style={{
@@ -768,9 +774,9 @@ function TabButton({ active, onClick, icon, label, badge, badgeColor, disabled, 
 ═══════════════════════════════════════════════════════ */
 function OverviewTab({ stats, chartData, filial, onGoNfe, onGoPrenotas }) {
   return (
-    <div style={{ animation: 'fadeIn .3s ease' }}>
+    <div className="fiscal-overview" style={{ animation: 'fadeIn .3s ease' }}>
       {/* HERO STATS */}
-      <div style={{
+      <div className="fiscal-overview-hero" style={{
         background: `linear-gradient(135deg, ${C.primary} 0%, ${C.accent} 100%)`,
         borderRadius: 12, padding: 24, marginBottom: 16,
         color: '#fff', boxShadow: C.shadowLg,
@@ -807,14 +813,14 @@ function OverviewTab({ stats, chartData, filial, onGoNfe, onGoPrenotas }) {
       </div>
 
       {/* SLA CARDS */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 16 }}>
+      <div className="fiscal-sla-strip" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 20 }}>
         <StatCard label="SLA Crítico" sub=">10 dias" value={stats.cr} color={C.redText} bg={C.redLight} dot={C.red} />
         <StatCard label="SLA Atenção" sub="6–10 dias" value={stats.at} color={C.amberText} bg={C.amberLight} dot={C.amber} />
         <StatCard label="SLA OK" sub="≤5 dias" value={stats.ok} color={C.greenText} bg={C.greenLight} dot={C.green} />
       </div>
 
       {/* GRÁFICOS GRID */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+      <div className="fiscal-chart-grid fiscal-chart-grid--two" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 18 }}>
         <ChartCard title="Distribuição por SLA" subtitle="Notas fiscais por categoria de prazo">
           <SLADonut critico={stats.cr} atencao={stats.at} ok={stats.ok} />
         </ChartCard>
@@ -823,13 +829,13 @@ function OverviewTab({ stats, chartData, filial, onGoNfe, onGoPrenotas }) {
         </ChartCard>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16, marginBottom: 16 }}>
+      <div className="fiscal-chart-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 18, marginBottom: 18 }}>
         <ChartCard title="Evolução de Pendências" subtitle="Notas por data de emissão — últimos 14 dias">
           <Timeline dias={chartData.dias} />
         </ChartCard>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
+      <div className="fiscal-chart-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 18 }}>
         <ChartCard title="Top 5 Fornecedores" subtitle="Por valor total em pendência">
           <TopFornecedores dados={chartData.topFornecedores} />
         </ChartCard>
@@ -844,9 +850,9 @@ function OverviewTab({ stats, chartData, filial, onGoNfe, onGoPrenotas }) {
 
 function ChartCard({ title, subtitle, children }) {
   return (
-    <div style={{
-      background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10,
-      padding: 20, boxShadow: C.shadow,
+    <div className="fiscal-chart-card" style={{
+      background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14,
+      padding: 24, boxShadow: C.shadow,
     }}>
       <div style={{ marginBottom: 16 }}>
         <h3 style={{ fontSize: 14, fontWeight: 600, color: C.text, margin: 0 }}>{title}</h3>
@@ -1040,7 +1046,7 @@ function EmptyChart({ label }) {
 ═══════════════════════════════════════════════════════ */
 function StatsRow({ cards }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 16 }}>
+    <div className="fiscal-stats-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 20 }}>
       {cards.map((c, i) => <StatCard key={i} {...c} />)}
     </div>
   );
@@ -1048,8 +1054,8 @@ function StatsRow({ cards }) {
 
 function StatCard({ label, sub, value, color, bg, dot, small }) {
   return (
-    <div style={{
-      background: bg, border: `1px solid ${C.border}`, borderRadius: 10,
+    <div className="fiscal-stat-card" style={{
+      background: bg, border: `1px solid ${C.border}`, borderRadius: 12,
       padding: '14px 16px', boxShadow: C.shadow,
       display: 'flex', flexDirection: 'column', gap: 4,
       animation: 'fadeIn .3s ease',
@@ -1078,13 +1084,13 @@ function DataPanel({
   temFiltros, limparFiltros, exportarCSV, total, children, semFiltrosSLA,
 }) {
   return (
-    <div style={{
-      background: C.surface, borderRadius: 10, border: `1px solid ${C.border}`,
+    <div className="fiscal-data-panel" style={{
+      background: C.surface, borderRadius: 14, border: `1px solid ${C.border}`,
       boxShadow: C.shadow, overflow: 'hidden',
     }}>
       {/* Header do painel */}
-      <div style={{
-        padding: '14px 16px', borderBottom: `1px solid ${C.border}`,
+      <div className="fiscal-data-panel__header" style={{
+        padding: '18px 20px', borderBottom: `1px solid ${C.border}`,
         display: 'flex', alignItems: 'center', gap: 10,
       }}>
         <div style={{ color: C.textMuted, display: 'flex' }}>{icon}</div>
@@ -1098,7 +1104,7 @@ function DataPanel({
       </div>
 
       {/* Barra de filtros */}
-      <div style={{ padding: '12px 16px', display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', borderBottom: `1px solid ${C.border}` }}>
+      <div className="fiscal-data-panel__toolbar" style={{ padding: '14px 20px', display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', borderBottom: `1px solid ${C.border}` }}>
         <div style={{ position: 'relative', flex: '1 1 240px', minWidth: 200 }}>
           <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: C.textSubtle }}>
             <Icon.Search />
@@ -1189,7 +1195,7 @@ function DataPanel({
 
 function FilterSelect({ value, onChange, options }) {
   return (
-    <div style={{ position: 'relative' }}>
+    <div className="fiscal-filter-select" style={{ position: 'relative' }}>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -1247,7 +1253,7 @@ function TabelaMonitor({ dados, mostrarFilial, expanded, toggleExpand, sortBy, s
   return (
     <>
       <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+        <table className="fiscal-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr>
               <th style={{ width: 28, background: C.bg, borderBottom: `1px solid ${C.border}` }}></th>
@@ -1431,7 +1437,7 @@ function TabelaPreNotas({ dados }) {
   return (
     <>
       <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+        <table className="fiscal-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr>
               {['Número', 'Série', 'Emissão', 'Digitação', 'Fornecedor', 'UF', 'Vlr Mercadoria', 'Vlr Bruto'].map(h => (

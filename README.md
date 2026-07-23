@@ -1,5 +1,7 @@
 # Premix — Central de Cadastros Protheus
 
+**Versão visual:** Premix Executive UI 3.0
+
 Painel interno do Núcleo Fiscal para receber, organizar, validar operacionalmente e copiar para o Protheus os dados de fornecedores, produtos e solicitações de desbloqueio.
 
 ## Objetivo do projeto
@@ -123,4 +125,4 @@ Com o repositório conectado ao Vercel, o deploy ocorre automaticamente.
 9. Responsividade em desktop, tablet e celular.
 10. Execução da rota de sincronização com o segredo do cron.
 
-Leia também `CLAUDE_HANDOFF.md`, `MELHORIAS_IMPLEMENTADAS.md` e `SECURITY.md`.
+Leia também `CLAUDE_HANDOFF.md`, `MELHORIAS_IMPLEMENTADAS.md`, `PREMIX_EXECUTIVE_UI.md` e `SECURITY.md`.

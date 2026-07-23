@@ -1,0 +1,390 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   PREMIX EXECUTIVE UI — camada visual premium
+   Preserva a identidade azul/laranja e prioriza legibilidade operacional.
+═══════════════════════════════════════════════════════════════════════ */
+
+:root{
+  --pmx-navy:#0f355c;
+  --pmx-navy-deep:#092744;
+  --pmx-blue:#1f5688;
+  --pmx-blue-bright:#2b6b9f;
+  --pmx-orange:#f15a24;
+  --pmx-bg:#f3f5f8;
+  --pmx-surface:#ffffff;
+  --pmx-surface-2:#f8fafc;
+  --pmx-text:#142033;
+  --pmx-text-2:#526173;
+  --pmx-text-3:#8591a2;
+  --pmx-border:#e4e9ef;
+  --pmx-border-strong:#cfd7e1;
+  --pmx-radius:14px;
+  --pmx-radius-lg:18px;
+  --pmx-shadow-sm:0 1px 2px rgba(15,35,55,.035);
+  --pmx-shadow:0 10px 28px rgba(18,45,72,.055),0 1px 3px rgba(18,45,72,.035);
+  --pmx-shadow-lg:0 24px 70px rgba(12,35,56,.16),0 4px 14px rgba(12,35,56,.07);
+}
+
+body{background:var(--pmx-bg);letter-spacing:-.006em}
+.pmx-theme-root{background:var(--pmx-bg)!important}
+.pmx-main{background:var(--pmx-bg)!important}
+
+/* ───────────────────────── Shell / sidebar ───────────────────────── */
+.pmx-app-shell{grid-template-columns:264px minmax(0,1fr)!important}
+.pmx-app-shell.is-collapsed{grid-template-columns:72px minmax(0,1fr)!important}
+.pmx-sidebar--executive{
+  background:linear-gradient(180deg,var(--pmx-navy-deep) 0%,var(--pmx-navy) 58%,#123f6b 100%)!important;
+  color:#fff;
+  border-right:1px solid rgba(255,255,255,.07)!important;
+  box-shadow:12px 0 34px rgba(7,28,48,.08);
+}
+.pmx-sidebar--executive::after{content:'';position:absolute;top:0;right:0;width:1px;height:100%;background:linear-gradient(180deg,rgba(255,255,255,.13),rgba(255,255,255,.02));pointer-events:none}
+.pmx-sidebar__brand{min-height:92px;position:relative}
+.pmx-sidebar__brand::after{content:'';position:absolute;left:20px;right:20px;bottom:-1px;height:1px;background:linear-gradient(90deg,var(--pmx-orange) 0 28%,rgba(255,255,255,.09) 28%)}
+.pmx-sidebar__identity{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:7px}
+.pmx-sidebar__identity img{height:31px;width:auto;max-width:150px;object-fit:contain;filter:brightness(0) invert(1);opacity:.98}
+.pmx-sidebar__identity span{font-size:9px;line-height:1;text-transform:uppercase;letter-spacing:1.35px;font-weight:700;color:rgba(255,255,255,.48);white-space:nowrap}
+.pmx-sidebar__toggle{background:rgba(255,255,255,.055)!important;border-color:rgba(255,255,255,.12)!important;color:rgba(255,255,255,.68)!important}
+.pmx-sidebar__toggle:hover{background:rgba(255,255,255,.12)!important;color:#fff!important;border-color:rgba(255,255,255,.2)!important}
+.pmx-sidebar__nav{scrollbar-color:rgba(255,255,255,.18) transparent!important}
+.pmx-sidebar__section-label{padding:18px 12px 8px;font-size:9px;font-weight:750;text-transform:uppercase;letter-spacing:1.35px;color:rgba(255,255,255,.35)}
+.pmx-sidebar__section-label--spaced{padding-top:24px}
+.pmx-sidebar .sb-link{
+  min-height:43px!important;
+  padding-top:10px!important;
+  padding-bottom:10px!important;
+  border-radius:9px!important;
+  color:rgba(255,255,255,.68)!important;
+  background:transparent!important;
+  font-size:12.5px!important;
+  letter-spacing:-.005em;
+  margin-bottom:3px!important;
+}
+.pmx-sidebar .sb-link svg{opacity:.82;transition:opacity .16s ease,transform .16s ease}
+.pmx-sidebar .sb-link:hover{background:rgba(255,255,255,.075)!important;color:#fff!important}
+.pmx-sidebar .sb-link:hover svg{opacity:1;transform:translateX(1px)}
+.pmx-sidebar .sb-link.active{background:rgba(255,255,255,.115)!important;color:#fff!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.035)}
+.pmx-sidebar .sb-link.active svg{opacity:1}
+.pmx-sidebar .sb-link span[style*="border-radius: 20px"],
+.pmx-sidebar .sb-link span[style*="borderRadius:20"]{box-shadow:0 0 0 1px rgba(255,255,255,.08)}
+.pmx-sidebar__user{background:rgba(0,0,0,.07);transition:background .16s ease}
+.pmx-sidebar__user:hover{background:rgba(255,255,255,.055)}
+.pmx-sidebar__user>div:first-child{box-shadow:0 0 0 3px rgba(255,255,255,.08)!important}
+.pmx-app-shell.is-collapsed .pmx-sidebar__brand{padding-left:16px!important;padding-right:16px!important}
+.pmx-app-shell.is-collapsed .pmx-sidebar__brand::after{left:14px;right:14px}
+
+/* ───────────────────────── Topbar ───────────────────────── */
+.pmx-topbar--executive{
+  min-height:72px!important;
+  background:rgba(255,255,255,.94)!important;
+  border-bottom:1px solid rgba(217,224,232,.9)!important;
+  box-shadow:0 1px 0 rgba(15,35,55,.015);
+  backdrop-filter:blur(18px) saturate(150%)!important;
+}
+.pmx-topbar__brand-line{display:none}
+.pmx-global-search--executive .pmx-search-input{
+  height:42px!important;
+  padding-left:41px!important;
+  border:1px solid transparent!important;
+  border-radius:11px!important;
+  background:#f4f6f9!important;
+  font-size:12.5px!important;
+  transition:background .16s ease,border-color .16s ease,box-shadow .16s ease!important;
+}
+.pmx-global-search--executive .pmx-search-input:hover{background:#f0f3f7!important}
+.pmx-global-search--executive .pmx-search-input:focus{background:#fff!important;border-color:#b8cadd!important;box-shadow:0 0 0 4px rgba(32,85,138,.075)!important}
+.pmx-topbar--executive .pmx-icon-btn{width:38px!important;height:38px!important;border-radius:10px!important;color:#637083!important}
+.pmx-topbar--executive .pmx-icon-btn:hover{background:#f2f5f8!important;color:var(--pmx-blue)!important}
+
+/* ───────────────────────── Page rhythm / typography ───────────────────────── */
+.pmx-page{max-width:1540px;padding:34px 40px 52px}
+.pmx-page-heading{align-items:center;margin-bottom:26px;padding-bottom:18px;border-bottom:1px solid var(--pmx-border)}
+.pmx-page-heading h1{font-size:30px;letter-spacing:-.85px;font-weight:700;margin:7px 0 8px}
+.pmx-page-heading p{font-size:13.5px;line-height:1.55;color:var(--pmx-text-2)}
+.pmx-eyebrow{font-size:9.5px;letter-spacing:1.15px;font-weight:750;color:var(--pmx-blue)}
+.pmx-eyebrow::before{content:'';width:18px;height:2px;border-radius:5px;background:var(--pmx-orange);display:inline-block}
+
+/* ───────────────────────── Editorial dashboard intro ───────────────────────── */
+.pmx-executive-intro{display:flex;align-items:flex-end;justify-content:space-between;gap:36px;margin:2px 0 28px;padding:12px 0 28px;border-bottom:1px solid var(--pmx-border);position:relative}
+.pmx-executive-intro::after{content:'';position:absolute;left:0;bottom:-1px;width:84px;height:2px;border-radius:4px;background:var(--pmx-orange)}
+.pmx-executive-intro__content{max-width:800px}
+.pmx-executive-intro h1{font-size:36px;line-height:1.08;letter-spacing:-1.25px;font-weight:720;margin:11px 0 10px;color:var(--pmx-text)}
+.pmx-executive-intro p{max-width:760px;font-size:14px;line-height:1.62;color:var(--pmx-text-2)}
+.pmx-executive-intro__actions{display:flex;gap:10px;align-items:center;padding-bottom:3px;flex-wrap:wrap;justify-content:flex-end}
+.pmx-operational-pulse{display:flex;align-items:center;gap:8px;margin-top:18px;color:var(--pmx-text-2);font-size:11.5px;font-weight:550}
+.pmx-operational-pulse i{width:7px;height:7px;border-radius:50%;background:#12a36c;box-shadow:0 0 0 4px rgba(18,163,108,.1)}
+.pmx-operational-pulse b{font-weight:650;color:var(--pmx-text);padding-left:9px;border-left:1px solid var(--pmx-border)}
+
+/* ───────────────────────── Buttons ───────────────────────── */
+.pmx-button{min-height:40px;border-radius:10px;padding:10px 16px;font-size:12px;font-weight:650;box-shadow:none;transform:none!important;transition:background .16s ease,border-color .16s ease,color .16s ease,box-shadow .16s ease!important}
+.pmx-button--primary{background:var(--pmx-blue)!important;color:#fff!important;box-shadow:0 5px 14px rgba(31,86,136,.16)!important}
+.pmx-button--primary:hover{background:var(--pmx-navy)!important;box-shadow:0 8px 18px rgba(31,86,136,.2)!important}
+.pmx-button--secondary{background:#fff!important;color:var(--pmx-text-2)!important;border:1px solid var(--pmx-border-strong)!important}
+.pmx-button--secondary:hover{background:#f8fafc!important;color:var(--pmx-blue)!important;border-color:#aebfce!important}
+.pmx-link-button{font-size:11px;padding:7px 9px;border-radius:8px}
+.pmx-link-button:hover{background:var(--pmx-blue-soft);color:var(--pmx-blue)}
+
+/* ───────────────────────── Unified metric strip ───────────────────────── */
+.pmx-metrics-grid{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:0;
+  margin-bottom:24px;
+  background:var(--pmx-surface);
+  border:1px solid var(--pmx-border);
+  border-radius:16px;
+  overflow:hidden;
+  box-shadow:var(--pmx-shadow-sm);
+}
+.pmx-metrics-grid--4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.pmx-metric{position:relative;min-height:126px;padding:23px 24px 20px!important;border:0!important;border-right:1px solid var(--pmx-border)!important;border-radius:0!important;box-shadow:none!important;background:transparent!important;display:flex!important;align-items:stretch!important;justify-content:space-between!important;gap:12px!important}
+.pmx-metric:last-child{border-right:0!important}
+.pmx-metric:not(:disabled):hover{transform:none!important;background:#fafbfd!important}
+.pmx-metric__accent{position:absolute;left:23px;top:0;width:34px;height:3px;border-radius:0 0 4px 4px;background:var(--pmx-blue)}
+.pmx-metric--warning .pmx-metric__accent{background:var(--pmx-orange)}
+.pmx-metric--danger .pmx-metric__accent{background:var(--pmx-red)}
+.pmx-metric--success .pmx-metric__accent{background:var(--pmx-green)}
+.pmx-metric--neutral .pmx-metric__accent{background:#9aa5b4}
+.pmx-metric__body{align-self:stretch;justify-content:center;gap:2px}
+.pmx-metric__body small{font-size:9.5px;letter-spacing:.75px;color:var(--pmx-text-3)}
+.pmx-metric__body strong{font-size:31px;letter-spacing:-1px;font-weight:700;margin:7px 0 4px}
+.pmx-metric__body em{font-size:10.5px;line-height:1.4;color:var(--pmx-text-2);white-space:normal}
+.pmx-metric__meta{display:flex;flex-direction:column;align-items:center;justify-content:space-between;color:#a2adba;padding:2px 0}
+.pmx-metric__meta svg:first-child{color:#8796a8}
+.pmx-metric:hover .pmx-metric__meta svg:last-child{color:var(--pmx-blue);transform:translateX(2px)}
+
+/* ───────────────────────── Surfaces / sections ───────────────────────── */
+.pmx-card,.pmx-executive-panel{border:1px solid var(--pmx-border)!important;border-radius:16px!important;box-shadow:var(--pmx-shadow-sm)!important;background:var(--pmx-surface)!important}
+.pmx-section-panel{overflow:hidden}
+.pmx-card__header{min-height:78px;padding:20px 24px!important;background:#fff!important;border-bottom:1px solid var(--pmx-border)!important}
+.pmx-card__header h2{font-size:16px;letter-spacing:-.25px;font-weight:660;margin-top:5px}
+.pmx-dashboard-grid{grid-template-columns:minmax(0,1.95fr) minmax(310px,.68fr);gap:20px;margin-bottom:20px}
+.pmx-dashboard-lower-grid{gap:20px}
+.pmx-activity-panel{background:#fbfcfd!important}
+.pmx-activity-list{padding:10px 22px 18px}
+.pmx-activity{padding:14px 0;grid-template-columns:9px 1fr;gap:12px;border-color:#e9eef3}
+.pmx-activity strong{font-size:12.5px}
+.pmx-activity p{font-size:10.5px;line-height:1.45}
+.pmx-activity small{font-size:9.5px}
+.pmx-reason-list{padding:6px 24px 20px}
+.pmx-reason-list>div{padding:14px 0}
+.pmx-reason-list span{font-size:11.5px}
+
+/* Category area: one continuous list rather than card mosaic */
+.pmx-category-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:0;padding:0}
+.pmx-category-card{min-height:126px;border:0;border-right:1px solid var(--pmx-border);border-radius:0;background:#fff;padding:22px 20px;grid-template-columns:34px minmax(0,1fr);align-items:flex-start;box-shadow:none!important;transform:none!important}
+.pmx-category-card:last-child{border-right:0}
+.pmx-category-card>svg:last-child{display:none}
+.pmx-category-card:hover{background:#fafcfe;border-color:var(--pmx-border)}
+.pmx-category-card__icon{width:34px;height:34px;border-radius:10px;background:#f0f5fa}
+.pmx-category-card__content small{font-size:9.5px;letter-spacing:.7px}
+.pmx-category-card__content strong{font-size:25px;letter-spacing:-.7px;margin:4px 0}
+.pmx-category-card__content em{font-size:10px;margin-bottom:10px}
+
+/* ───────────────────────── Tables ───────────────────────── */
+.pmx-table-wrap{background:#fff}
+.pmx-premium-table{min-width:900px}
+.pmx-premium-table th{height:46px;padding:0 18px;background:#f7f9fb;color:#778496;font-size:9.5px;letter-spacing:.75px;border-bottom:1px solid var(--pmx-border)}
+.pmx-premium-table td{height:60px;padding:12px 18px;font-size:12.5px;color:var(--pmx-text-2);border-bottom:1px solid #edf1f5}
+.pmx-premium-table td>strong{font-size:12.5px;font-weight:630;color:var(--pmx-text)}
+.pmx-premium-table td>small{font-size:10px;color:#8c98a7;margin-top:3px}
+.pmx-premium-table tbody tr{position:relative}
+.pmx-premium-table tbody tr:hover{background:#f8fafc}
+.pmx-premium-table tbody tr:hover td:first-child{box-shadow:inset 3px 0 0 var(--pmx-blue)}
+.pmx-premium-table--selectable tbody tr.is-selected{background:#f0f6fb}
+.pmx-row-arrow{width:30px;height:30px;border-radius:9px;border-color:transparent;background:transparent}
+.pmx-premium-table tr:hover .pmx-row-arrow{background:#eaf2fa;border-color:#d8e6f2}
+.pmx-status{padding:5px 9px;font-size:9.5px;font-weight:680}
+.pmx-priority{padding:5px 8px;font-size:8.5px;border-radius:7px}
+.pmx-completeness__head,.pmx-completeness__head strong{font-size:9.5px}
+.pmx-progress{height:4px;background:#e7edf3}
+
+/* ───────────────────────── Queue / filters ───────────────────────── */
+.pmx-queue-summary{background:#fff;border-bottom:1px solid var(--pmx-border)}
+.pmx-queue-summary>div{padding:22px 24px}
+.pmx-queue-summary span{font-size:9.5px;letter-spacing:.7px}
+.pmx-queue-summary strong{font-size:27px;letter-spacing:-.7px;margin-top:5px}
+.pmx-saved-views{padding:16px 20px 5px;background:#fff}
+.pmx-saved-views label span{font-size:8.5px;letter-spacing:.7px}
+.pmx-saved-views select,.pmx-saved-views button{height:36px;border-radius:9px;font-size:10.5px}
+.pmx-toolbar{padding:13px 20px 17px;background:#fff;border-bottom:1px solid var(--pmx-border);gap:9px}
+.pmx-search-field{height:41px;border-radius:10px;background:#f7f9fb;border-color:#edf0f4}
+.pmx-search-field input{font-size:12px}
+.pmx-toolbar select,.pmx-period-select{height:41px;border-radius:10px;background:#fff;font-size:10.5px;color:#536174}
+.pmx-filter-clear{height:39px;border-radius:9px;background:#fff7f2;color:#bd4b21;border:1px solid #f7d3c2}
+.pmx-pagination{min-height:64px;padding:12px 20px;background:#fbfcfd}
+
+/* ───────────────────────── Cadastro legacy pages upgraded ───────────────────────── */
+.pmx-cadastros-page{background:var(--pmx-bg);min-height:calc(100vh - 72px)}
+.pmx-cadastros-header{padding:28px 40px 20px!important;background:transparent!important;border-bottom:0!important;max-width:1540px;margin:0 auto;width:100%}
+.pmx-cadastros-header>div:first-child{font-size:10px!important;text-transform:uppercase;letter-spacing:.75px;color:var(--pmx-text-3)!important;margin-bottom:9px!important}
+.pmx-cadastros-header h1{font-size:30px!important;letter-spacing:-.8px!important;font-weight:700!important;color:var(--pmx-text)!important}
+.pmx-cadastros-tabs{padding:0 40px!important;background:transparent!important;border-bottom:1px solid var(--pmx-border)!important;max-width:1540px;margin:0 auto;width:100%}
+.pmx-cadastros-tabs .pmx-subtab{padding:15px 18px!important;font-size:12px!important}
+.pmx-cadastros-tabs .pmx-subtab:first-child{padding-left:0!important}
+.pmx-cadastros-content{padding:30px 40px 52px!important;max-width:1540px;margin:0 auto;width:100%}
+.pmx-stats-4,.pmx-stats-5{gap:0!important;background:#fff;border:1px solid var(--pmx-border);border-radius:15px;overflow:hidden;margin-bottom:24px!important;box-shadow:var(--pmx-shadow-sm)}
+.pmx-stats-4 .pmx-stat,.pmx-stats-5 .pmx-stat{border:0!important;border-right:1px solid var(--pmx-border)!important;border-radius:0!important;padding:20px 22px!important;box-shadow:none!important;background:#fff!important;min-height:108px}
+.pmx-stats-4 .pmx-stat:last-child,.pmx-stats-5 .pmx-stat:last-child{border-right:0!important}
+.pmx-stats-4 .pmx-stat:hover,.pmx-stats-5 .pmx-stat:hover{transform:none!important;background:#fafbfd!important;box-shadow:none!important}
+.pmx-stat [style*="font-size: 28px"],.pmx-stat [style*="fontSize:28"]{font-size:30px!important;letter-spacing:-.9px!important}
+.pmx-executive-panel{border-radius:16px!important;box-shadow:var(--pmx-shadow-sm)!important}
+.pmx-cadastros-page table thead th{background:#f7f9fb!important;color:#778496!important;font-size:9.5px!important;letter-spacing:.7px!important;padding-top:12px!important;padding-bottom:12px!important}
+.pmx-cadastros-page table tbody td{padding-top:14px!important;padding-bottom:14px!important}
+.pmx-cadastros-page .pmx-act{border-radius:9px!important}
+
+/* ───────────────────────── Drawer / data sheet ───────────────────────── */
+.pmx-detail-overlay{backdrop-filter:blur(4px)}
+.pmx-detail-drawer{box-shadow:-24px 0 70px rgba(10,32,52,.16)!important;border-left:1px solid rgba(210,219,229,.9)!important}
+.pmx-record-drawer__header{padding:24px 26px 19px;grid-template-columns:48px minmax(0,1fr) 38px}
+.pmx-record-drawer__icon{width:46px;height:46px;border-radius:13px}
+.pmx-record-drawer__title h2{font-size:21px;letter-spacing:-.5px}
+.pmx-record-drawer__summary{padding:15px 26px;background:#fafbfd}
+.pmx-record-drawer__body{padding:22px 27px 32px;background:#fff}
+.pmx-data-block{border:0;border-radius:0;margin-bottom:24px;box-shadow:none;overflow:visible;background:transparent!important}
+.pmx-data-block>header{padding:0 0 11px;background:transparent;border-bottom:1px solid var(--pmx-border)}
+.pmx-data-block>header h3{font-size:12.5px;letter-spacing:-.1px}
+.pmx-data-block>header button{background:transparent;border:1px solid var(--pmx-border);font-size:8.5px;color:var(--pmx-text-2);opacity:.82}
+.pmx-copy-grid{border-bottom:1px solid var(--pmx-border)}
+.pmx-copy-field{min-height:78px;padding:14px 6px 15px 0;border-right:0;border-bottom:1px solid #edf1f5;background:#fff!important}
+.pmx-copy-field:nth-child(odd){padding-right:18px}
+.pmx-copy-field:nth-child(even){padding-left:18px;border-left:1px solid #edf1f5}
+.pmx-copy-field small{font-size:8.5px;letter-spacing:.65px;margin-bottom:5px}
+.pmx-copy-field strong{font-size:11.5px;line-height:1.5;font-weight:560}
+.pmx-copy-field button{opacity:0;transform:translateX(4px);transition:opacity .14s ease,transform .14s ease;background:#fff}
+.pmx-copy-field:hover button,.pmx-copy-field button:focus-visible{opacity:1;transform:none}
+.pmx-record-drawer__footer{padding:15px 22px;box-shadow:0 -10px 28px rgba(15,35,55,.045)}
+
+/* ───────────────────────── Kanban / reports / history ───────────────────────── */
+.pmx-kanban-column{border-radius:15px!important;background:#f7f9fb!important;border-color:#e4e9ef!important}
+.pmx-kanban-card{border-radius:12px!important;border-color:#e2e8ef!important;box-shadow:0 1px 2px rgba(15,35,55,.035)!important}
+.pmx-kanban-card:hover{box-shadow:0 10px 22px rgba(15,35,55,.07)!important;transform:translateY(-1px)}
+.pmx-report-grid{gap:20px}
+.pmx-report-grid .pmx-card{box-shadow:var(--pmx-shadow-sm)}
+.pmx-history-card{padding:4px 24px}
+.pmx-history-row{padding:18px 0;grid-template-columns:40px 1fr auto}
+.pmx-history-row__icon{width:36px;height:36px;border-radius:10px}
+
+/* ───────────────────────── Fiscal premium shell ───────────────────────── */
+.fiscal-shell{background:var(--pmx-bg)!important;min-height:100vh}
+.fiscal-topbar{background:linear-gradient(105deg,var(--pmx-navy-deep),var(--pmx-navy))!important;border-bottom:1px solid rgba(255,255,255,.08)!important;color:#fff;backdrop-filter:none!important}
+.fiscal-topbar__inner{min-height:74px}
+.fiscal-topbar__logo{filter:brightness(0) invert(1);height:31px!important}
+.fiscal-topbar h1{color:#fff!important;font-size:14px!important;letter-spacing:-.1px}
+.fiscal-topbar p{color:rgba(255,255,255,.55)!important}
+.fiscal-topbar a[style*="Central de Cadastros"]{color:#fff!important}
+.fiscal-topbar__inner>a:last-of-type{background:rgba(255,255,255,.08)!important;border-color:rgba(255,255,255,.15)!important;color:#fff!important;border-radius:9px!important}
+.fiscal-topbar button{background:rgba(255,255,255,.075)!important;border-color:rgba(255,255,255,.13)!important;color:rgba(255,255,255,.82)!important;border-radius:9px!important}
+.fiscal-module-nav{background:#0d3155!important;border-bottom:2px solid var(--pmx-orange)!important}
+.fiscal-module-nav a,.fiscal-module-nav span{min-height:44px;display:flex;align-items:center;font-size:11px!important;letter-spacing:.02em}
+.fiscal-module-nav a{color:rgba(255,255,255,.6)!important;transition:background .15s,color .15s}
+.fiscal-module-nav a:hover{background:rgba(255,255,255,.06);color:#fff!important}
+.fiscal-module-nav span[aria-current="page"]{background:rgba(255,255,255,.09)!important;border-bottom:0!important;margin-bottom:0!important;position:relative}
+.fiscal-module-nav span[aria-current="page"]::after{content:'';position:absolute;left:13px;right:13px;bottom:0;height:2px;background:var(--pmx-orange)}
+.fiscal-main{max-width:1520px!important;padding:36px 40px 54px!important}
+.fiscal-page-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:28px;padding-bottom:22px;border-bottom:1px solid var(--pmx-border);position:relative}
+.fiscal-page-heading::after{content:'';position:absolute;left:0;bottom:-1px;width:78px;height:2px;background:var(--pmx-orange);border-radius:4px}
+.fiscal-page-heading>div:first-child>span{display:block;color:var(--pmx-blue);font-size:9.5px;font-weight:750;letter-spacing:1.1px;text-transform:uppercase;margin-bottom:8px}
+.fiscal-page-heading h1{font-size:31px;line-height:1.1;letter-spacing:-.9px;margin:0 0 8px;font-weight:700;color:var(--pmx-text)}
+.fiscal-page-heading p{font-size:13.5px;color:var(--pmx-text-2);margin:0;max-width:720px}
+.fiscal-page-heading__status{display:flex;align-items:center;gap:8px;font-size:10.5px;color:var(--pmx-text-2);white-space:nowrap}
+.fiscal-page-heading__status i{width:7px;height:7px;border-radius:50%;background:#0d9f68;box-shadow:0 0 0 4px rgba(13,159,104,.1)}
+.fiscal-filial-selector{display:grid;grid-template-columns:minmax(260px,480px) 1fr;align-items:end;gap:24px}
+.fiscal-filial-selector>label{grid-column:1;font-size:9.5px!important;letter-spacing:.75px!important;margin-bottom:-16px!important;z-index:1}
+.fiscal-filial-selector>div{grid-column:1}
+.fiscal-filial-selector select{height:46px!important;border-radius:11px!important;box-shadow:none!important;border-color:var(--pmx-border)!important;background:#fff!important;padding-left:15px!important}
+.fiscal-tabs-wrap{border-bottom:1px solid var(--pmx-border)}
+.fiscal-tabs{display:flex!important;gap:0!important;padding:0!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important}
+.fiscal-tab-button{position:relative!important;border-radius:0!important;padding:13px 17px!important;background:transparent!important;font-size:11.5px!important}
+.fiscal-tab-button.is-active{color:var(--pmx-blue)!important}
+.fiscal-tab-button.is-active::after{content:'';position:absolute;left:13px;right:13px;bottom:-1px;height:2px;background:var(--pmx-blue);border-radius:3px 3px 0 0}
+.fiscal-stat-card{background:#fff!important;border:0!important;border-right:1px solid var(--pmx-border)!important;border-radius:0!important;box-shadow:none!important;padding:20px 22px!important;min-height:108px}
+.fiscal-stats-row,.fiscal-sla-strip{gap:0!important;border:1px solid var(--pmx-border);border-radius:15px;overflow:hidden;background:#fff;box-shadow:var(--pmx-shadow-sm)}
+.fiscal-stat-card:last-child{border-right:0!important}
+.fiscal-stat-card span[style*="font-size: 24px"],.fiscal-stat-card span[style*="fontSize:24"]{font-size:29px!important;letter-spacing:-.8px}
+.fiscal-overview-hero{background:#fff!important;color:var(--pmx-text)!important;border:1px solid var(--pmx-border)!important;border-radius:16px!important;box-shadow:var(--pmx-shadow-sm)!important;padding:25px 26px!important;position:relative;overflow:hidden}
+.fiscal-overview-hero::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,var(--pmx-blue),var(--pmx-orange))}
+.fiscal-overview-hero *{color:inherit}
+.fiscal-overview-hero>div:first-child{color:var(--pmx-blue)!important;opacity:1!important}
+.fiscal-overview-hero button{background:#fff!important;border:1px solid var(--pmx-border-strong)!important;color:var(--pmx-blue)!important;border-radius:8px!important}
+.fiscal-overview-hero [style*="opacity: .8"],.fiscal-overview-hero [style*="opacity:.8"]{opacity:1!important;color:var(--pmx-text-2)!important}
+.fiscal-chart-grid{gap:20px!important;margin-bottom:20px!important}
+.fiscal-chart-card{border-radius:16px!important;box-shadow:var(--pmx-shadow-sm)!important;border-color:var(--pmx-border)!important;padding:24px!important}
+.fiscal-chart-card h3{font-size:15px!important;letter-spacing:-.2px;font-weight:650!important}
+.fiscal-data-panel{border-radius:16px!important;box-shadow:var(--pmx-shadow-sm)!important;border-color:var(--pmx-border)!important}
+.fiscal-data-panel__header{min-height:72px;background:#fff!important;padding:18px 22px!important}
+.fiscal-data-panel__header h2{font-size:15px!important;letter-spacing:-.2px;font-weight:650!important}
+.fiscal-data-panel__toolbar{background:#fbfcfd!important;padding:14px 22px!important}
+.fiscal-data-panel__toolbar input,.fiscal-filter-select select{height:40px!important;border-radius:9px!important;background:#fff!important;border-color:var(--pmx-border)!important}
+.fiscal-data-panel__toolbar button{height:40px!important;border-radius:9px!important}
+.fiscal-table th{height:46px!important;padding:0 14px!important;background:#f7f9fb!important;color:#788596!important;font-size:9.5px!important;letter-spacing:.7px!important}
+.fiscal-table td{height:58px!important;padding:12px 14px!important;font-size:12.5px!important;border-color:#edf1f5!important}
+.fiscal-table tbody tr:hover{background:#f8fafc!important}
+
+/* ───────────────────────── Dark mode compatibility ───────────────────────── */
+.pmx-theme-dark .pmx-topbar--executive{background:rgba(20,28,37,.94)!important;border-color:var(--pmx-border)!important}
+.pmx-theme-dark .pmx-executive-intro,.pmx-theme-dark .pmx-page-heading{border-color:var(--pmx-border)}
+.pmx-theme-dark .pmx-metrics-grid,.pmx-theme-dark .pmx-metric,.pmx-theme-dark .pmx-card__header,.pmx-theme-dark .pmx-category-card,.pmx-theme-dark .pmx-toolbar,.pmx-theme-dark .pmx-saved-views,.pmx-theme-dark .pmx-queue-summary{background:var(--pmx-surface)!important}
+.pmx-theme-dark .pmx-metric:not(:disabled):hover,.pmx-theme-dark .pmx-category-card:hover{background:var(--pmx-surface-2)!important}
+.pmx-theme-dark .pmx-premium-table th{background:var(--pmx-surface-2)!important}
+.pmx-theme-dark .pmx-record-drawer__body,.pmx-theme-dark .pmx-copy-field{background:var(--pmx-surface)!important}
+
+/* ───────────────────────── Responsive ───────────────────────── */
+@media(max-width:1280px){
+  .pmx-page,.pmx-cadastros-header,.pmx-cadastros-tabs,.pmx-cadastros-content,.fiscal-main{padding-left:28px!important;padding-right:28px!important}
+  .pmx-metrics-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .pmx-metric:nth-child(3){border-right:0!important}
+  .pmx-metric:nth-child(-n+3){border-bottom:1px solid var(--pmx-border)!important}
+  .pmx-dashboard-grid{grid-template-columns:1fr}
+  .pmx-activity-list{max-height:360px}
+}
+@media(max-width:1024px){
+  .pmx-app-shell,.pmx-app-shell.is-collapsed{grid-template-columns:1fr!important}
+  .pmx-sidebar--executive{position:fixed!important;width:282px!important;z-index:1200!important}
+  .pmx-executive-intro{align-items:flex-start;flex-direction:column}
+  .pmx-executive-intro__actions{justify-content:flex-start}
+  .pmx-category-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pmx-category-card:nth-child(2){border-right:0}
+  .pmx-category-card:nth-child(-n+2){border-bottom:1px solid var(--pmx-border)}
+  .fiscal-chart-grid--two{grid-template-columns:1fr!important}
+}
+@media(max-width:760px){
+  .pmx-page,.pmx-cadastros-header,.pmx-cadastros-tabs,.pmx-cadastros-content,.fiscal-main{padding-left:16px!important;padding-right:16px!important}
+  .pmx-page{padding-top:24px}
+  .pmx-executive-intro{padding-top:4px;margin-bottom:20px}
+  .pmx-executive-intro h1{font-size:30px}
+  .pmx-executive-intro__actions{width:100%}.pmx-executive-intro__actions .pmx-button{flex:1}
+  .pmx-metrics-grid,.pmx-metrics-grid--4{grid-template-columns:1fr 1fr}
+  .pmx-metric{min-height:112px;border-bottom:1px solid var(--pmx-border)!important}
+  .pmx-metric:nth-child(odd){border-right:1px solid var(--pmx-border)!important}
+  .pmx-metric:nth-child(even){border-right:0!important}
+  .pmx-metric:last-child{grid-column:1/-1;border-bottom:0!important}
+  .pmx-category-grid{grid-template-columns:1fr}
+  .pmx-category-card{border-right:0;border-bottom:1px solid var(--pmx-border)}
+  .pmx-category-card:last-child{border-bottom:0}
+  .pmx-page-heading{align-items:flex-start;flex-direction:column}
+  .pmx-page-heading h1{font-size:27px}
+  .pmx-stats-4,.pmx-stats-5{grid-template-columns:1fr 1fr!important}
+  .pmx-stats-4 .pmx-stat:nth-child(even),.pmx-stats-5 .pmx-stat:nth-child(even){border-right:0!important}
+  .pmx-copy-grid{grid-template-columns:1fr}.pmx-copy-field:nth-child(even){padding-left:0;border-left:0}.pmx-copy-field button{opacity:1;transform:none}
+  .fiscal-topbar__inner{padding-left:16px!important;padding-right:16px!important;flex-wrap:wrap}
+  .fiscal-module-nav__inner{padding-left:8px!important;padding-right:8px!important}
+  .fiscal-page-heading{align-items:flex-start;flex-direction:column}
+  .fiscal-page-heading h1{font-size:28px}
+  .fiscal-filial-selector{grid-template-columns:1fr}
+  .fiscal-stats-row,.fiscal-sla-strip{grid-template-columns:1fr 1fr!important}
+  .fiscal-stat-card:nth-child(even){border-right:0!important}
+}
+@media(max-width:480px){
+  .pmx-metrics-grid,.pmx-metrics-grid--4,.pmx-stats-4,.pmx-stats-5,.fiscal-stats-row,.fiscal-sla-strip{grid-template-columns:1fr!important}
+  .pmx-metric,.pmx-stats-4 .pmx-stat,.pmx-stats-5 .pmx-stat,.fiscal-stat-card{border-right:0!important;border-bottom:1px solid var(--pmx-border)!important}
+  .pmx-metric:last-child,.pmx-stats-4 .pmx-stat:last-child,.pmx-stats-5 .pmx-stat:last-child,.fiscal-stat-card:last-child{border-bottom:0!important}
+  .pmx-operational-pulse{align-items:flex-start;flex-wrap:wrap}.pmx-operational-pulse b{border-left:0;padding-left:15px}
+}
+
+/* Ajustes de especificidade para componentes que recebem tema inline. */
+.pmx-cadastros-header.pmx-themed-bg,.pmx-cadastros-tabs.pmx-themed-bg{background:transparent!important}
+.pmx-topbar.pmx-topbar--executive{background:rgba(255,255,255,.94)!important}
+.pmx-theme-dark .pmx-topbar.pmx-topbar--executive{background:rgba(20,28,37,.94)!important}
+.fiscal-topbar__inner>div:nth-child(2){background:rgba(255,255,255,.16)!important}
+.fiscal-filial-selector>label{margin-bottom:8px!important}
+.fiscal-tab-button:hover:not(:disabled){background:#f4f7fa!important;color:var(--pmx-blue)!important}

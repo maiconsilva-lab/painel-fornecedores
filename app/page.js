@@ -1046,8 +1046,8 @@ export default function Home() {
         @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
         @keyframes slideInRight { from { opacity:0; transform:translateX(20px) } to { opacity:1; transform:translateX(0) } }
         @keyframes premixShimmer { from { background-position:0% 0 } to { background-position:200% 0 } }
-        .sb-link:hover { background:#F8F9FB; color:#1A2332 !important; }
-        .sb-link.active::before { content:''; position:absolute; left:-12px; top:50%; transform:translateY(-50%); width:3px; height:20px; background:#F15A24; border-radius:0 2px 2px 0; }
+        .pmx-sidebar .sb-link:hover { background:rgba(255,255,255,.075) !important; color:#fff !important; }
+        .pmx-sidebar .sb-link.active::before { content:''; position:absolute; left:-12px; top:50%; transform:translateY(-50%); width:3px; height:24px; background:#F15A24; border-radius:0 3px 3px 0; box-shadow:0 0 14px rgba(241,90,36,.42); }
         .pmx-row:hover { background:#F8F9FB; }
         .pmx-row { transition: background .12s; }
         .pmx-stat:hover { border-color:#D4D9E0 !important; box-shadow:0 4px 12px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.04); transform:translateY(-1px); }
@@ -1096,22 +1096,22 @@ export default function Home() {
         .pmx-themed-muted { color: ${T.text2} !important; }
         .pmx-themed-faint { color: ${T.text3} !important; }
         .pmx-themed-surface2 { background: ${T.surface2} !important; }
-        .sb-link.active { background: ${T.primaryLight} !important; color: ${T.primaryDark} !important; }
-        .sb-link.active::before { background: ${T.accent} !important; }
+        .pmx-sidebar .sb-link.active { background:rgba(255,255,255,.12) !important; color:#fff !important; }
+        .pmx-sidebar .sb-link.active::before { background:${T.accent} !important; }
       `}</style>
 
       {/* Toast */}
       {toast && <div style={{position:'fixed',bottom:28,left:'50%',transform:'translateX(-50%)',background:'#1A2332',color:'#fff',padding:'12px 24px',borderRadius:10,fontSize:'.84rem',fontWeight:600,zIndex:9999,boxShadow:'0 12px 32px rgba(16,24,40,.18)',animation:'slideUp .3s cubic-bezier(.16,1,.3,1)'}}>{toast}</div>}
 
       {/* ══ APP LAYOUT: SIDEBAR + MAIN ══ */}
-      <div className={`pmx-app-shell ${sidebarCol ? 'is-collapsed' : ''}`} style={{display:'grid',gridTemplateColumns: sidebarCol ? '64px 1fr' : '240px 1fr',minHeight:'100vh',transition:'grid-template-columns .2s ease'}}>
+      <div className={`pmx-app-shell ${sidebarCol ? 'is-collapsed' : ''}`} style={{display:'grid',gridTemplateColumns: sidebarCol ? '72px 1fr' : '264px 1fr',minHeight:'100vh',transition:'grid-template-columns .2s ease'}}>
 
         {/* ── SIDEBAR ── */}
-        <aside className={`pmx-themed-bg pmx-sidebar ${mobileNavOpen ? 'is-open' : ''}`} style={{background:T.surface,borderRight:`1px solid ${T.border}`,display:'flex',flexDirection:'column',position:'sticky',top:0,height:'100vh',zIndex:50}}>
+        <aside className={`pmx-sidebar pmx-sidebar--executive ${mobileNavOpen ? 'is-open' : ''}`} style={{background:T.sidebar,borderRight:'1px solid rgba(255,255,255,.08)',display:'flex',flexDirection:'column',position:'sticky',top:0,height:'100vh',zIndex:50}}>
           {/* Brand + Toggle */}
-          <div style={{padding: sidebarCol ? '18px 12px 16px' : '18px 16px 16px',display:'flex',alignItems:'center',gap:8,borderBottom:`1px solid ${T.border}`,justifyContent: sidebarCol ? 'center' : 'space-between'}}>
-            {!sidebarCol && <img src="https://premix.com.br/wp-content/uploads/2023/06/Logotipo_Premix_Positivo_Com-Bandeira.png" alt="Premix" style={{height:30}} />}
-            <button onClick={()=>setSidebarCol(!sidebarCol)} title={sidebarCol ? 'Expandir menu' : 'Recolher menu'} style={{
+          <div className="pmx-sidebar__brand" style={{padding: sidebarCol ? '22px 14px 20px' : '22px 20px 20px',display:'flex',alignItems:'center',gap:10,borderBottom:'1px solid rgba(255,255,255,.09)',justifyContent: sidebarCol ? 'center' : 'space-between'}}>
+            {!sidebarCol && <div className="pmx-sidebar__identity"><img src="https://premix.com.br/wp-content/uploads/2023/06/Logotipo_Premix_Positivo_Com-Bandeira.png" alt="Premix" /><span>Central de Cadastros</span></div>}
+            <button className="pmx-sidebar__toggle" onClick={()=>setSidebarCol(!sidebarCol)} title={sidebarCol ? 'Expandir menu' : 'Recolher menu'} style={{
               width:32,height:32,borderRadius:8,border:'1px solid '+T.border,background:T.surface2,
               color:T.text2,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'all .15s',flexShrink:0
             }}
@@ -1124,8 +1124,8 @@ export default function Home() {
           </div>
 
           {/* Nav */}
-          <nav style={{padding:'12px 12px 0',flex:1,overflowY:'auto'}}>
-            {!sidebarCol && <div style={{fontSize:10,fontWeight:700,textTransform:'uppercase',letterSpacing:'.9px',color:'#98A2B3',padding:'14px 12px 6px'}}>Operação</div>}
+          <nav className="pmx-sidebar__nav" style={{padding:'16px 14px 0',flex:1,overflowY:'auto'}}>
+            {!sidebarCol && <div className="pmx-sidebar__section-label">Operação</div>}
             {[
               { k:'dashboard', l:'Visão Geral', icon:<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg> },
               { k:'fila', l:'Fila Protheus', icon:<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/><path d="m18 15 3 3-3 3"/></svg>, count: operationalQueue.length, alert: operationalQueue.some(i=>i._priority==='critica') },
@@ -1159,7 +1159,7 @@ export default function Home() {
             </a>
 
             {isAdmin && (<>
-              {!sidebarCol && <div style={{fontSize:10,fontWeight:600,textTransform:'uppercase',letterSpacing:'.8px',color:'#B5BCC6',padding:'14px 12px 6px'}}>Administração</div>}
+              {!sidebarCol && <div className="pmx-sidebar__section-label">Administração</div>}
               <a onClick={()=>{ setPage('admin'); setSel(null); setShowModal(false); setMobileNavOpen(false); }} title={sidebarCol ? 'Equipe' : ''} className={'sb-link' + (page==='admin' ? ' active' : '')} style={{
                 display:'flex',alignItems:'center',gap:11,padding: sidebarCol ? '10px 11px' : '9px 12px',borderRadius:8,fontSize:13,
                 fontWeight: page==='admin' ? 600 : 500,
@@ -1174,7 +1174,7 @@ export default function Home() {
               </a>
             </>)}
 
-            {!sidebarCol && <div style={{fontSize:10,fontWeight:600,textTransform:'uppercase',letterSpacing:'.8px',color:'#B5BCC6',padding:'18px 12px 6px'}}>Aparência</div>}
+            {!sidebarCol && <div className="pmx-sidebar__section-label pmx-sidebar__section-label--spaced">Sistema</div>}
             <a onClick={()=>{ setPage('aparencia'); setSel(null); setShowModal(false); setMobileNavOpen(false); }} title={sidebarCol ? 'Aparência' : ''} className={'sb-link' + (page==='aparencia' ? ' active' : '')} style={{display:'flex',alignItems:'center',gap:11,padding: sidebarCol ? '10px 11px' : '9px 12px',borderRadius:8,fontSize:13,fontWeight: page==='aparencia' ? 600 : 500,color: page==='aparencia' ? T.primary : T.text2,background: page==='aparencia' ? T.primaryLight : 'transparent',textDecoration:'none',cursor:'pointer',position:'relative',marginBottom:1,justifyContent: sidebarCol ? 'center' : 'flex-start'}}>
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
               {!sidebarCol && <span style={{flex:1}}>Aparência</span>}
@@ -1182,11 +1182,11 @@ export default function Home() {
           </nav>
 
           {/* Footer user */}
-          <div style={{padding: sidebarCol ? '12px 8px' : 14,borderTop:`1px solid ${T.border}`,display:'flex',alignItems:'center',gap:11,cursor:'pointer',position:'relative',justifyContent: sidebarCol ? 'center' : 'flex-start'}} onClick={()=>setShowLogout(!showLogout)} title={sidebarCol ? user.nome : ''}>
+          <div className="pmx-sidebar__user" style={{padding: sidebarCol ? '14px 10px' : '16px 18px',borderTop:'1px solid rgba(255,255,255,.09)',display:'flex',alignItems:'center',gap:11,cursor:'pointer',position:'relative',justifyContent: sidebarCol ? 'center' : 'flex-start'}} onClick={()=>setShowLogout(!showLogout)} title={sidebarCol ? user.nome : ''}>
             <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(135deg,#20558A 0%,#123D6B 100%)',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Geist,-apple-system,sans-serif',fontWeight:700,fontSize:12,color:'#fff',boxShadow:'0 4px 12px rgba(32,85,138,.25), inset 0 1px 0 rgba(255,255,255,.2)',flexShrink:0}}>{user.nome.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
             {!sidebarCol && <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:13,fontWeight:600,color:'#1A2332',lineHeight:1.2,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{user.nome.split(' ').slice(0,2).join(' ')}</div>
-              <div style={{fontSize:11,color:'#8B94A3'}}>{user.cargo}</div>
+              <div style={{fontSize:13,fontWeight:600,color:'#FFFFFF',lineHeight:1.2,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{user.nome.split(' ').slice(0,2).join(' ')}</div>
+              <div style={{fontSize:11,color:'rgba(255,255,255,.58)'}}>{user.cargo}</div>
             </div>}
             {!sidebarCol && <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#8B94A3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{transform: showLogout ? 'rotate(180deg)' : 'rotate(0)',transition:'.15s'}}><polyline points="6 9 12 15 18 9"/></svg>}
             {showLogout && (
@@ -1205,13 +1205,13 @@ export default function Home() {
         <div className="pmx-main" style={{display:'flex',flexDirection:'column',minWidth:0}}>
 
           {/* TOPBAR */}
-          <header className="pmx-themed-bg pmx-topbar" style={{background:T.surface,borderBottom:`1px solid ${T.border}`,padding:'12px 28px',display:'flex',alignItems:'center',gap:20,position:'sticky',top:0,zIndex:10}}>
-            <div style={{height:2,background:'linear-gradient(90deg,#20558A 0%,#20558A 62%,#F15A24 62%,#F15A24 100%)',backgroundSize:'200% 100%',animation:'premixShimmer 8s linear infinite',position:'absolute',top:0,left:0,right:0}} />
+          <header className="pmx-themed-bg pmx-topbar pmx-topbar--executive" style={{background:T.surface,borderBottom:`1px solid ${T.border}`,padding:'0 32px',minHeight:72,display:'flex',alignItems:'center',gap:20,position:'sticky',top:0,zIndex:10}}>
+            <div className="pmx-topbar__brand-line" style={{height:2,background:'linear-gradient(90deg,#20558A 0%,#20558A 62%,#F15A24 62%,#F15A24 100%)',backgroundSize:'200% 100%',animation:'premixShimmer 8s linear infinite',position:'absolute',top:0,left:0,right:0}} />
 
             <button className="pmx-mobile-menu" onClick={()=>setMobileNavOpen(true)} aria-label="Abrir menu">
               <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
             </button>
-            <div className="pmx-global-search" style={{flex:1,maxWidth:520,position:'relative'}}>
+            <div className="pmx-global-search pmx-global-search--executive" style={{flex:1,maxWidth:620,position:'relative'}}>
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#8B94A3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',pointerEvents:'none',zIndex:1}}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
               <input className="pmx-search-input" type="text" placeholder="Buscar fornecedor, produto, código, CNPJ, e-mail..." value={searchGlobal} onChange={e=>setSearchGlobal(e.target.value)} onKeyDown={e=>{ if(e.key==='Escape') setSearchGlobal(''); }} style={{width:'100%',padding:'10px 14px 10px 38px',background:T.surface2,border:'1px solid transparent',borderRadius:8,fontFamily:'inherit',fontSize:13,color:T.text1,outline:'none'}} />
               {searchGlobal && (
@@ -1376,9 +1376,9 @@ export default function Home() {
 
       {/* ══ PAGE: CADASTROS ══ */}
       {page === 'cadastros' && (
-        <div className="pmx-fade-in">
+        <div className="pmx-fade-in pmx-cadastros-page">
           {/* Page Header (breadcrumb + title) */}
-          <div className="pmx-themed-bg" style={{background:T.surface,padding:'16px 28px',borderBottom:`1px solid ${T.border}`}}>
+          <div className="pmx-themed-bg pmx-cadastros-header" style={{background:T.surface,padding:'24px 32px 18px',borderBottom:`1px solid ${T.border}`}}>
             <div style={{fontSize:12,color:'#8B94A3',marginBottom:6,display:'flex',alignItems:'center',gap:6}}>
               <span style={{cursor:'pointer'}}>Núcleo Fiscal</span>
               <span>›</span>
@@ -1394,7 +1394,7 @@ export default function Home() {
           </div>
 
           {/* Sub-tabs (estilo Bitrix: linha horizontal, underline) */}
-          <div className="pmx-themed-bg" style={{background:T.surface,padding:'0 28px',borderBottom:`1px solid ${T.border}`,display:'flex',gap:0}}>
+          <div className="pmx-themed-bg pmx-cadastros-tabs" style={{background:T.surface,padding:'0 32px',borderBottom:`1px solid ${T.border}`,display:'flex',gap:0}}>
             {[
               { k:'fornecedores', l:'Fornecedores', n: forn.length, icon:<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/><path d="M9 9v.01M9 12v.01M9 15v.01M9 18v.01"/></svg> },
               { k:'produtos',     l:'Produtos',     n: produtos.length, icon:<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg> },
@@ -1418,7 +1418,7 @@ export default function Home() {
           </div>
 
           {/* Content area */}
-          <div style={{padding:'22px 28px 32px'}}>
+          <div className="pmx-cadastros-content" style={{padding:'28px 32px 44px'}}>
 
           {/* ── Sub-aba: PRODUTOS ── */}
           {subTab === 'produtos' && (
@@ -1442,7 +1442,7 @@ export default function Home() {
               </div>
 
               {/* Painel Produtos */}
-              <div style={{background:'#fff',borderRadius:14,border:'1px solid #E5E9EF',overflow:'hidden'}}>
+              <div className="pmx-executive-panel" style={{background:'#fff',borderRadius:14,border:'1px solid #E5E9EF',overflow:'hidden'}}>
                 <div style={{padding:'14px 20px',borderBottom:'1px solid #E5E9EF',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                   <h2 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:15,fontWeight:700,color:'#1A2332',margin:0}}>Cadastros de Produtos</h2>
                   <span style={{fontSize:12,color:'#8B94A3'}}>{produtos.length} total</span>
@@ -1553,7 +1553,7 @@ export default function Home() {
               </div>
 
               {/* Painel Desbloqueios */}
-              <div style={{background:'#fff',borderRadius:14,border:'1px solid #E5E9EF',overflow:'hidden'}}>
+              <div className="pmx-executive-panel" style={{background:'#fff',borderRadius:14,border:'1px solid #E5E9EF',overflow:'hidden'}}>
                 <div style={{padding:'14px 20px',borderBottom:'1px solid #E5E9EF',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                   <h2 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:15,fontWeight:700,color:'#1A2332',margin:0}}>Pedidos de Desbloqueio</h2>
                   <span style={{fontSize:12,color:'#8B94A3'}}>{desbloqueios.length} total</span>
@@ -1661,7 +1661,7 @@ export default function Home() {
           </div>
 
           {/* Painel principal: tabs + filtros + lista */}
-          <div style={{background:'#fff',borderRadius:14,border:'1px solid #E5E9EF',overflow:'hidden'}}>
+          <div className="pmx-executive-panel" style={{background:'#fff',borderRadius:14,border:'1px solid #E5E9EF',overflow:'hidden'}}>
             <div style={{display:'flex',alignItems:'center',borderBottom:'1px solid #E5E9EF',padding:'0 20px'}}>
               {[
                 { k:'pendentes', l:'Tarefas', n:pend.length },

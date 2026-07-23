@@ -66,9 +66,13 @@ export function Completeness({ record, type = 'fornecedor', compact = false }) {
 function MetricCard({ label, value, helper, tone = 'brand', icon, onClick }) {
   return (
     <button type="button" className={`pmx-metric pmx-metric--${tone}`} onClick={onClick} disabled={!onClick}>
-      <span className="pmx-metric__icon"><Icon name={icon} /></span>
-      <span className="pmx-metric__body"><small>{label}</small><strong>{value}</strong><em>{helper}</em></span>
-      {onClick && <span className="pmx-metric__arrow"><Icon name="arrow" size={16} /></span>}
+      <span className="pmx-metric__accent" aria-hidden="true" />
+      <span className="pmx-metric__body">
+        <small>{label}</small>
+        <strong>{value}</strong>
+        <em>{helper}</em>
+      </span>
+      <span className="pmx-metric__meta" aria-hidden="true"><Icon name={icon} size={17} />{onClick && <Icon name="arrow" size={14} />}</span>
     </button>
   );
 }
@@ -91,15 +95,16 @@ export function OverviewDashboard({ fornecedores, produtos, desbloqueios, kanban
 
   return (
     <div className="pmx-page pmx-page--dashboard">
-      <section className="pmx-hero">
-        <div>
+      <section className="pmx-executive-intro">
+        <div className="pmx-executive-intro__content">
           <span className="pmx-eyebrow">Central de Cadastros Premix</span>
           <h1>Olá, {user?.nome?.split(' ')[0] || 'equipe'}.</h1>
-          <p>Receba, valide, copie e acompanhe as informações necessárias para cadastro no Protheus.</p>
+          <p>Controle operacional dos dados recebidos para cadastro no Protheus, com prioridades, responsáveis e histórico em uma única visão.</p>
+          <div className="pmx-operational-pulse"><i aria-hidden="true" /><span>{queue.length ? `${queue.length} solicitações aguardam tratamento` : 'Operação em dia'}</span><b>{critical ? `${critical} críticas` : 'sem itens críticos'}</b></div>
         </div>
-        <div className="pmx-hero__actions">
+        <div className="pmx-executive-intro__actions">
           <button className="pmx-button pmx-button--secondary" onClick={() => onNavigate('fila')}>Abrir fila Protheus</button>
-          <button className="pmx-button pmx-button--primary" onClick={() => onNavigate('cadastros')}>Ver cadastros</button>
+          <button className="pmx-button pmx-button--primary" onClick={() => onNavigate('cadastros')}>Consultar cadastros</button>
         </div>
       </section>
 
@@ -112,7 +117,7 @@ export function OverviewDashboard({ fornecedores, produtos, desbloqueios, kanban
       </section>
 
       <section className="pmx-dashboard-grid">
-        <article className="pmx-card pmx-card--flush pmx-dashboard-grid__main">
+        <article className="pmx-card pmx-card--flush pmx-dashboard-grid__main pmx-section-panel">
           <header className="pmx-card__header">
             <div><span className="pmx-eyebrow">Operação</span><h2>Minha fila no Protheus</h2></div>
             <button className="pmx-link-button" onClick={() => onNavigate('fila')}>Ver fila completa <Icon name="arrow" size={15} /></button>
@@ -138,7 +143,7 @@ export function OverviewDashboard({ fornecedores, produtos, desbloqueios, kanban
           </div>
         </article>
 
-        <aside className="pmx-card pmx-card--flush">
+        <aside className="pmx-card pmx-card--flush pmx-section-panel pmx-activity-panel">
           <header className="pmx-card__header"><div><span className="pmx-eyebrow">Atualizações</span><h2>Atividade recente</h2></div></header>
           <div className="pmx-activity-list">
             {activity.slice(0, 8).map((item) => (
@@ -153,7 +158,7 @@ export function OverviewDashboard({ fornecedores, produtos, desbloqueios, kanban
       </section>
 
       <section className="pmx-dashboard-lower-grid">
-        <article className="pmx-card pmx-card--flush">
+        <article className="pmx-card pmx-card--flush pmx-section-panel">
           <header className="pmx-card__header"><div><span className="pmx-eyebrow">Visão por categoria</span><h2>Volume operacional</h2></div></header>
           <div className="pmx-category-grid">
             <CategoryCard icon="building" label="Fornecedores" total={fornecedores.length} pending={fornecedores.filter((i) => ['pendente', 'em_analise'].includes(i.status)).length} done={fornecedores.filter((i) => i.status === 'aprovado').length} onClick={() => onNavigate('cadastros')} />
@@ -162,7 +167,7 @@ export function OverviewDashboard({ fornecedores, produtos, desbloqueios, kanban
             <CategoryCard icon="users" label="Tarefas" total={kanban.length} pending={kanban.filter((i) => i.status !== 'concluido').length} done={kanban.filter((i) => i.status === 'concluido').length} onClick={() => onNavigate('kanban')} />
           </div>
         </article>
-        <article className="pmx-card pmx-card--flush">
+        <article className="pmx-card pmx-card--flush pmx-section-panel">
           <header className="pmx-card__header"><div><span className="pmx-eyebrow">Qualidade do fluxo</span><h2>Motivos de devolução</h2></div></header>
           <div className="pmx-reason-list">
             {reasons.map((row, index) => <div key={row.label}><span><b>{index + 1}</b>{row.label}</span><strong>{row.count}</strong></div>)}

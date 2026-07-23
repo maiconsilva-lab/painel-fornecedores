@@ -20,6 +20,26 @@
 - [x] Link de correção com token temporário.
 - [x] Histórico operacional e auditoria.
 
+## Premix Executive UI 3.0
+
+- [x] Sidebar azul-marinho institucional com logotipo branco e assinatura laranja.
+- [x] Remoção do banner genérico em gradiente da página inicial.
+- [x] Cabeçalho editorial com pulso operacional.
+- [x] Indicadores consolidados em uma única faixa visual.
+- [x] Redução de cards e contêineres concorrentes.
+- [x] Tipografia, títulos e números ampliados.
+- [x] Ações principais migradas do laranja para o azul Premix.
+- [x] Tabelas com maior altura de linha, melhor contraste e hierarquia de conteúdo.
+- [x] Filtros, paginação e visões salvas com aparência mais discreta.
+- [x] Categorias consolidadas em faixa contínua.
+- [x] Drawer tratado como ficha cadastral, sem caixas aninhadas em excesso.
+- [x] Botões de cópia contextuais, reduzindo poluição visual.
+- [x] Cadastros legados elevados ao mesmo padrão visual.
+- [x] Kanban, relatórios e histórico refinados.
+- [x] Pendências Fiscais redesenhadas no mesmo sistema visual.
+- [x] Responsividade da nova camada executiva.
+- [x] Compatibilidade visual com tema escuro.
+
 ## Interface premium Premix
 
 - [x] Design system unificado.

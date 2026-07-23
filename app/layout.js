@@ -1,4 +1,5 @@
 import './globals.css';
+import './executive.css';
 
 export const metadata = {
   title: 'Premix — Central de Cadastros Protheus',
