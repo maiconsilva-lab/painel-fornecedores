@@ -2150,9 +2150,31 @@ export default function Home() {
                 <header><div><span className="pmx-eyebrow">Governança</span><h3>Histórico do cadastro</h3></div></header>
                 <div className="pmx-record-timeline" style={{padding:16}}>
                   <div><i className="success"/><span><strong>Solicitação recebida</strong><small>{sel.created_at ? new Date(sel.created_at).toLocaleString('pt-BR') : 'Data não informada'}</small></span></div>
-                  {sel.atribuido_para && <div><i className="info"/><span><strong>Atribuída a {sel.atribuido_para}</strong><small>Status: {ST[sel.status]?.l || sel.status}</small></span></div>}
-                  {sel.motivo_devolucao && <div><i className="danger"/><span><strong>Devolvida para correção</strong><small>{sel.motivo_devolucao}</small></span></div>}
-                  {sel.data_finalizacao && <div><i className="success"/><span><strong>Cadastro concluído no Protheus</strong><small>{new Date(sel.data_finalizacao).toLocaleString('pt-BR')} · {sel.finalizado_por || 'Equipe'}{sel.codigo_fornecedor ? ` · Código ${sel.codigo_fornecedor}` : ''}</small></span></div>}
+                  {auditLog
+                    .filter(l => l.cadastro_id === sel.id)
+                    .slice()
+                    .sort((a,b) => new Date(a.created_at) - new Date(b.created_at))
+                    .map(l => {
+                      const quando = l.created_at ? new Date(l.created_at).toLocaleString('pt-BR') : '';
+                      const quem = l.ator_nome || l.ator_email || 'Sistema';
+                      const map = {
+                        atribuiu:     { cls:'info',    titulo:`Atribuído por ${quem}`, sub: l.detalhes?.para ? `Responsável: ${l.detalhes.para}` : null },
+                        aprovou:      { cls:'success', titulo:`Aprovado por ${quem}`, sub: l.detalhes?.codigo ? `Código Protheus: ${l.detalhes.codigo}` : null },
+                        rejeitou:     { cls:'danger',  titulo:`Devolvido por ${quem}`, sub: l.detalhes?.motivo || null },
+                        devolveu:     { cls:'danger',  titulo:`Devolvido por ${quem}`, sub: l.detalhes?.motivo || null },
+                        excluiu:      { cls:'danger',  titulo:`Excluído por ${quem}`, sub: null },
+                        mudou_status: { cls:'info',    titulo:`Status alterado por ${quem}`, sub: l.detalhes?.para ? `Novo status: ${ST[l.detalhes.para]?.l || l.detalhes.para}` : null },
+                        comentou:     { cls:null,      titulo:`Observação de ${quem}`, sub: typeof l.detalhes === 'string' ? l.detalhes : null },
+                        editou:       { cls:null,      titulo:`Editado por ${quem}`, sub: null },
+                        criou:        { cls:'success', titulo:`Criado por ${quem}`, sub: null },
+                      };
+                      const info = map[l.acao] || { cls:null, titulo:`${l.acao} — ${quem}`, sub:null };
+                      return (
+                        <div key={l.id}><i className={info.cls || undefined}/><span><strong>{info.titulo}</strong><small>{quando}{info.sub ? `\n${info.sub}` : ''}</small></span></div>
+                      );
+                    })}
+                  {sel.motivo_devolucao && !auditLog.some(l => l.cadastro_id === sel.id && (l.acao==='rejeitou'||l.acao==='devolveu')) && <div><i className="danger"/><span><strong>Devolvida para correção</strong><small>{sel.motivo_devolucao}</small></span></div>}
+                  {sel.data_finalizacao && !auditLog.some(l => l.cadastro_id === sel.id && l.acao==='aprovou') && <div><i className="success"/><span><strong>Cadastro concluído no Protheus</strong><small>{new Date(sel.data_finalizacao).toLocaleString('pt-BR')} · {sel.finalizado_por || 'Equipe'}{sel.codigo_fornecedor ? ` · Código ${sel.codigo_fornecedor}` : ''}</small></span></div>}
                 </div>
               </section>
 
