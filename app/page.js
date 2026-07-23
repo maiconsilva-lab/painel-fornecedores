@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { fetchAllRows } from '../lib/fetchAllRows';
+import { listTable, mutateTable } from '../lib/dataApi';
 import { sanitize } from '../lib/sanitize';
 import { inputStyle, fieldStyle, selectStyle, menuItem, tdS, thS, tdSnew, btnAction, actBtn, modalActBtn } from '../lib/styleHelpers';
 import { ST, TL, PRI, KAN_COLS } from '../constants/status';
@@ -191,11 +191,11 @@ export default function Home() {
   const fetchAll = useCallback(async () => {
     if (!user) return;
     const [f, uList, k, p, d] = await Promise.all([
-      fetchAllRows('fornecedores', 'created_at', false),
+      listTable(user.id, 'fornecedores', { orderCol: 'created_at', ascending: false }),
       fetchUsuarios(),
-      fetchAllRows('kanban_tarefas', 'ordem', true),
-      fetchAllRows('produtos', 'created_at', false),
-      fetchAllRows('desbloqueios', 'created_at', false),
+      listTable(user.id, 'kanban_tarefas', { orderCol: 'ordem', ascending: true }),
+      listTable(user.id, 'produtos', { orderCol: 'created_at', ascending: false }),
+      listTable(user.id, 'desbloqueios', { orderCol: 'created_at', ascending: false }),
     ]);
     setForn(f);
     setUsu(uList);
@@ -289,23 +289,22 @@ export default function Home() {
     }
   }, []);
 
-  useEffect(() => {
-    if (!user) return;
-    const ch = supabase.channel('rt-all')
-      .on('postgres_changes', { event:'*', schema:'public', table:'fornecedores' }, p => applyRealtimeChange('fornecedores', p))
-      .on('postgres_changes', { event:'*', schema:'public', table:'produtos' },     p => applyRealtimeChange('produtos', p))
-      .on('postgres_changes', { event:'*', schema:'public', table:'desbloqueios' }, p => applyRealtimeChange('desbloqueios', p))
-      .on('postgres_changes', { event:'*', schema:'public', table:'kanban_tarefas' }, p => applyRealtimeChange('kanban_tarefas', p))
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [user, fetchAll]);
+  /* Realtime cross-sessão removido pra fornecedores/produtos/desbloqueios/
+     kanban_tarefas: dependia da chave anon ter SELECT nessas tabelas, o que
+     foi revogado por segurança (ver commit de correção de RLS). Cada ação
+     agora atualiza o state local diretamente (via applyRealtimeChange
+     chamado manualmente após cada mutação bem-sucedida) — funciona
+     perfeitamente pra quem fez a ação, mas outra pessoa com o painel aberto
+     ao mesmo tempo só vê a mudança no próximo refresh/login. Se isso for um
+     problema no dia a dia, a solução correta é Supabase Realtime
+     Authorization (canais autenticados) — vale um passo futuro. */
 
   /* ── Ações Fornecedores ──────────────────────── */
   const updateStatus = async (id, s) => {
     setSav(true);
     const u = { status: s };
     if (s === 'aprovado') { u.finalizado_por = user.nome; u.data_finalizacao = new Date().toISOString(); }
-    await supabase.from('fornecedores').update(u).eq('id', id);
+    await mutateTable(user.id, 'fornecedores', 'update', { id, data: u });
     if (sel?.id === id) setSel({ ...sel, ...u });
     logAcao('mudou_status', 'fornecedor', id, { para: s });
     setSav(false);
@@ -460,14 +459,17 @@ export default function Home() {
      ────────────────────────────────────────────────────────────── */
 
   const pegarProduto = async (id) => {
-    await supabase.from('produtos').update({ atribuido_para: user.nome, status:'em_analise' }).eq('id', id);
+    const { row } = await mutateTable(user.id, 'produtos', 'update', { id, data: { atribuido_para: user.nome, status:'em_analise' }, returning: true });
+    if (row) applyRealtimeChange('produtos', { eventType:'UPDATE', new: row });
     logAcao('atribuiu', 'produto', id, { para: user.nome });
   };
 
   const excluirProduto = (id) => {
     askConfirm('Excluir produto?', 'Esta ação não pode ser desfeita.', async () => {
-      const { error } = await supabase.from('produtos').delete().eq('id', id);
-      if (error) { showToast('Erro ao excluir: ' + error.message); return; }
+      try {
+        await mutateTable(user.id, 'produtos', 'delete', { id });
+      } catch (err) { showToast('Erro ao excluir: ' + err.message); return; }
+      applyRealtimeChange('produtos', { eventType:'DELETE', old: { id } });
       showToast('Produto excluído');
       logAcao('excluiu', 'produto', id);
     });
@@ -484,8 +486,11 @@ export default function Home() {
       finalizado_por: user.nome,
       data_finalizacao: new Date().toISOString(),
     };
-    const { error } = await supabase.from('produtos').update(upd).eq('id', produto.id).select();
-    if (error) { showToast(`Erro: ${error.message}`); return; }
+    let row;
+    try {
+      ({ row } = await mutateTable(user.id, 'produtos', 'update', { id: produto.id, data: upd, returning: true }));
+    } catch (err) { showToast(`Erro: ${err.message}`); return; }
+    applyRealtimeChange('produtos', { eventType:'UPDATE', new: row });
 
     const r = await sendEmail(EMAILJS_TEMPLATE_APROVADO, {
       to_name: produto.nome_solicitante,
@@ -504,14 +509,17 @@ export default function Home() {
      ────────────────────────────────────────────────────────────── */
 
   const pegarDesbloqueio = async (id) => {
-    await supabase.from('desbloqueios').update({ atribuido_para: user.nome, status:'em_analise' }).eq('id', id);
+    const { row } = await mutateTable(user.id, 'desbloqueios', 'update', { id, data: { atribuido_para: user.nome, status:'em_analise' }, returning: true });
+    if (row) applyRealtimeChange('desbloqueios', { eventType:'UPDATE', new: row });
     logAcao('atribuiu', 'desbloqueio', id, { para: user.nome });
   };
 
   const excluirDesbloqueio = (id) => {
     askConfirm('Excluir pedido?', 'Esta ação não pode ser desfeita.', async () => {
-      const { error } = await supabase.from('desbloqueios').delete().eq('id', id);
-      if (error) { showToast('Erro ao excluir: ' + error.message); return; }
+      try {
+        await mutateTable(user.id, 'desbloqueios', 'delete', { id });
+      } catch (err) { showToast('Erro ao excluir: ' + err.message); return; }
+      applyRealtimeChange('desbloqueios', { eventType:'DELETE', old: { id } });
       showToast('Pedido excluído');
       logAcao('excluiu', 'desbloqueio', id);
     });
@@ -523,8 +531,11 @@ export default function Home() {
       finalizado_por: user.nome,
       data_finalizacao: new Date().toISOString(),
     };
-    const { error } = await supabase.from('desbloqueios').update(upd).eq('id', d.id).select();
-    if (error) { showToast(`Erro: ${error.message}`); return; }
+    let row;
+    try {
+      ({ row } = await mutateTable(user.id, 'desbloqueios', 'update', { id: d.id, data: upd, returning: true }));
+    } catch (err) { showToast(`Erro: ${err.message}`); return; }
+    applyRealtimeChange('desbloqueios', { eventType:'UPDATE', new: row });
 
     const r = await sendEmail(EMAILJS_TEMPLATE_DESBLOQ, {
       to_name: d.nome_solicitante,
@@ -549,15 +560,19 @@ export default function Home() {
       finalizado_por: user.nome,
       data_finalizacao: new Date().toISOString(),
     };
-    const { error } = await supabase.from('desbloqueios').update(upd).eq('id', d.id);
-    if (error) { showToast(`Erro: ${error.message}`); return; }
+    let row;
+    try {
+      ({ row } = await mutateTable(user.id, 'desbloqueios', 'update', { id: d.id, data: upd, returning: true }));
+    } catch (err) { showToast(`Erro: ${err.message}`); return; }
+    applyRealtimeChange('desbloqueios', { eventType:'UPDATE', new: row });
     showToast('Desbloqueio rejeitado');
     logAcao('rejeitou', 'desbloqueio', d.id, { motivo: motivo.trim() });
   };
 
   const assignTo = async (id, nome) => {
     setSav(true);
-    await supabase.from('fornecedores').update({ atribuido_para: nome, status:'em_analise' }).eq('id', id);
+    const { row } = await mutateTable(user.id, 'fornecedores', 'update', { id, data: { atribuido_para: nome, status:'em_analise' }, returning: true });
+    if (row) applyRealtimeChange('fornecedores', { eventType:'UPDATE', new: row });
     if (sel?.id === id) setSel({ ...sel, atribuido_para: nome, status:'em_analise' });
     logAcao('atribuiu', 'fornecedor', id, { para: nome });
     setShowAssign(false);
@@ -568,8 +583,10 @@ export default function Home() {
       'Excluir cadastro?',
       'Esta ação não pode ser desfeita. O cadastro do fornecedor será removido permanentemente.',
       async () => {
-        const { error } = await supabase.from('fornecedores').delete().eq('id', id);
-        if (error) { showToast('Erro ao excluir: ' + error.message); console.error('[deleteForn]', error); return; }
+        try {
+          await mutateTable(user.id, 'fornecedores', 'delete', { id });
+        } catch (err) { showToast('Erro ao excluir: ' + err.message); console.error('[deleteForn]', err); return; }
+        applyRealtimeChange('fornecedores', { eventType:'DELETE', old: { id } });
         showToast('Cadastro excluído');
         logAcao('excluiu', 'fornecedor', id);
         setSel(null);
@@ -579,7 +596,8 @@ export default function Home() {
   };
   const saveObs = async (id) => {
     if (!obsRef.current) return;
-    await supabase.from('fornecedores').update({ observacoes_internas: obsRef.current.value }).eq('id', id);
+    const { row } = await mutateTable(user.id, 'fornecedores', 'update', { id, data: { observacoes_internas: obsRef.current.value }, returning: true });
+    if (row) applyRealtimeChange('fornecedores', { eventType:'UPDATE', new: row });
     showToast('Observação salva');
   };
 
@@ -685,24 +703,30 @@ export default function Home() {
     if (!newTask.atribuido_para) { showToast('Atribua a tarefa a alguém'); return; }
     const dt = { ...newTask, criado_por: user.nome, checklist: [], comentarios: [] };
     if (!dt.prazo) delete dt.prazo;
-    const { error } = await supabase.from('kanban_tarefas').insert(dt);
+    let error;
+    try { await mutateTable(user.id, 'kanban_tarefas', 'insert', { data: dt }); }
+    catch (err) { error = err; }
     if (error) { showToast('Erro ao criar: ' + error.message); return; }
     showToast('Tarefa criada!');
     setShowNewTask(false);
     setNewTask({ titulo:'',descricao:'',atribuido_para:'',prioridade:'media',prazo:'',status:'backlog' });
     await fetchAll();
   };
-  const moveKanTask = async (id, newStatus) => { await supabase.from('kanban_tarefas').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', id); await fetchAll(); };
+  const moveKanTask = async (id, newStatus) => { await mutateTable(user.id, 'kanban_tarefas', 'update', { id, data: { status: newStatus, updated_at: new Date().toISOString() } }); await fetchAll(); };
   const deleteKanTask = (id) => {
     askConfirm('Excluir tarefa?', 'Esta tarefa será removida permanentemente.', async () => {
-      const { error } = await supabase.from('kanban_tarefas').delete().eq('id', id);
-      if (error) { showToast('Erro ao excluir: ' + error.message); return; }
+      try { await mutateTable(user.id, 'kanban_tarefas', 'delete', { id }); }
+      catch (err) { showToast('Erro ao excluir: ' + err.message); return; }
       showToast('Tarefa excluída');
       if (editTask?.id === id) setEditTask(null);
       await fetchAll();
     });
   };
-  const updateKanTask = async (id, data) => { await supabase.from('kanban_tarefas').update({ ...data, updated_at: new Date().toISOString() }).eq('id', id); if (editTask?.id === id) { const { data: nt } = await supabase.from('kanban_tarefas').select('*').eq('id', id).single(); if (nt) setEditTask(nt); } await fetchAll(); };
+  const updateKanTask = async (id, data) => {
+    const { row } = await mutateTable(user.id, 'kanban_tarefas', 'update', { id, data: { ...data, updated_at: new Date().toISOString() }, returning: true });
+    if (editTask?.id === id && row) setEditTask(row);
+    await fetchAll();
+  };
 
   const addChkItem = async () => {
     if (!newChkItem.trim() || !editTask) return;
