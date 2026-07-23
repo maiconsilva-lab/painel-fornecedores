@@ -138,6 +138,19 @@ export default function PendenciasPage() {
   const [expanded, setExpanded] = useState({});
   const [copiedKey, setCopiedKey] = useState('');
 
+  /* Essa página é pública (consultada por qualquer colaborador @premix.com.br
+     sem login). O menu de navegação pros outros módulos do painel só faz
+     sentido pra quem já está logado — pra quem não está, clicar num desses
+     links esbarra na tela de login. Checa a sessão só pra decidir se mostra
+     o menu; não bloqueia nada nesta página. */
+  const [authUser, setAuthUser] = useState(null);
+  useEffect(() => {
+    fetch('/api/auth/session', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(j => setAuthUser(j?.user || null))
+      .catch(() => setAuthUser(null));
+  }, []);
+
   // ─── CARGA INICIAL PROTEGIDA POR SESSÃO ───
   useEffect(() => {
     let active = true;
@@ -463,7 +476,9 @@ export default function PendenciasPage() {
               {ultimaAtt ? `Atualizado ${fmtRelativeTime(ultimaAtt)}` : 'Núcleo Fiscal'}
             </p>
           </div>
-          <a href="/" style={{padding:'7px 11px',border:`1px solid ${C.border}`,borderRadius:8,background:C.surface,color:C.primary,fontSize:11,fontWeight:650,textDecoration:'none'}}>← Central de Cadastros</a>
+          {authUser && (
+            <a href="/" style={{padding:'7px 11px',border:`1px solid ${C.border}`,borderRadius:8,background:C.surface,color:C.primary,fontSize:11,fontWeight:650,textDecoration:'none'}}>← Central de Cadastros</a>
+          )}
           <button
             onClick={loadFilialData}
             disabled={loading || !filialSel}
@@ -481,19 +496,21 @@ export default function PendenciasPage() {
         </div>
       </header>
 
-      <nav aria-label="Módulos do painel" style={{background:'#173F69',borderBottom:'3px solid #F15A24'}}>
-        <div style={{maxWidth:1440,margin:'0 auto',padding:'0 24px',display:'flex',gap:4,overflowX:'auto'}}>
-          {[
-            ['/?view=dashboard','Visão Geral'],
-            ['/?view=fila','Fila Protheus'],
-            ['/?view=cadastros&tab=fornecedores','Fornecedores'],
-            ['/?view=cadastros&tab=produtos','Produtos'],
-            ['/?view=kanban','Tarefas'],
-            ['/?view=relatorios','Relatórios'],
-          ].map(([href,label]) => <a key={href} href={href} style={{padding:'11px 13px',color:'#EAF2FA',textDecoration:'none',fontSize:12,fontWeight:600,whiteSpace:'nowrap'}}>{label}</a>)}
-          <span aria-current="page" style={{padding:'11px 13px',color:'#fff',background:'rgba(255,255,255,.10)',fontSize:12,fontWeight:700,whiteSpace:'nowrap',borderBottom:'3px solid #F15A24',marginBottom:-3}}>Pendências Fiscais</span>
-        </div>
-      </nav>
+      {authUser && (
+        <nav aria-label="Módulos do painel" style={{background:'#173F69',borderBottom:'3px solid #F15A24'}}>
+          <div style={{maxWidth:1440,margin:'0 auto',padding:'0 24px',display:'flex',gap:4,overflowX:'auto'}}>
+            {[
+              ['/?view=dashboard','Visão Geral'],
+              ['/?view=fila','Fila Protheus'],
+              ['/?view=cadastros&tab=fornecedores','Fornecedores'],
+              ['/?view=cadastros&tab=produtos','Produtos'],
+              ['/?view=kanban','Tarefas'],
+              ['/?view=relatorios','Relatórios'],
+            ].map(([href,label]) => <a key={href} href={href} style={{padding:'11px 13px',color:'#EAF2FA',textDecoration:'none',fontSize:12,fontWeight:600,whiteSpace:'nowrap'}}>{label}</a>)}
+            <span aria-current="page" style={{padding:'11px 13px',color:'#fff',background:'rgba(255,255,255,.10)',fontSize:12,fontWeight:700,whiteSpace:'nowrap',borderBottom:'3px solid #F15A24',marginBottom:-3}}>Pendências Fiscais</span>
+          </div>
+        </nav>
+      )}
 
       <main style={{ maxWidth: 1440, margin: '0 auto', padding: '24px' }}>
 
