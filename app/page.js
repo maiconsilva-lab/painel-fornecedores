@@ -207,6 +207,20 @@ export default function Home() {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
+  /* Polling: como o realtime não é mais possível pra fornecedores/produtos/
+     desbloqueios/kanban_tarefas (dependia de SELECT liberado pra anon, que
+     foi revogado por segurança), recarrega os dados sozinho a cada 20s pra
+     pegar novos cadastros vindos dos formulários públicos e mudanças feitas
+     por outras pessoas com o painel aberto ao mesmo tempo. Só roda com a
+     aba em foco, pra não gastar função à toa em segundo plano. */
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') fetchAll();
+    }, 20000);
+    return () => clearInterval(interval);
+  }, [user, fetchAll]);
+
   /* ── Aparência: carregar e salvar preferências do usuário ── */
   const loadPrefs = useCallback(async () => {
     if (!user?.email) return;
