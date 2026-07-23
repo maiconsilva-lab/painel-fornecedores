@@ -41,7 +41,7 @@ body{background:var(--pmx-bg);letter-spacing:-.006em}
 .pmx-sidebar__brand{min-height:92px;position:relative}
 .pmx-sidebar__brand::after{content:'';position:absolute;left:20px;right:20px;bottom:-1px;height:1px;background:linear-gradient(90deg,var(--pmx-orange) 0 28%,rgba(255,255,255,.09) 28%)}
 .pmx-sidebar__identity{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:7px}
-.pmx-sidebar__identity img{height:31px;width:auto;max-width:150px;object-fit:contain;filter:brightness(0) invert(1);opacity:.98}
+.pmx-sidebar__identity img{height:27px;width:auto;max-width:142px;object-fit:contain;background:#fff;border-radius:6px;padding:4px 8px}
 .pmx-sidebar__identity span{font-size:9px;line-height:1;text-transform:uppercase;letter-spacing:1.35px;font-weight:700;color:rgba(255,255,255,.48);white-space:nowrap}
 .pmx-sidebar__toggle{background:rgba(255,255,255,.055)!important;border-color:rgba(255,255,255,.12)!important;color:rgba(255,255,255,.68)!important}
 .pmx-sidebar__toggle:hover{background:rgba(255,255,255,.12)!important;color:#fff!important;border-color:rgba(255,255,255,.2)!important}
@@ -268,7 +268,7 @@ body{background:var(--pmx-bg);letter-spacing:-.006em}
 .fiscal-shell{background:var(--pmx-bg)!important;min-height:100vh}
 .fiscal-topbar{background:linear-gradient(105deg,var(--pmx-navy-deep),var(--pmx-navy))!important;border-bottom:1px solid rgba(255,255,255,.08)!important;color:#fff;backdrop-filter:none!important}
 .fiscal-topbar__inner{min-height:74px}
-.fiscal-topbar__logo{filter:brightness(0) invert(1);height:31px!important}
+.fiscal-topbar__logo{height:27px!important;background:#fff;border-radius:6px;padding:4px 8px}
 .fiscal-topbar h1{color:#fff!important;font-size:14px!important;letter-spacing:-.1px}
 .fiscal-topbar p{color:rgba(255,255,255,.55)!important}
 .fiscal-topbar a[style*="Central de Cadastros"]{color:#fff!important}
