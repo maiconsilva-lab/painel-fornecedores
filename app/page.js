@@ -32,6 +32,8 @@ export default function Home() {
   const [page, setPage] = useState('dashboard');
   const [subTab, setSubTab] = useState('fornecedores'); // 'fornecedores' | 'produtos' | 'desbloqueios'
   const [tab, setTab] = useState('pendentes');
+  const [produtoTab, setProdutoTab] = useState('pendentes');
+  const [desbloqueioTab, setDesbloqueioTab] = useState('pendentes');
   const [sel, setSel] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [search, setSearch] = useState('');
@@ -334,6 +336,10 @@ export default function Home() {
 
   const listPend = applyFilters(pend, search);
   const listDone = applyFilters(done, searchDone);
+  const produtosPend = produtos.filter(p => p.status === 'pendente' || p.status === 'em_analise');
+  const produtosDone = produtos.filter(p => p.status === 'aprovado' || p.status === 'rejeitado');
+  const desbloqueiosPend = desbloqueios.filter(d => d.status === 'pendente' || d.status === 'em_analise');
+  const desbloqueiosDone = desbloqueios.filter(d => d.status === 'desbloqueado' || d.status === 'rejeitado');
   const kanFiltered = kanView === 'todos' ? kanban : kanban.filter(t => t.atribuido_para === kanView);
 
   const calcProgress = (checklist) => {
@@ -886,12 +892,12 @@ export default function Home() {
               {/* Stats Produtos */}
               <div className="pmx-stats-4" style={{display:'grid',gridTemplateColumns:'repeat(4, 1fr)',gap:14,marginBottom:22}}>
                 {[
-                  { n: produtos.filter(p=>p.status==='pendente').length,   l:'Pendentes',  c:'#D97706', bg:'#FEF3C7', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
-                  { n: produtos.filter(p=>p.status==='em_analise').length, l:'Em análise', c:'#2563EB', bg:'#DBEAFE', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg> },
-                  { n: produtos.filter(p=>p.status==='aprovado').length,   l:'Aprovados',  c:'#008C44', bg:'#E6F7EE', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> },
-                  { n: produtos.filter(p=>p.status==='rejeitado').length,  l:'Devolvidos', c:'#E63946', bg:'#FEE2E2', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></svg> },
+                  { n: produtos.filter(p=>p.status==='pendente').length,   l:'Pendentes',  c:'#D97706', bg:'#FEF3C7', tab:'pendentes', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
+                  { n: produtos.filter(p=>p.status==='em_analise').length, l:'Em análise', c:'#2563EB', bg:'#DBEAFE', tab:'pendentes', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg> },
+                  { n: produtos.filter(p=>p.status==='aprovado').length,   l:'Aprovados',  c:'#008C44', bg:'#E6F7EE', tab:'concluidos', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> },
+                  { n: produtos.filter(p=>p.status==='rejeitado').length,  l:'Devolvidos', c:'#E63946', bg:'#FEE2E2', tab:'concluidos', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></svg> },
                 ].map((s,i)=>(
-                  <div key={i} className="pmx-stat" style={{background:'#fff',border:'1px solid #E5E9EF',borderRadius:10,padding:'16px 18px',cursor:'pointer'}}>
+                  <div key={i} className="pmx-stat" onClick={()=>setProdutoTab(s.tab)} style={{background:'#fff',border:'1px solid #E5E9EF',borderRadius:10,padding:'16px 18px',cursor:'pointer'}}>
                     <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>
                       <div style={{width:32,height:32,borderRadius:8,background:s.bg,color:s.c,display:'flex',alignItems:'center',justifyContent:'center'}}>{s.icon}</div>
                       <div style={{fontSize:11,fontWeight:600,color:'#8B94A3',textTransform:'uppercase',letterSpacing:'.5px'}}>{s.l}</div>
@@ -903,17 +909,36 @@ export default function Home() {
 
               {/* Painel Produtos */}
               <div className="pmx-executive-panel" style={{background:'#fff',borderRadius:14,border:'1px solid #E5E9EF',overflow:'hidden'}}>
-                <div style={{padding:'14px 20px',borderBottom:'1px solid #E5E9EF',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                  <h2 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:15,fontWeight:700,color:'#1A2332',margin:0}}>Cadastros de Produtos</h2>
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:'1px solid #E5E9EF',padding:'0 20px'}}>
+                  <div style={{display:'flex',alignItems:'center'}}>
+                    {[
+                      { k:'pendentes', l:'Pendentes', n:produtosPend.length },
+                      { k:'concluidos', l:'Concluídos & Devolvidos', n:produtosDone.length },
+                    ].map(t => {
+                      const active = produtoTab === t.k;
+                      return (
+                        <button key={t.k} onClick={()=>setProdutoTab(t.k)} style={{
+                          position:'relative',padding:'14px 16px',background:'none',border:'none',
+                          fontFamily:'inherit',fontSize:13,fontWeight: active ? 600 : 500,
+                          color: active ? T.primary : T.text2,
+                          cursor:'pointer',display:'inline-flex',alignItems:'center',gap:7
+                        }}>
+                          {t.l}
+                          <span style={{fontFamily:'Geist,-apple-system,sans-serif',fontWeight:700,fontSize:10,padding:'1px 7px',background: active ? '#E6F7EE' : '#EEF1F5',color: active ? T.primary : T.text2,borderRadius:20}}>{t.n}</span>
+                          {active && <span style={{position:'absolute',bottom:-1,left:12,right:12,height:2,background:'#20558A'}} />}
+                        </button>
+                      );
+                    })}
+                  </div>
                   <span style={{fontSize:12,color:'#8B94A3'}}>{produtos.length} total</span>
                 </div>
 
-                {produtos.length === 0 ? (
+                {(produtoTab==='pendentes' ? produtosPend : produtosDone).length === 0 ? (
                   <div style={{textAlign:'center',padding:60}}>
                     <div style={{width:64,height:64,margin:'0 auto 14px',background:'#F8F9FB',borderRadius:14,display:'flex',alignItems:'center',justifyContent:'center',color:'#B5BCC6'}}>
                       <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
                     </div>
-                    <div style={{fontWeight:600,color:'#4F5868',fontSize:14}}>Nenhum cadastro de produto ainda</div>
+                    <div style={{fontWeight:600,color:'#4F5868',fontSize:14}}>{produtoTab==='pendentes' ? 'Nenhum produto pendente' : 'Nenhum produto concluído ou devolvido ainda'}</div>
                     <div style={{fontSize:12,color:'#8B94A3',marginTop:4}}>Os cadastros aparecem aqui quando enviados pelo formulário interno</div>
                   </div>
                 ) : (
@@ -928,7 +953,7 @@ export default function Home() {
                       </tr>
                     </thead>
                     <tbody>
-                      {produtos.map(p => {
+                      {(produtoTab==='pendentes' ? produtosPend : produtosDone).map(p => {
                         const st = ST[p.status] || ST.pendente;
                         const stColor = p.status==='aprovado'?'#008C44':p.status==='rejeitado'?'#E63946':p.status==='em_analise'?'#2563EB':'#D97706';
                         const stBg = p.status==='aprovado'?'#E6F7EE':p.status==='rejeitado'?'#FEE2E2':p.status==='em_analise'?'#DBEAFE':'#FEF3C7';
@@ -997,12 +1022,12 @@ export default function Home() {
               {/* Stats Desbloqueios */}
               <div className="pmx-stats-4" style={{display:'grid',gridTemplateColumns:'repeat(4, 1fr)',gap:14,marginBottom:22}}>
                 {[
-                  { n: desbloqueios.filter(d=>d.status==='pendente').length,     l:'Pendentes',     c:'#D97706', bg:'#FEF3C7', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
-                  { n: desbloqueios.filter(d=>d.status==='em_analise').length,   l:'Em análise',    c:'#2563EB', bg:'#DBEAFE', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg> },
-                  { n: desbloqueios.filter(d=>d.status==='desbloqueado').length, l:'Desbloqueados', c:'#008C44', bg:'#E6F7EE', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg> },
-                  { n: desbloqueios.filter(d=>d.status==='rejeitado').length,    l:'Rejeitados',    c:'#E63946', bg:'#FEE2E2', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> },
+                  { n: desbloqueios.filter(d=>d.status==='pendente').length,     l:'Pendentes',     c:'#D97706', bg:'#FEF3C7', tab:'pendentes', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
+                  { n: desbloqueios.filter(d=>d.status==='em_analise').length,   l:'Em análise',    c:'#2563EB', bg:'#DBEAFE', tab:'pendentes', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg> },
+                  { n: desbloqueios.filter(d=>d.status==='desbloqueado').length, l:'Desbloqueados', c:'#008C44', bg:'#E6F7EE', tab:'concluidos', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg> },
+                  { n: desbloqueios.filter(d=>d.status==='rejeitado').length,    l:'Rejeitados',    c:'#E63946', bg:'#FEE2E2', tab:'concluidos', icon:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> },
                 ].map((s,i)=>(
-                  <div key={i} className="pmx-stat" style={{background:'#fff',border:'1px solid #E5E9EF',borderRadius:10,padding:'16px 18px',cursor:'pointer'}}>
+                  <div key={i} className="pmx-stat" onClick={()=>setDesbloqueioTab(s.tab)} style={{background:'#fff',border:'1px solid #E5E9EF',borderRadius:10,padding:'16px 18px',cursor:'pointer'}}>
                     <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>
                       <div style={{width:32,height:32,borderRadius:8,background:s.bg,color:s.c,display:'flex',alignItems:'center',justifyContent:'center'}}>{s.icon}</div>
                       <div style={{fontSize:11,fontWeight:600,color:'#8B94A3',textTransform:'uppercase',letterSpacing:'.5px'}}>{s.l}</div>
@@ -1014,17 +1039,36 @@ export default function Home() {
 
               {/* Painel Desbloqueios */}
               <div className="pmx-executive-panel" style={{background:'#fff',borderRadius:14,border:'1px solid #E5E9EF',overflow:'hidden'}}>
-                <div style={{padding:'14px 20px',borderBottom:'1px solid #E5E9EF',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                  <h2 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:15,fontWeight:700,color:'#1A2332',margin:0}}>Pedidos de Desbloqueio</h2>
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:'1px solid #E5E9EF',padding:'0 20px'}}>
+                  <div style={{display:'flex',alignItems:'center'}}>
+                    {[
+                      { k:'pendentes', l:'Pendentes', n:desbloqueiosPend.length },
+                      { k:'concluidos', l:'Concluídos & Rejeitados', n:desbloqueiosDone.length },
+                    ].map(t => {
+                      const active = desbloqueioTab === t.k;
+                      return (
+                        <button key={t.k} onClick={()=>setDesbloqueioTab(t.k)} style={{
+                          position:'relative',padding:'14px 16px',background:'none',border:'none',
+                          fontFamily:'inherit',fontSize:13,fontWeight: active ? 600 : 500,
+                          color: active ? T.primary : T.text2,
+                          cursor:'pointer',display:'inline-flex',alignItems:'center',gap:7
+                        }}>
+                          {t.l}
+                          <span style={{fontFamily:'Geist,-apple-system,sans-serif',fontWeight:700,fontSize:10,padding:'1px 7px',background: active ? '#E6F7EE' : '#EEF1F5',color: active ? T.primary : T.text2,borderRadius:20}}>{t.n}</span>
+                          {active && <span style={{position:'absolute',bottom:-1,left:12,right:12,height:2,background:'#20558A'}} />}
+                        </button>
+                      );
+                    })}
+                  </div>
                   <span style={{fontSize:12,color:'#8B94A3'}}>{desbloqueios.length} total</span>
                 </div>
 
-                {desbloqueios.length === 0 ? (
+                {(desbloqueioTab==='pendentes' ? desbloqueiosPend : desbloqueiosDone).length === 0 ? (
                   <div style={{textAlign:'center',padding:60}}>
                     <div style={{width:64,height:64,margin:'0 auto 14px',background:'#F8F9FB',borderRadius:14,display:'flex',alignItems:'center',justifyContent:'center',color:'#B5BCC6'}}>
                       <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
                     </div>
-                    <div style={{fontWeight:600,color:'#4F5868',fontSize:14}}>Nenhum pedido de desbloqueio ainda</div>
+                    <div style={{fontWeight:600,color:'#4F5868',fontSize:14}}>{desbloqueioTab==='pendentes' ? 'Nenhum pedido pendente' : 'Nenhum pedido concluído ou rejeitado ainda'}</div>
                     <div style={{fontSize:12,color:'#8B94A3',marginTop:4}}>Os pedidos aparecem aqui quando enviados pelo formulário interno</div>
                   </div>
                 ) : (
@@ -1038,7 +1082,7 @@ export default function Home() {
                       </tr>
                     </thead>
                     <tbody>
-                      {desbloqueios.map(d => {
+                      {(desbloqueioTab==='pendentes' ? desbloqueiosPend : desbloqueiosDone).map(d => {
                         const stColor = d.status==='desbloqueado'?'#008C44':d.status==='rejeitado'?'#E63946':d.status==='em_analise'?'#2563EB':'#D97706';
                         const stBg = d.status==='desbloqueado'?'#E6F7EE':d.status==='rejeitado'?'#FEE2E2':d.status==='em_analise'?'#DBEAFE':'#FEF3C7';
                         const statusLabel = d.status==='desbloqueado'?'Desbloqueado':d.status==='rejeitado'?'Rejeitado':d.status==='em_analise'?'Em análise':'Pendente';
