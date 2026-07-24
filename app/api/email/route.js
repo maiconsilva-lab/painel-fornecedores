@@ -1,13 +1,35 @@
 import { NextResponse } from 'next/server';
 import { verifySession } from '../../../lib/authServer';
 
+/* Plano gratuito do EmailJS permite só 2 templates — então, em vez de um
+   template por tipo de e-mail, agrupamos em 2 templates GENÉRICOS e
+   flexíveis (título, saudação, caixa de destaque, texto extra opcional),
+   cada chamador preenche o texto certo pro caso dele:
+   - 'fornecedor': aprovação e devolução de cadastro de fornecedor
+   - 'operacional': produtos e desbloqueios, individual ou em lote
+   Os nomes antigos (EMAILJS_TEMPLATE_APROVADO etc.) continuam funcionando
+   como fallback, pra não exigir reconfigurar o Vercel se você já tinha
+   isso setado. */
 const TEMPLATE_ENV = {
-  aprovado: ['EMAILJS_TEMPLATE_APROVADO', 'NEXT_PUBLIC_EMAILJS_TEMPLATE_APROVADO'],
-  devolvido: ['EMAILJS_TEMPLATE_DEVOLVIDO', 'NEXT_PUBLIC_EMAILJS_TEMPLATE_DEVOLVIDO'],
-  desbloqueio: ['EMAILJS_TEMPLATE_DESBLOQ', 'NEXT_PUBLIC_EMAILJS_TEMPLATE_DESBLOQ'],
-  produto_aprovado: ['EMAILJS_TEMPLATE_PRODUTO_APROVADO', 'NEXT_PUBLIC_EMAILJS_TEMPLATE_PRODUTO_APROVADO'],
-  produtos_aprovados_lote: ['EMAILJS_TEMPLATE_PRODUTOS_LOTE', 'NEXT_PUBLIC_EMAILJS_TEMPLATE_PRODUTOS_LOTE'],
-  desbloqueios_lote: ['EMAILJS_TEMPLATE_DESBLOQ_LOTE', 'NEXT_PUBLIC_EMAILJS_TEMPLATE_DESBLOQ_LOTE'],
+  fornecedor: [
+    'EMAILJS_TEMPLATE_FORNECEDOR', 'NEXT_PUBLIC_EMAILJS_TEMPLATE_FORNECEDOR',
+    'EMAILJS_TEMPLATE_APROVADO', 'NEXT_PUBLIC_EMAILJS_TEMPLATE_APROVADO',
+  ],
+  operacional: [
+    'EMAILJS_TEMPLATE_OPERACIONAL', 'NEXT_PUBLIC_EMAILJS_TEMPLATE_OPERACIONAL',
+  ],
+};
+
+/* Cada chamador continua mandando um 'kind' específico (mais legível no
+   código de quem chama) — aqui é só onde decidimos qual dos 2 templates
+   usar pra cada um. */
+const KIND_TO_GROUP = {
+  aprovado: 'fornecedor',
+  devolvido: 'fornecedor',
+  desbloqueio: 'operacional',
+  produto_aprovado: 'operacional',
+  produtos_aprovados_lote: 'operacional',
+  desbloqueios_lote: 'operacional',
 };
 
 function firstEnv(names) {
@@ -29,11 +51,12 @@ export async function POST(req) {
 
   try {
     const { kind, params } = await req.json();
-    if (!TEMPLATE_ENV[kind]) return NextResponse.json({ error: 'Modelo de e-mail inválido.' }, { status: 400 });
+    const group = KIND_TO_GROUP[kind];
+    if (!group) return NextResponse.json({ error: 'Modelo de e-mail inválido.' }, { status: 400 });
 
     const serviceId = process.env.EMAILJS_SERVICE || process.env.NEXT_PUBLIC_EMAILJS_SERVICE;
     const publicKey = process.env.EMAILJS_PUBLIC || process.env.NEXT_PUBLIC_EMAILJS_PUBLIC;
-    const templateId = firstEnv(TEMPLATE_ENV[kind]);
+    const templateId = firstEnv(TEMPLATE_ENV[group]);
     if (!serviceId || !publicKey || !templateId) {
       return NextResponse.json({ error: 'Configuração de e-mail incompleta.' }, { status: 503 });
     }
