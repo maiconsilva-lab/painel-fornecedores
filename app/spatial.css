@@ -382,3 +382,23 @@
 .pmx-view-switch button:hover{transform:none!important}
 .pmx-spatial-login__card{animation:pmxCalmOpacity .18s ease-out both!important}
 .pmx-spatial-login__status i{animation:none!important}
+
+/* ── FlowStrip: substitui a cena 3D por um fluxo simples e sóbrio ── */
+.pmx-flowstrip{display:flex;align-items:center;height:100%;padding:0 32px;gap:0}
+.pmx-flowstrip__item{display:flex;align-items:center;flex:1;min-width:0}
+.pmx-flowstrip__card{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:18px 20px;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(8px);flex:1;min-width:0}
+.pmx-flowstrip__card svg{color:rgba(224,240,249,.55)}
+.pmx-flowstrip__card strong{font-size:26px;font-weight:700;color:#fff;line-height:1.1;letter-spacing:-.02em}
+.pmx-flowstrip__card span{font-size:11px;color:rgba(224,240,249,.65);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.pmx-flowstrip__connector{width:28px;height:1px;background:linear-gradient(90deg,rgba(255,255,255,.25),rgba(255,255,255,.06));flex-shrink:0;margin:0 2px}
+.pmx-flowstrip--compact{padding:0 20px}
+.pmx-flowstrip--compact .pmx-flowstrip__card{padding:14px 16px}
+.pmx-flowstrip--compact .pmx-flowstrip__card strong{font-size:20px}
+@media (max-width:980px){
+  .pmx-flowstrip{flex-wrap:wrap;gap:12px;padding:20px}
+  .pmx-flowstrip__item{flex:1 1 40%}
+  .pmx-flowstrip__connector{display:none}
+}
+@media (max-width:520px){
+  .pmx-flowstrip__item{flex:1 1 100%}
+}

@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import SpatialScene from './spatial/SpatialScene';
 import { CountUp, ProtheusFlowSpatial, TiltSurface } from './spatial/SpatialUI';
+import FlowStrip from './spatial/FlowStrip';
 import {
   buildRecentActivity,
   buildUnifiedQueue,
@@ -120,7 +120,7 @@ export function OverviewDashboard({ fornecedores, produtos, desbloqueios, kanban
           </div>
         </div>
         <div className="pmx-spatial-hero__visual">
-          <SpatialScene mode="hero" interactive={false} counts={{ received: queue.length, validation: queue.filter((item) => item.status === 'em_analise').length, ready, done: completedTotal }} />
+          <FlowStrip counts={{ received: queue.length, validation: queue.filter((item) => item.status === 'em_analise').length, ready, done: completedTotal }} />
           <div className="pmx-spatial-hero__caption"><i/> Fluxo Solicitação → Protheus</div>
         </div>
       </section>

@@ -1,6 +1,6 @@
 'use client';
 
-import SpatialScene from './SpatialScene';
+import FlowStrip from './FlowStrip';
 
 export default function SpatialLogin({ loginForm, setLoginForm, loginError, loginLocked, onSubmit }) {
   return (
@@ -15,7 +15,9 @@ export default function SpatialLogin({ loginForm, setLoginForm, loginError, logi
           <h1>Dados organizados.<br/><em>Operação sob controle.</em></h1>
           <p>Uma central clara e segura para receber, validar e preparar cadastros destinados ao Protheus.</p>
         </div>
-        <SpatialScene mode="login" counts={{ received: 18, validation: 7, ready: 11, done: 24 }} />
+        <div className="pmx-spatial-scene pmx-spatial-scene--login">
+          <FlowStrip compact counts={{ received: 18, validation: 7, ready: 11, done: 24 }} />
+        </div>
         <div className="pmx-spatial-login__status"><i /><span>Ambiente operacional disponível</span><b>v4.1</b></div>
       </section>
       <section className="pmx-spatial-login__form-zone">
