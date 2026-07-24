@@ -1,6 +1,8 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { listTable, mutateTable } from '../lib/dataApi';
+import { useAuth } from '../lib/useAuth';
+import { useAppearance } from '../lib/useAppearance';
 import { useKanban } from '../lib/useKanban';
 import { useUsersAdmin } from '../lib/useUsersAdmin';
 import { useFornecedorActions } from '../lib/useFornecedorActions';
@@ -17,17 +19,6 @@ import RecordDrawer from '../components/recordDrawer';
 import { buildRecentActivity, buildUnifiedQueue, getCompleteness, getDuplicateCandidates, recordToClipboardText, fieldsForType } from '../lib/panelMetrics';
 
 export default function Home() {
-  /* ── Auth State ──────────────────────────────── */
-  const [user, setUser] = useState(null);
-  const [authLoading, setAuthLoading] = useState(true);
-  const [loginForm, setLF] = useState({ email:'', senha:'' });
-  const [loginErr, setLE] = useState('');
-  const [loginAttempts, setLoginAttempts] = useState(0);
-  const [loginLocked, setLoginLocked] = useState(false);
-  const [changePw, setCP] = useState(false);
-  const [newPw, setNP] = useState({ nova:'', conf:'' });
-  const [pwMsg, setPwMsg] = useState('');
-
   /* ── Data State ──────────────────────────────── */
   const [forn, setForn] = useState([]);
   const [produtos, setProdutos] = useState([]);
@@ -47,8 +38,6 @@ export default function Home() {
   const [searchDone, setSearchDone] = useState('');
   const [filterTipo, setFilterTipo] = useState('todos');
   const [filterAssign, setFilterAssign] = useState('todos');
-  const [showLogout, setShowLogout] = useState(false);
-  /* Modal de confirmação customizado (substitui window.confirm que pode ser bloqueado) */
   const [confirmModal, setConfirmModal] = useState(null);
   // confirmModal = { title, message, danger, onConfirm }
   const askConfirm = (title, message, onConfirm, danger = true) => setConfirmModal({ title, message, onConfirm, danger });
@@ -58,26 +47,22 @@ export default function Home() {
   const [rejectUnlock, setRejectUnlock] = useState(null);
   const [rejectUnlockReason, setRejectUnlockReason] = useState('');
 
-  /* ── Aparência: tema, wallpaper, cor, densidade ──
-     IMPORTANTE: inicialização lazy a partir do localStorage para evitar FOUC.
-     Só fazemos isso no client (typeof window !== 'undefined') pra não quebrar SSR. */
-  const readLS = (k, fallback) => {
-    if (typeof window === 'undefined') return fallback;
-    try { const v = window.localStorage.getItem('pmx_'+k); return v !== null ? JSON.parse(v) : fallback; }
-    catch { return fallback; }
-  };
-  const writeLS = (k, v) => {
-    if (typeof window === 'undefined') return;
-    try { window.localStorage.setItem('pmx_'+k, JSON.stringify(v)); } catch {}
-  };
+  /* Auth e Aparência: hooks extraídos (lib/useAuth.js, lib/useAppearance.js).
+     Precisam vir depois de setPage/showToast já estarem definidos. */
+  const {
+    user, authLoading, loginForm, setLF, loginErr, setLE, loginAttempts, loginLocked,
+    changePw, setCP, newPw, setNP, pwMsg, showLogout, setShowLogout,
+    doLogin, doChangePw, doLogout,
+  } = useAuth({ setPage });
+  const {
+    tema, setTema, densidade, setDensidade, prefsLoaded, sidebarCol, setSidebarCol,
+    mobileNavOpen, setMobileNavOpen, searchGlobal, setSearchGlobal, searchGlobalDeb,
+    savePrefs,
+  } = useAppearance({ user, showToast });
 
-  const [tema, setTema] = useState(() => readLS('tema', 'premix_claro'));
-  const [densidade, setDensidade] = useState(() => readLS('densidade', 'normal'));
-  const [prefsLoaded, setPrefsLoaded] = useState(false);
-  const [sidebarCol, setSidebarCol] = useState(() => readLS('sidebarCol', false));
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [searchGlobal, setSearchGlobal] = useState(''); // busca global da topbar
-  const [searchGlobalDeb, setSearchGlobalDeb] = useState(''); // versão "debounced" (250ms)
+
+  /* Notificações do sistema operacional (permanece aqui — não é "aparência",
+     é usado por detectarNovos() dentro do fetchAll principal). */
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifPermission, setNotifPermission] = useState('default');
   useEffect(() => {
@@ -101,90 +86,12 @@ export default function Home() {
   const [detailMode, setDetailMode] = useState('protheus');
 
 
-  /* Persistir cada mudança no localStorage (mirror do Supabase, latência zero) */
-  useEffect(() => { writeLS('tema', tema); }, [tema]);
-  useEffect(() => { writeLS('densidade', densidade); }, [densidade]);
-  useEffect(() => { writeLS('sidebarCol', sidebarCol); }, [sidebarCol]);
-
-  /* Debounce da busca global — atrasa 250ms o filtro para evitar engasgo em bases grandes */
-  useEffect(() => {
-    const t = setTimeout(() => setSearchGlobalDeb(searchGlobal), 250);
-    return () => clearTimeout(t);
-  }, [searchGlobal]);
-
-
   /* Kanban State e Admin State agora vêm dos hooks useKanban()/useUsersAdmin(),
      chamados logo abaixo de logAcao/applyRealtimeChange serem definidos. */
 
   const obsRef = useRef(null);
   const isAdmin = user && user.role === 'admin';
   const isSubAdmin = user && (user.role === 'admin' || user.role === 'subadmin');
-
-  /* ── Login (com rate limiting) ───────────────── */
-  const doLogin = async (e) => {
-    e.preventDefault();
-    if (loginLocked) return;
-    if (loginAttempts >= 5) {
-      setLoginLocked(true);
-      setLE('Muitas tentativas. Aguarde 60 segundos.');
-      setTimeout(() => { setLoginLocked(false); setLoginAttempts(0); setLE(''); }, 60000);
-      return;
-    }
-    let data, error;
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: loginForm.email, senha: loginForm.senha }),
-      });
-      const json = await res.json();
-      if (!res.ok) { error = true; }
-      else { data = json.user; }
-    } catch { error = true; }
-    if (error || !data) {
-      setLoginAttempts(a => a + 1);
-      setLE('E-mail ou senha inválidos');
-      return;
-    }
-    setUser(data);
-    setAuthLoading(false);
-    localStorage.setItem('premix_user_profile', JSON.stringify(data));
-    if (data.primeiro_login) setCP(true);
-    setLoginAttempts(0);
-  };
-
-  const doChangePw = async (e) => {
-    e.preventDefault();
-    if (newPw.nova !== newPw.conf) { setPwMsg('As senhas não coincidem'); return; }
-    if (newPw.nova.length < 8) { setPwMsg('Mínimo 8 caracteres'); return; }
-    if (!/[A-Z]/.test(newPw.nova) || !/[0-9]/.test(newPw.nova)) { setPwMsg('Use letras maiúsculas e números'); return; }
-    const res = await fetch('/api/auth/change-password', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'same-origin',
-      body: JSON.stringify({ senhaAtual: loginForm.senha, novaSenha: newPw.nova }),
-    });
-    const json = await res.json();
-    if (!res.ok) { setPwMsg(json.error || 'Erro ao atualizar'); return; }
-    const updated = { ...user, primeiro_login: false };
-    setUser(updated); localStorage.setItem('premix_user_profile', JSON.stringify(updated));
-    setCP(false); setNP({ nova:'', conf:'' }); setPwMsg('');
-  };
-
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        const res = await fetch('/api/auth/session', { credentials: 'same-origin', cache: 'no-store' });
-        if (!res.ok) throw new Error('Sessão ausente');
-        const json = await res.json();
-        if (active) { setUser(json.user); localStorage.setItem('premix_user_profile', JSON.stringify(json.user)); }
-      } catch {
-        if (active) { setUser(null); localStorage.removeItem('premix_user_profile'); }
-      } finally { if (active) setAuthLoading(false); }
-    })();
-    return () => { active = false; };
-  }, []);
 
   /* Permite links diretos entre módulos, inclusive a página de Pendências Fiscais. */
   useEffect(() => {
@@ -199,14 +106,6 @@ export default function Home() {
       setSubTab(requestedTab);
     }
   }, []);
-
-  const doLogout = async () => {
-    try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }); } catch {}
-    localStorage.removeItem('premix_user_profile');
-    setShowLogout(false);
-    setUser(null);
-    setPage('dashboard');
-  };
 
   /* ESC fecha modais e dropdowns abertos (acessibilidade) */
   useEffect(() => {
@@ -293,43 +192,6 @@ export default function Home() {
     }, 20000);
     return () => clearInterval(interval);
   }, [user, fetchAll]);
-
-  /* ── Aparência: carregar e salvar preferências do usuário ── */
-  const loadPrefs = useCallback(async () => {
-    if (!user) return;
-    try {
-      const res = await fetch('/api/preferences', { credentials:'same-origin', cache:'no-store' });
-      if (!res.ok) throw new Error('Falha ao carregar preferências');
-      const { preferences:data } = await res.json();
-      if (data) {
-        if (data.tema && ['premix_claro', 'premix_escuro'].includes(data.tema)) setTema(data.tema);
-        if (data.densidade) setDensidade(data.densidade);
-      }
-    } catch (e) { console.warn('[loadPrefs]', e.message); }
-    finally { setPrefsLoaded(true); }
-  }, [user]);
-
-  useEffect(() => { if (user) loadPrefs(); }, [user, loadPrefs]);
-
-  const savePrefs = async (patch) => {
-    if (!user) return;
-    const payload = {
-      tema,
-      densidade,
-      ...patch,
-    };
-    try {
-      const res = await fetch('/api/preferences', {
-        method:'POST', credentials:'same-origin',
-        headers:{ 'Content-Type':'application/json' },
-        body:JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error('Falha ao salvar preferências');
-    } catch (e) {
-      console.warn('[savePrefs]', e.message);
-      showToast('Erro ao salvar preferências');
-    }
-  };
 
   /* ── Tema institucional Premix ativo ── */
   const T = TEMAS[tema] || TEMAS.premix_claro;
