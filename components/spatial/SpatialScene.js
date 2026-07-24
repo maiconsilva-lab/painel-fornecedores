@@ -43,7 +43,7 @@ export default function SpatialScene(props) {
   const [engine, setEngine] = useState('checking');
 
   useEffect(() => {
-    const lowPower = window.matchMedia('(max-width: 680px)').matches || Boolean(navigator.connection?.saveData);
+    const lowPower = window.matchMedia('(max-width: 900px)').matches || Boolean(navigator.connection?.saveData);
     setEngine(!lowPower && canUseWebGL() ? 'webgl' : 'canvas');
   }, []);
 

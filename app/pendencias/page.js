@@ -470,7 +470,7 @@ export default function PendenciasPage() {
       }}>
         <div className="fiscal-topbar__inner" style={{ maxWidth: 1520, margin: '0 auto', padding: '14px 32px', display: 'flex', alignItems: 'center', gap: 18 }}>
           <a href={authUser ? '/' : undefined} aria-label={authUser ? 'Voltar ao painel' : 'Premix'} style={{display:'inline-flex',alignItems:'center',gap:9,textDecoration:'none',cursor:authUser?'pointer':'default'}}>
-            <img className="fiscal-topbar__logo" src="https://premix.com.br/wp-content/uploads/2023/06/Logotipo_Premix_Positivo_Com-Bandeira.png" alt="Premix" style={{ height: 30 }} />
+            <img className="fiscal-topbar__logo" src="/premix-logo.png" alt="Premix" style={{ height: 30 }} />
           </a>
           <div style={{ width: 1, height: 24, background: C.border }} />
           <div style={{ flex: 1 }}>

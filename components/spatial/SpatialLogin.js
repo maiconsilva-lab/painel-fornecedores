@@ -7,22 +7,22 @@ export default function SpatialLogin({ loginForm, setLoginForm, loginError, logi
     <main className="pmx-spatial-login">
       <section className="pmx-spatial-login__visual">
         <div className="pmx-spatial-login__brand">
-          <img src="https://premix.com.br/wp-content/uploads/2023/06/Logotipo_Premix_Positivo_Com-Bandeira.png" alt="Premix" />
+          <img src="/premix-logo.png" alt="Premix" />
           <span>Central de Cadastros</span>
         </div>
         <div className="pmx-spatial-login__copy">
-          <span className="pmx-spatial-kicker">Premix Spatial Operations</span>
-          <h1>Dados em movimento.<br/><em>Operação sob controle.</em></h1>
-          <p>Uma experiência imersiva para receber, validar e preparar cadastros destinados ao Protheus.</p>
+          <span className="pmx-spatial-kicker">Central de Cadastros Premix</span>
+          <h1>Dados organizados.<br/><em>Operação sob controle.</em></h1>
+          <p>Uma central clara e segura para receber, validar e preparar cadastros destinados ao Protheus.</p>
         </div>
         <SpatialScene mode="login" counts={{ received: 18, validation: 7, ready: 11, done: 24 }} />
-        <div className="pmx-spatial-login__status"><i /><span>Ambiente operacional disponível</span><b>v4.0</b></div>
+        <div className="pmx-spatial-login__status"><i /><span>Ambiente operacional disponível</span><b>v4.1</b></div>
       </section>
       <section className="pmx-spatial-login__form-zone">
         <div className="pmx-spatial-login__orb pmx-spatial-login__orb--blue" />
         <div className="pmx-spatial-login__orb pmx-spatial-login__orb--orange" />
         <form className="pmx-spatial-login__card" onSubmit={onSubmit}>
-          <div className="pmx-spatial-login__mobile-brand"><img src="https://premix.com.br/wp-content/uploads/2023/06/Logotipo_Premix_Positivo_Com-Bandeira.png" alt="Premix" /><span>Central de Cadastros</span></div>
+          <div className="pmx-spatial-login__mobile-brand"><img src="/premix-logo.png" alt="Premix" /><span>Central de Cadastros</span></div>
           <span className="pmx-eyebrow">Acesso seguro</span>
           <h2>Bem-vindo ao Núcleo Fiscal</h2>
           <p>Entre com suas credenciais corporativas para continuar.</p>

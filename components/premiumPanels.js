@@ -110,9 +110,9 @@ export function OverviewDashboard({ fornecedores, produtos, desbloqueios, kanban
     <div className="pmx-page pmx-page--dashboard">
       <section className="pmx-spatial-hero">
         <div className="pmx-spatial-hero__content">
-          <span className="pmx-eyebrow">Premix Spatial Operations</span>
-          <h1>Olá, {user?.nome?.split(' ')[0] || 'equipe'}.<span>A operação está em movimento.</span></h1>
-          <p>Receba, valide e prepare todos os dados destinados ao Protheus em uma central com leitura imediata de prioridades e andamento.</p>
+          <span className="pmx-eyebrow">Central de Cadastros Premix</span>
+          <h1>Olá, {user?.nome?.split(' ')[0] || 'equipe'}.<span>A operação está sob controle.</span></h1>
+          <p>Receba, valide e prepare os dados destinados ao Protheus com leitura clara das prioridades, responsáveis e andamento.</p>
           <div className="pmx-spatial-hero__pulse"><i aria-hidden="true"/><span>{queue.length ? `${queue.length} solicitações aguardam tratamento` : 'Operação em dia'}</span><b>{critical ? `${critical} críticas` : 'sem itens críticos'}</b></div>
           <div className="pmx-spatial-hero__actions">
             <button className="pmx-button pmx-button--primary" onClick={() => onNavigate('fila')}>Abrir fila Protheus <Icon name="arrow" size={15}/></button>
@@ -120,7 +120,7 @@ export function OverviewDashboard({ fornecedores, produtos, desbloqueios, kanban
           </div>
         </div>
         <div className="pmx-spatial-hero__visual">
-          <SpatialScene mode="hero" counts={{ received: queue.length, validation: queue.filter((item) => item.status === 'em_analise').length, ready, done: completedTotal }} />
+          <SpatialScene mode="hero" interactive={false} counts={{ received: queue.length, validation: queue.filter((item) => item.status === 'em_analise').length, ready, done: completedTotal }} />
           <div className="pmx-spatial-hero__caption"><i/> Fluxo Solicitação → Protheus</div>
         </div>
       </section>

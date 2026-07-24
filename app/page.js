@@ -405,7 +405,7 @@ export default function Home() {
   if (authLoading) return (
     <div className="pmx-auth-loading" role="status" aria-live="polite">
       <div className="pmx-auth-loading__card">
-        <img src="https://premix.com.br/wp-content/uploads/2023/06/Logotipo_Premix_Positivo_Com-Bandeira.png" alt="Premix" />
+        <img src="/premix-logo.png" alt="Premix" />
         <span className="pmx-spinner" />
         <p>Carregando sua central de cadastros...</p>
       </div>
@@ -550,7 +550,7 @@ export default function Home() {
         <aside className={`pmx-sidebar pmx-sidebar--executive ${mobileNavOpen ? 'is-open' : ''}`} style={{background:T.sidebar,borderRight:'1px solid rgba(255,255,255,.08)',display:'flex',flexDirection:'column',position:'sticky',top:0,height:'100vh',zIndex:50}}>
           {/* Brand + Toggle */}
           <div className="pmx-sidebar__brand" style={{padding: sidebarCol ? '22px 14px 20px' : '22px 20px 20px',display:'flex',alignItems:'center',gap:10,borderBottom:'1px solid rgba(255,255,255,.09)',justifyContent: sidebarCol ? 'center' : 'space-between'}}>
-            {!sidebarCol && <div className="pmx-sidebar__identity"><img src="https://premix.com.br/wp-content/uploads/2023/06/Logotipo_Premix_Positivo_Com-Bandeira.png" alt="Premix" /><span>Central de Cadastros</span></div>}
+            {!sidebarCol && <div className="pmx-sidebar__identity"><img src="/premix-logo.png" alt="Premix" /><span>Central de Cadastros</span></div>}
             <button className="pmx-sidebar__toggle" onClick={()=>setSidebarCol(!sidebarCol)} title={sidebarCol ? 'Expandir menu' : 'Recolher menu'} style={{
               width:32,height:32,borderRadius:8,border:'1px solid '+T.border,background:T.surface2,
               color:T.text2,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'all .15s',flexShrink:0
