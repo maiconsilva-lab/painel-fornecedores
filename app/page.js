@@ -3,6 +3,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { listTable, mutateTable } from '../lib/dataApi';
 import { useKanban } from '../lib/useKanban';
 import { useUsersAdmin } from '../lib/useUsersAdmin';
+import { useProdutosActions } from '../lib/useProdutosActions';
+import { useDesbloqueiosActions } from '../lib/useDesbloqueiosActions';
 import { sanitize } from '../lib/sanitize';
 import { inputStyle, fieldStyle, selectStyle, menuItem, tdS, thS, tdSnew, btnAction, actBtn, modalActBtn } from '../lib/styleHelpers';
 import { ST, TL, PRI, KAN_COLS } from '../constants/status';
@@ -514,116 +516,12 @@ export default function Home() {
      AÇÕES — PRODUTOS
      ────────────────────────────────────────────────────────────── */
 
-  const pegarProduto = async (id) => {
-    const { row } = await mutateTable(user.id, 'produtos', 'update', { id, data: { atribuido_para: user.nome, status:'em_analise' }, returning: true });
-    if (row) applyRealtimeChange('produtos', { eventType:'UPDATE', new: row });
-    logAcao('atribuiu', 'produto', id, { para: user.nome });
-  };
-
-  const excluirProduto = (id) => {
-    askConfirm('Excluir produto?', 'Esta ação não pode ser desfeita.', async () => {
-      try {
-        await mutateTable(user.id, 'produtos', 'delete', { id });
-      } catch (err) { showToast('Erro ao excluir: ' + err.message); return; }
-      applyRealtimeChange('produtos', { eventType:'DELETE', old: { id } });
-      showToast('Produto excluído');
-      logAcao('excluiu', 'produto', id);
-    });
-  };
-
-  const concluirProduto = async (produto, codigoProtheus) => {
-    if (!codigoProtheus || !codigoProtheus.trim()) {
-      showToast('Informe o código Protheus do produto');
-      return;
-    }
-    const upd = {
-      status: 'aprovado',
-      codigo_protheus: codigoProtheus.trim(),
-      finalizado_por: user.nome,
-      data_finalizacao: new Date().toISOString(),
-    };
-    let row;
-    try {
-      ({ row } = await mutateTable(user.id, 'produtos', 'update', { id: produto.id, data: upd, returning: true }));
-    } catch (err) { showToast(`Erro: ${err.message}`); return; }
-    applyRealtimeChange('produtos', { eventType:'UPDATE', new: row });
-
-    const r = await sendEmail('aprovado', {
-      to_name: produto.nome_solicitante,
-      to_email: produto.email_solicitante,
-      codigo_fornecedor: codigoProtheus.trim(),   // reaproveita o mesmo template
-      fornecedor_nome: (produto.descricao || '').slice(0,80),
-    });
-    if (r.ok) showToast('Produto cadastrado e e-mail enviado!');
-    else showToast(`Produto cadastrado, mas e-mail falhou: ${r.error}`);
-
-    logAcao('aprovou', 'produto', produto.id, { codigo_protheus: codigoProtheus.trim(), email_enviado: r.ok });
-  };
-
-  /* ──────────────────────────────────────────────────────────────
-     AÇÕES — DESBLOQUEIOS
-     ────────────────────────────────────────────────────────────── */
-
-  const pegarDesbloqueio = async (id) => {
-    const { row } = await mutateTable(user.id, 'desbloqueios', 'update', { id, data: { atribuido_para: user.nome, status:'em_analise' }, returning: true });
-    if (row) applyRealtimeChange('desbloqueios', { eventType:'UPDATE', new: row });
-    logAcao('atribuiu', 'desbloqueio', id, { para: user.nome });
-  };
-
-  const excluirDesbloqueio = (id) => {
-    askConfirm('Excluir pedido?', 'Esta ação não pode ser desfeita.', async () => {
-      try {
-        await mutateTable(user.id, 'desbloqueios', 'delete', { id });
-      } catch (err) { showToast('Erro ao excluir: ' + err.message); return; }
-      applyRealtimeChange('desbloqueios', { eventType:'DELETE', old: { id } });
-      showToast('Pedido excluído');
-      logAcao('excluiu', 'desbloqueio', id);
-    });
-  };
-
-  const concluirDesbloqueio = async (d) => {
-    const upd = {
-      status: 'desbloqueado',
-      finalizado_por: user.nome,
-      data_finalizacao: new Date().toISOString(),
-    };
-    let row;
-    try {
-      ({ row } = await mutateTable(user.id, 'desbloqueios', 'update', { id: d.id, data: upd, returning: true }));
-    } catch (err) { showToast(`Erro: ${err.message}`); return; }
-    applyRealtimeChange('desbloqueios', { eventType:'UPDATE', new: row });
-
-    const r = await sendEmail('desbloqueio', {
-      to_name: d.nome_solicitante,
-      to_email: d.email_solicitante,
-      codigo_produto: d.codigo_produto,
-      nome_produto: d.nome_produto,
-    });
-    if (r.ok) showToast('Produto desbloqueado e e-mail enviado!');
-    else showToast(`Desbloqueado, mas e-mail falhou: ${r.error}`);
-
-    logAcao('desbloqueou', 'desbloqueio', d.id, {
-      codigo: d.codigo_produto,
-      email_enviado: r.ok,
-    });
-  };
-
-  const rejeitarDesbloqueio = async (d, motivo) => {
-    if (!motivo || !motivo.trim()) { showToast('Informe o motivo da rejeição'); return; }
-    const upd = {
-      status: 'rejeitado',
-      motivo_rejeicao: motivo.trim(),
-      finalizado_por: user.nome,
-      data_finalizacao: new Date().toISOString(),
-    };
-    let row;
-    try {
-      ({ row } = await mutateTable(user.id, 'desbloqueios', 'update', { id: d.id, data: upd, returning: true }));
-    } catch (err) { showToast(`Erro: ${err.message}`); return; }
-    applyRealtimeChange('desbloqueios', { eventType:'UPDATE', new: row });
-    showToast('Desbloqueio rejeitado');
-    logAcao('rejeitou', 'desbloqueio', d.id, { motivo: motivo.trim() });
-  };
+  const { pegarProduto, excluirProduto, concluirProduto } = useProdutosActions({
+    user, showToast, askConfirm, logAcao, applyRealtimeChange, sendEmail,
+  });
+  const { pegarDesbloqueio, excluirDesbloqueio, concluirDesbloqueio, rejeitarDesbloqueio } = useDesbloqueiosActions({
+    user, showToast, askConfirm, logAcao, applyRealtimeChange, sendEmail,
+  });
 
   const assignTo = async (id, nome) => {
     setSav(true);
