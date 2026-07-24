@@ -277,10 +277,10 @@ export default function Home() {
      AÇÕES — PRODUTOS
      ────────────────────────────────────────────────────────────── */
 
-  const { pegarProduto, excluirProduto, concluirProduto } = useProdutosActions({
+  const { pegarProduto, excluirProduto, concluirProduto, concluirProdutosEmLote } = useProdutosActions({
     user, showToast, askConfirm, logAcao, applyRealtimeChange, sendEmail,
   });
-  const { pegarDesbloqueio, excluirDesbloqueio, concluirDesbloqueio, rejeitarDesbloqueio } = useDesbloqueiosActions({
+  const { pegarDesbloqueio, excluirDesbloqueio, concluirDesbloqueio, rejeitarDesbloqueio, concluirDesbloqueiosEmLote } = useDesbloqueiosActions({
     user, showToast, askConfirm, logAcao, applyRealtimeChange, sendEmail,
   });
 
@@ -809,6 +809,8 @@ export default function Home() {
           usuarios={usuarios}
           onOpen={openOperationalItem}
           onToast={showToast}
+          onConcluirProdutosEmLote={concluirProdutosEmLote}
+          onConcluirDesbloqueiosEmLote={concluirDesbloqueiosEmLote}
         />
       )}
 

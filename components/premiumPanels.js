@@ -203,7 +203,7 @@ function exportQueueCsv(rows) {
   URL.revokeObjectURL(url);
 }
 
-export function ProtheusQueue({ fornecedores, produtos, desbloqueios, usuarios = [], onOpen, onToast }) {
+export function ProtheusQueue({ fornecedores, produtos, desbloqueios, usuarios = [], onOpen, onToast, onConcluirProdutosEmLote, onConcluirDesbloqueiosEmLote }) {
   const all = useMemo(() => buildUnifiedQueue(fornecedores, produtos, desbloqueios), [fornecedores, produtos, desbloqueios]);
   const [search, setSearch] = useState('');
   const [type, setType] = useState('todos');
@@ -221,6 +221,9 @@ export function ProtheusQueue({ fornecedores, produtos, desbloqueios, usuarios =
   const [activeView, setActiveView] = useState('');
   const [showSaveView, setShowSaveView] = useState(false);
   const [viewName, setViewName] = useState('');
+  const [showBulkConcluir, setShowBulkConcluir] = useState(false);
+  const [bulkCodes, setBulkCodes] = useState({}); // { [produtoId]: 'codigo digitado' }
+  const [bulkSending, setBulkSending] = useState(false);
 
   useEffect(() => setPage(1), [search, type, status, owner, priority, sort, pageSize]);
   useEffect(() => {
@@ -254,6 +257,25 @@ export function ProtheusQueue({ fornecedores, produtos, desbloqueios, usuarios =
 
   const toggleVisible = () => setSelected((current) => allVisibleSelected ? current.filter((id) => !visibleIds.includes(id)) : [...new Set([...current, ...visibleIds])]);
   const selectedRows = all.filter((item) => selected.includes(`${item._type}:${item.id}`));
+  const bulkElegiveis = selectedRows.filter((item) => (item._type === 'produto' || item._type === 'desbloqueio') && ['pendente','em_analise'].includes(item.status));
+  const bulkProdutos = bulkElegiveis.filter((item) => item._type === 'produto');
+  const bulkDesbloqueios = bulkElegiveis.filter((item) => item._type === 'desbloqueio');
+  const abrirBulkConcluir = () => {
+    setBulkCodes(Object.fromEntries(bulkProdutos.map((p) => [p.id, ''])));
+    setShowBulkConcluir(true);
+  };
+  const confirmarBulkConcluir = async () => {
+    setBulkSending(true);
+    if (bulkProdutos.length && onConcluirProdutosEmLote) {
+      await onConcluirProdutosEmLote(bulkProdutos.map((p) => ({ produto: p, codigo: bulkCodes[p.id] || '' })));
+    }
+    if (bulkDesbloqueios.length && onConcluirDesbloqueiosEmLote) {
+      await onConcluirDesbloqueiosEmLote(bulkDesbloqueios);
+    }
+    setBulkSending(false);
+    setShowBulkConcluir(false);
+    setSelected([]);
+  };
   const copySelected = async () => {
     if (!selectedRows.length) return;
     await navigator.clipboard.writeText(selectedRows.map((item) => recordToClipboardText(item, item._type)).join('\n\n────────────────────\n\n'));
@@ -324,7 +346,66 @@ export function ProtheusQueue({ fornecedores, produtos, desbloqueios, usuarios =
           {activeFilters > 0 && <button className="pmx-filter-clear" onClick={clearFilters}>Limpar ({activeFilters})</button>}
         </div>
 
-        {selectedRows.length > 0 && <div className="pmx-bulkbar"><strong>{selectedRows.length} selecionado(s)</strong><button onClick={copySelected}><Icon name="copy" size={14} /> Copiar dados</button><button onClick={() => exportQueueCsv(selectedRows)}><Icon name="download" size={14} /> Exportar seleção</button><button onClick={() => setSelected([])}>Limpar seleção</button></div>}
+        {selectedRows.length > 0 && (
+          <div className="pmx-bulkbar">
+            <strong>{selectedRows.length} selecionado(s)</strong>
+            {bulkElegiveis.length > 0 && (
+              <button onClick={abrirBulkConcluir} style={{background:'#20558A',color:'#fff',border:'none',borderRadius:7,padding:'6px 12px',fontSize:12,fontWeight:600,cursor:'pointer',display:'inline-flex',alignItems:'center',gap:6}}>
+                <Icon name="check" size={14} /> Concluir {bulkElegiveis.length} selecionado(s)
+              </button>
+            )}
+            <button onClick={copySelected}><Icon name="copy" size={14} /> Copiar dados</button>
+            <button onClick={() => exportQueueCsv(selectedRows)}><Icon name="download" size={14} /> Exportar seleção</button>
+            <button onClick={() => setSelected([])}>Limpar seleção</button>
+          </div>
+        )}
+
+        {showBulkConcluir && (
+          <div style={{position:'fixed',inset:0,background:'rgba(26,35,50,.55)',backdropFilter:'blur(6px)',WebkitBackdropFilter:'blur(6px)',zIndex:9000,display:'flex',alignItems:'center',justifyContent:'center',padding:20}} onClick={(e) => { if (e.target === e.currentTarget && !bulkSending) setShowBulkConcluir(false); }}>
+            <div style={{background:'#fff',borderRadius:14,width:'100%',maxWidth:560,maxHeight:'85vh',overflowY:'auto',boxShadow:'0 24px 64px rgba(16,24,40,.18),0 8px 16px rgba(16,24,40,.08)',border:'1px solid #E5E9EF'}}>
+              <div style={{padding:'22px 24px 8px'}}>
+                <h3 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:17,fontWeight:700,color:'#1A2332',margin:'0 0 6px 0'}}>Concluir {bulkElegiveis.length} item(ns) selecionado(s)</h3>
+                <p style={{fontSize:13,color:'#4F5868',lineHeight:1.5,margin:0}}>
+                  Solicitantes com mais de um item aprovado neste lote recebem um único e-mail consolidado, em vez de um e-mail por item.
+                </p>
+              </div>
+              <div style={{padding:'12px 24px'}}>
+                {bulkProdutos.length > 0 && (
+                  <div style={{marginBottom:16}}>
+                    <strong style={{fontSize:13,color:'#1A2332'}}>Produtos — informe o código Protheus de cada um</strong>
+                    <div style={{display:'flex',flexDirection:'column',gap:8,marginTop:8}}>
+                      {bulkProdutos.map((p) => (
+                        <div key={p.id} style={{display:'flex',alignItems:'center',gap:10}}>
+                          <span style={{flex:1,fontSize:13,color:'#1A2332'}}>{p.descricao || 'Produto sem descrição'} <span style={{color:'#8B94A3'}}>— {p.nome_solicitante}</span></span>
+                          <input
+                            placeholder="Código Protheus"
+                            value={bulkCodes[p.id] || ''}
+                            onChange={(e) => setBulkCodes((cur) => ({ ...cur, [p.id]: e.target.value }))}
+                            style={{width:150,padding:'8px 10px',border:'1px solid #E5E9EF',borderRadius:7,fontSize:13,fontFamily:'inherit'}}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {bulkDesbloqueios.length > 0 && (
+                  <div style={{marginBottom:8}}>
+                    <strong style={{fontSize:13,color:'#1A2332'}}>Desbloqueios — serão marcados como desbloqueados</strong>
+                    <ul style={{marginTop:8,paddingLeft:18,fontSize:13,color:'#1A2332'}}>
+                      {bulkDesbloqueios.map((d) => <li key={d.id}>{d.nome_produto || d.codigo_produto} <span style={{color:'#8B94A3'}}>— {d.nome_solicitante}</span></li>)}
+                    </ul>
+                  </div>
+                )}
+              </div>
+              <div style={{padding:'14px 24px 20px',display:'flex',gap:10,justifyContent:'flex-end',background:'#F8F9FB',borderTop:'1px solid #E5E9EF'}}>
+                <button onClick={() => setShowBulkConcluir(false)} disabled={bulkSending} style={{padding:'10px 18px',borderRadius:9,border:'1px solid #E5E9EF',background:'#fff',fontFamily:'inherit',fontSize:13,fontWeight:500,cursor:'pointer',color:'#4F5868'}}>Cancelar</button>
+                <button onClick={confirmarBulkConcluir} disabled={bulkSending} style={{padding:'10px 18px',borderRadius:9,border:'none',background:'#20558A',color:'#fff',fontFamily:'inherit',fontSize:13,fontWeight:600,cursor:bulkSending?'wait':'pointer',opacity:bulkSending?.7:1}}>
+                  {bulkSending ? 'Processando…' : 'Confirmar conclusão'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="pmx-table-wrap">
           <table className="pmx-premium-table pmx-premium-table--selectable">
