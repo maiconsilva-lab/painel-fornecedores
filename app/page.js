@@ -16,7 +16,7 @@ import { DEV_MOTIVOS, MOTIVO_CAMPOS, CAMPO_LABELS } from '../constants/devolucao
 import { DataSection, ActionBtn, PillBtn, SmBtn, StatNum } from '../components/shared';
 import { OverviewDashboard, ProtheusQueue, ReportsDashboard, HistoryTimeline } from '../components/premiumPanels';
 import RecordDrawer from '../components/recordDrawer';
-import { buildRecentActivity, buildUnifiedQueue, getCompleteness, getDuplicateCandidates, recordToClipboardText, fieldsForType } from '../lib/panelMetrics';
+import { buildRecentActivity, buildUnifiedQueue, getCompleteness, getDuplicateCandidates, recordToClipboardText, fieldsForType, supplierBankFields } from '../lib/panelMetrics';
 
 export default function Home() {
   /* ── Data State ──────────────────────────────── */
@@ -327,7 +327,7 @@ export default function Home() {
     if (filterAssign !== 'todos' && f.atribuido_para !== filterAssign) return false;
     if (searchTerm) {
       const s = searchTerm.toLowerCase();
-      return (f.razao_social||'').toLowerCase().includes(s) || (f.cnpj||'').includes(s) || (f.nome_fantasia||'').toLowerCase().includes(s) || (f.email||'').toLowerCase().includes(s) || (f.nome_completo||'').toLowerCase().includes(s) || (f.cpf||'').includes(s) || (f.razao_social_atu||'').toLowerCase().includes(s) || (f.cnpj_cpf_atu||'').includes(s);
+      return (f.razao_social||'').toLowerCase().includes(s) || (f.cnpj||'').includes(s) || (f.nome_fantasia||'').toLowerCase().includes(s) || (f.email||'').toLowerCase().includes(s) || (f.nome_completo||'').toLowerCase().includes(s) || (f.cpf||'').includes(s) || (f.razao_social_atu||'').toLowerCase().includes(s) || (f.cnpj_cpf_atu||'').includes(s) || (f.codigo_fornecedor||'').toLowerCase().includes(s);
     }
     return true;
   });
@@ -1219,6 +1219,11 @@ export default function Home() {
                             <span style={{width:6,height:6,borderRadius:'50%',background:stColor}} />
                             {st.l}
                           </span>
+                          {f.status==='aprovado' && f.codigo_fornecedor && (
+                            <div style={{marginTop:4,fontFamily:'Geist Mono,SF Mono,Consolas,monospace',fontSize:11,color:'#008C44',fontWeight:600}}>
+                              Cód. {f.codigo_fornecedor}
+                            </div>
+                          )}
                         </td>
                         <td style={tdSnew()}>
                           {f.atribuido_para ? (
@@ -1522,6 +1527,14 @@ export default function Home() {
                 title="Dados recebidos para o Protheus"
                 icon=""
                 items={fieldsForType(sel, 'fornecedor')}
+                onCopy={cp}
+              />
+
+              {/* Dados bancários — separados de propósito pra não misturar com o cadastral */}
+              <DataSection
+                title="Dados bancários"
+                icon=""
+                items={supplierBankFields(sel)}
                 onCopy={cp}
               />
 
