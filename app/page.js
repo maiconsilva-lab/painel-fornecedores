@@ -1,6 +1,8 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { listTable, mutateTable } from '../lib/dataApi';
+import { useKanban } from '../lib/useKanban';
+import { useUsersAdmin } from '../lib/useUsersAdmin';
 import { sanitize } from '../lib/sanitize';
 import { inputStyle, fieldStyle, selectStyle, menuItem, tdS, thS, tdSnew, btnAction, actBtn, modalActBtn } from '../lib/styleHelpers';
 import { ST, TL, PRI, KAN_COLS } from '../constants/status';
@@ -56,6 +58,7 @@ export default function Home() {
   const askConfirm = (title, message, onConfirm, danger = true) => setConfirmModal({ title, message, onConfirm, danger });
 
   const [toast, setToast] = useState('');
+  const showToast = (msg, duration = 2500) => { setToast(msg); setTimeout(() => setToast(''), duration); };
   const [showConcluir, setShowConcluir] = useState(false);
   const [concluirData, setConcluirData] = useState({ codigo:'' });
   const [sendingEmail, setSendingEmail] = useState(false);
@@ -117,21 +120,8 @@ export default function Home() {
   }, [searchGlobal]);
 
 
-
-  /* ── Kanban State ────────────────────────────── */
-  const [kanView, setKanView] = useState('todos');
-  const [showNewTask, setShowNewTask] = useState(false);
-  const [newTask, setNewTask] = useState({ titulo:'',descricao:'',atribuido_para:'',prioridade:'media',prazo:'',status:'backlog' });
-  const [editTask, setEditTask] = useState(null);
-  const [newChkItem, setNewChkItem] = useState('');
-  const [dragTaskId, setDragTaskId] = useState(null);
-  const [kanLayout, setKanLayout] = useState('board');
-  const [newTaskComment, setNewTaskComment] = useState('');
-
-  /* ── Admin State ─────────────────────────────── */
-  const [showNewUser, setShowNewUser] = useState(false);
-  const [newUser, setNewUser] = useState({ nome:'',email:'',cargo:'Analista',role:'user',telefone:'' });
-  const [editUser, setEditUser] = useState(null);
+  /* Kanban State e Admin State agora vêm dos hooks useKanban()/useUsersAdmin(),
+     chamados logo abaixo de logAcao/applyRealtimeChange serem definidos. */
 
   const obsRef = useRef(null);
   const isAdmin = user && user.role === 'admin';
@@ -762,162 +752,28 @@ export default function Home() {
     setDevSending(false);
   };
 
-  /* ── Kanban ──────────────────────────────────── */
-  const addKanTask = async (e) => {
-    e.preventDefault();
-    if (!newTask.titulo.trim()) { showToast('Informe o título da tarefa'); return; }
-    if (!newTask.atribuido_para) { showToast('Atribua a tarefa a alguém'); return; }
-    const dt = { ...newTask, criado_por: user.nome, checklist: [], comentarios: [] };
-    if (!dt.prazo) delete dt.prazo;
-    let error, created;
-    try { created = await mutateTable(user.id, 'kanban_tarefas', 'insert', { data: dt, returning:true }); }
-    catch (err) { error = err; }
-    if (error) { showToast('Erro ao criar: ' + error.message); return; }
-    logAcao('criou', 'tarefa', created?.row?.id || 'novo', { titulo:dt.titulo, atribuido_para:dt.atribuido_para, prioridade:dt.prioridade });
-    showToast('Tarefa criada!');
-    setShowNewTask(false);
-    setNewTask({ titulo:'',descricao:'',atribuido_para:'',prioridade:'media',prazo:'',status:'backlog' });
-    await fetchAll();
-  };
-  const moveKanTask = async (id, newStatus) => {
-    const previous = kanban.find((task) => task.id === id);
-    if (!previous || previous.status === newStatus) return;
-    setKanban((rows) => rows.map((task) => task.id === id ? { ...task, status:newStatus, updated_at:new Date().toISOString() } : task));
-    try {
-      const { row } = await mutateTable(user.id, 'kanban_tarefas', 'update', { id, data: { status: newStatus, updated_at: new Date().toISOString() }, returning:true });
-      if (row) applyRealtimeChange('kanban_tarefas', { eventType:'UPDATE', new:row });
-      logAcao('moveu', 'tarefa', id, { de:previous.status, para:newStatus });
-      showToast('Tarefa movida');
-    } catch (err) {
-      setKanban((rows) => rows.map((task) => task.id === id ? previous : task));
-      showToast('Não foi possível mover a tarefa');
-    }
-  };
-  const dropKanTask = async (newStatus) => {
-    const id = dragTaskId;
-    setDragTaskId(null);
-    if (id) await moveKanTask(id, newStatus);
-  };
-  const deleteKanTask = (id) => {
-    askConfirm('Excluir tarefa?', 'Esta tarefa será removida permanentemente.', async () => {
-      try { await mutateTable(user.id, 'kanban_tarefas', 'delete', { id }); }
-      catch (err) { showToast('Erro ao excluir: ' + err.message); return; }
-      logAcao('excluiu', 'tarefa', id);
-      showToast('Tarefa excluída');
-      if (editTask?.id === id) setEditTask(null);
-      await fetchAll();
-    });
-  };
-  const updateKanTask = async (id, data) => {
-    const { row } = await mutateTable(user.id, 'kanban_tarefas', 'update', { id, data: { ...data, updated_at: new Date().toISOString() }, returning: true });
-    if (editTask?.id === id && row) setEditTask(row);
-    setKanban(current => current.map(task => task.id === id ? { ...task, ...(row || data) } : task));
-    if (!('comentarios' in data) && !('checklist' in data)) logAcao(data.status === 'concluido' ? 'concluiu' : 'editou', 'tarefa', id, data);
-  };
+  /* ── Kanban e Admin de usuários: hooks extraídos ──
+     (lib/useKanban.js e lib/useUsersAdmin.js). Precisam vir depois de
+     logAcao e applyRealtimeChange já estarem definidos. ── */
+  const kb = useKanban({ kanban, setKanban, user, fetchAll, showToast, askConfirm, logAcao, applyRealtimeChange });
+  const {
+    kanView, setKanView, showNewTask, setShowNewTask, newTask, setNewTask,
+    editTask, setEditTask, newChkItem, setNewChkItem, dragTaskId, setDragTaskId,
+    kanLayout, setKanLayout, newTaskComment, setNewTaskComment,
+    addKanTask, moveKanTask, dropKanTask, deleteKanTask, updateKanTask,
+    addChkItem, toggleChkItem, removeChkItem, addTaskComment,
+  } = kb;
 
-  const addChkItem = async () => {
-    if (!newChkItem.trim() || !editTask) return;
-    const newList = [...(editTask.checklist || []), { id: Date.now(), texto: sanitize(newChkItem), feito: false }];
-    await updateKanTask(editTask.id, { checklist: newList });
-    setNewChkItem('');
-  };
-  const toggleChkItem = async (itemId) => {
-    if (!editTask) return;
-    const newList = (editTask.checklist || []).map(i => i.id === itemId ? { ...i, feito: !i.feito } : i);
-    await updateKanTask(editTask.id, { checklist: newList });
-  };
-  const removeChkItem = async (itemId) => {
-    if (!editTask) return;
-    const newList = (editTask.checklist || []).filter(i => i.id !== itemId);
-    await updateKanTask(editTask.id, { checklist: newList });
-  };
-  const addTaskComment = async () => {
-    if (!editTask || !newTaskComment.trim()) return;
-    const comments = [...(editTask.comentarios || []), {
-      id: Date.now(), texto: sanitize(newTaskComment.trim()), autor: user.nome, criado_em: new Date().toISOString(),
-    }];
-    await updateKanTask(editTask.id, { comentarios: comments });
-    setNewTaskComment('');
-    logAcao('comentou', 'tarefa', editTask.id, { comentario: newTaskComment.trim().slice(0, 180) });
-  };
-
-  /* ── Usuarios (admin) ────────────────────────── */
-  const addUser = async (e) => {
-    e.preventDefault();
-    if (!newUser.nome.trim()) { showToast('Informe o nome do usuário'); return; }
-    if (!newUser.email.trim()) { showToast('Informe o e-mail'); return; }
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(newUser.email.trim())) { showToast('E-mail inválido'); return; }
-    const res = await fetch('/api/auth/users', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nome: newUser.nome, email: newUser.email, cargo: newUser.cargo, role: newUser.role, telefone: newUser.telefone }),
-    });
-    const json = await res.json();
-    if (!res.ok) { showToast('Erro ao criar: ' + (json.error || '')); return; }
-    setShowNewUser(false);
-    setNewUser({ nome:'',email:'',cargo:'Analista',role:'user',telefone:'' });
-    await fetchAll();
-    askConfirm(
-      'Usuário criado!',
-      `Senha temporária de ${newUser.nome}: ${json.tempPassword} — copie agora e repasse com segurança, ela não será exibida de novo.`,
-      () => {}, false
-    );
-  };
-  const updateUser = async (id, data) => {
-    const res = await fetch(`/api/auth/users/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ actingUserId: user.id, ...data }),
-    });
-    const json = await res.json();
-    if (!res.ok) { showToast('Erro ao atualizar: ' + (json.error || '')); return; }
-    showToast('Usuário atualizado');
-    setEditUser(null); await fetchAll();
-  };
-  const deleteUser = (id, nome) => {
-    askConfirm('Excluir usuário?', `${nome} perderá acesso ao painel. Esta ação não pode ser desfeita.`, async () => {
-      const res = await fetch(`/api/auth/users/${id}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ actingUserId: user.id }),
-      });
-      const json = await res.json();
-      if (!res.ok) { showToast('Erro ao excluir: ' + (json.error || '')); return; }
-      showToast('Usuário excluído');
-      await fetchAll();
-    });
-  };
-  const toggleUserActive = async (u) => {
-    await fetch('/api/auth/users/toggle-active', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ actingUserId: user.id, userId: u.id }),
-    });
-    await fetchAll();
-  };
-  const resetUserPw = (id, nome) => {
-    askConfirm('Resetar senha?', `Uma nova senha temporária será gerada para ${nome} e ele precisará alterá-la no próximo login.`, async () => {
-      const res = await fetch('/api/auth/users/reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ actingUserId: user.id, userId: id }),
-      });
-      const json = await res.json();
-      if (!res.ok) { showToast('Erro: ' + (json.error || '')); return; }
-      await fetchAll();
-      askConfirm(
-        'Senha resetada!',
-        `Nova senha temporária de ${nome}: ${json.tempPassword} — copie agora e repasse com segurança, ela não será exibida de novo.`,
-        () => {}, false
-      );
-    }, false);
-  };
+  const ua = useUsersAdmin({ user, fetchAll, showToast, askConfirm });
+  const {
+    showNewUser, setShowNewUser, newUser, setNewUser, editUser, setEditUser,
+    addUser, updateUser, deleteUser, toggleUserActive, resetUserPw,
+  } = ua;
 
   /* ── Helpers ─────────────────────────────────── */
   const fmtDate = d => { if (!d) return '-'; return new Date(d).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }); };
   const fmtDateShort = d => { if (!d) return ''; return new Date(d).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' }); };
   const cp = t => { navigator.clipboard.writeText(t || ''); showToast('Copiado!'); };
-  const showToast = (msg, duration = 2500) => { setToast(msg); setTimeout(() => setToast(''), duration); };
 
   const openDetail = (f) => { setSel(f); setShowModal(true); };
   const closeDetail = () => { setShowModal(false); setTimeout(() => setSel(null), 200); };
