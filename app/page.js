@@ -16,6 +16,8 @@ import { DEV_MOTIVOS, MOTIVO_CAMPOS, CAMPO_LABELS } from '../constants/devolucao
 import { DataSection, ActionBtn, PillBtn, SmBtn, StatNum } from '../components/shared';
 import { OverviewDashboard, ProtheusQueue, ReportsDashboard, HistoryTimeline } from '../components/premiumPanels';
 import RecordDrawer from '../components/recordDrawer';
+import SpatialLogin from '../components/spatial/SpatialLogin';
+import { SpatialBackground, PageMotion, useMagneticButtons } from '../components/spatial/SpatialUI';
 import { buildRecentActivity, buildUnifiedQueue, getCompleteness, getDuplicateCandidates, recordToClipboardText, fieldsForType, supplierBankFields } from '../lib/panelMetrics';
 
 export default function Home() {
@@ -92,6 +94,8 @@ export default function Home() {
      chamados logo abaixo de logAcao/applyRealtimeChange serem definidos. */
 
   const obsRef = useRef(null);
+  const spatialRootRef = useRef(null);
+  useMagneticButtons(spatialRootRef);
   const isAdmin = user && user.role === 'admin';
   const isSubAdmin = user && (user.role === 'admin' || user.role === 'subadmin');
 
@@ -409,38 +413,16 @@ export default function Home() {
   );
 
   /* ═══════════════════════════════════════════════
-     RENDER — LOGIN
+     RENDER — LOGIN SPATIAL
      ═══════════════════════════════════════════════ */
   if (!user) return (
-    <div style={{minHeight:'100vh',background:'#F5F7FA',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'Geist',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif",padding:20,position:'relative',overflow:'hidden'}}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap');
-        @keyframes premixShimmer { from { background-position:0% 0 } to { background-position:200% 0 } }
-        @keyframes loginFadeIn { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:translateY(0) } }
-        .login-input:focus { background:#fff !important; border-color:#20558A !important; box-shadow:0 0 0 3px #EAF2FA !important; }
-        .login-input { transition: all .15s; }
-        .login-btn:hover:not(:disabled) { background:#173F69 !important; box-shadow:0 6px 16px rgba(32,85,138,.35); transform:translateY(-1px); }
-        .login-btn { transition: all .15s; }
-      `}</style>
-      {/* Decorative background */}
-      <div style={{position:'absolute',top:'-200px',right:'-200px',width:500,height:500,background:'radial-gradient(circle,rgba(32,85,138,.09) 0%,transparent 70%)',pointerEvents:'none'}} />
-      <div style={{position:'absolute',bottom:'-200px',left:'-200px',width:500,height:500,background:'radial-gradient(circle,rgba(200,169,81,.08) 0%,transparent 70%)',pointerEvents:'none'}} />
-
-      <div style={{background:'#fff',borderRadius:16,padding:'48px 40px',maxWidth:420,width:'100%',textAlign:'center',position:'relative',overflow:'hidden',boxShadow:'0 12px 32px rgba(16,24,40,.08),0 4px 8px rgba(16,24,40,.04)',border:'1px solid #E5E9EF',animation:'loginFadeIn .35s cubic-bezier(.16,1,.3,1)'}}>
-        <div style={{position:'absolute',top:0,left:0,right:0,height:3,background:'linear-gradient(90deg,#20558A 0%,#20558A 45%,#F15A24 55%,#F15A24 100%)',backgroundSize:'200% 100%',animation:'premixShimmer 8s linear infinite'}} />
-        <img src="https://premix.com.br/wp-content/uploads/2023/06/Logotipo_Premix_Positivo_Com-Bandeira.png" alt="Premix" style={{height:44,marginBottom:28}} />
-        <h2 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:20,fontWeight:700,letterSpacing:'-.4px',marginBottom:6,color:'#1A2332'}}>Núcleo Fiscal</h2>
-        <p style={{fontSize:13,color:'#8B94A3',marginBottom:32}}>Gestão de fornecedores, produtos e desbloqueios</p>
-        <form onSubmit={doLogin} style={{display:'flex',flexDirection:'column',gap:12}}>
-          <input className="login-input" placeholder="E-mail corporativo" type="email" value={loginForm.email} onChange={e=>setLF({...loginForm,email:e.target.value})} disabled={loginLocked} style={{width:'100%',padding:'12px 14px',background:'#F8F9FB',border:'1px solid #E5E9EF',borderRadius:10,fontSize:14,fontFamily:'inherit',color:'#1A2332',outline:'none'}} />
-          <input className="login-input" placeholder="Senha" type="password" value={loginForm.senha} onChange={e=>setLF({...loginForm,senha:e.target.value})} disabled={loginLocked} style={{width:'100%',padding:'12px 14px',background:'#F8F9FB',border:'1px solid #E5E9EF',borderRadius:10,fontSize:14,fontFamily:'inherit',color:'#1A2332',outline:'none'}} />
-          {loginErr && <p style={{color:'#E63946',fontSize:12,margin:'-2px 0',textAlign:'left',fontWeight:500}}>{loginErr}</p>}
-          <button className="login-btn" type="submit" disabled={loginLocked} style={{width:'100%',padding:'13px',background:loginLocked?'#B5BCC6':'#20558A',color:'#fff',border:'none',borderRadius:10,fontFamily:'inherit',fontWeight:600,fontSize:14,cursor:loginLocked?'not-allowed':'pointer',letterSpacing:'.2px',marginTop:6,boxShadow:loginLocked?'none':'0 1px 2px rgba(32,85,138,.3),inset 0 1px 0 rgba(255,255,255,.15)'}}>
-            {loginLocked ? 'Aguarde...' : 'Entrar'}
-          </button>
-        </form>
-      </div>
-    </div>
+    <SpatialLogin
+      loginForm={loginForm}
+      setLoginForm={setLF}
+      loginError={loginErr}
+      loginLocked={loginLocked}
+      onSubmit={doLogin}
+    />
   );
 
   /* ═══════════════════════════════════════════════
@@ -495,7 +477,8 @@ export default function Home() {
      RENDER — MAIN APP
      ═══════════════════════════════════════════════ */
   return (
-    <div className={`pmx-theme-root ${tema === 'premix_escuro' ? 'pmx-theme-dark' : ''} density-${densidade}`} style={{minHeight:'100vh',background:T.bg,fontFamily:"'Geist',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif",color:T.text1,fontSize:14,lineHeight:1.5,WebkitFontSmoothing:'antialiased',position:'relative'}}>
+    <div ref={spatialRootRef} className={`pmx-theme-root pmx-spatial-enabled ${tema === 'premix_escuro' ? 'pmx-theme-dark' : ''} density-${densidade}`} style={{minHeight:'100vh',background:'transparent',fontFamily:"'Geist',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif",color:T.text1,fontSize:14,lineHeight:1.5,WebkitFontSmoothing:'antialiased',position:'relative'}}>
+      <SpatialBackground />
       <div style={{position:'relative',zIndex:1}}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap');
@@ -795,6 +778,7 @@ export default function Home() {
             </div>
           )}
 
+      <PageMotion pageKey={page}>
       {page === 'dashboard' && (
         <OverviewDashboard
           fornecedores={forn}
@@ -2058,6 +2042,8 @@ export default function Home() {
           </section>
         </div>
       )}
+
+      </PageMotion>
 
       <style>{`
         @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }

@@ -1,9 +1,10 @@
 import './globals.css';
 import './executive.css';
+import './spatial.css';
 
 export const metadata = {
-  title: 'Premix — Central de Cadastros Protheus',
-  description: 'Central Premix para recebimento, conferência e acompanhamento de cadastros no Protheus.',
+  title: 'Premix Spatial — Central de Cadastros Protheus',
+  description: 'Central Premix com experiência espacial para recebimento, conferência e acompanhamento de cadastros no Protheus.',
   robots: 'noindex, nofollow',
 };
 

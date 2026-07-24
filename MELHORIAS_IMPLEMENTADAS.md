@@ -20,6 +20,33 @@
 - [x] Link de correção com token temporário.
 - [x] Histórico operacional e auditoria.
 
+## Premix Spatial UI 4.0
+
+- [x] Hero 3D procedural exclusivo da Premix na Visão Geral.
+- [x] Núcleo translúcido, anéis luminosos, módulos operacionais e conexões espaciais.
+- [x] Partículas azul/laranja e parallax de câmera pelo ponteiro.
+- [x] Cena WebGL com React Three Fiber, Drei e Three.js.
+- [x] Fallback Canvas 2D procedural para celular, economia de dados ou ausência de WebGL.
+- [x] Tela de login imersiva com composição 3D, fundo azul-marinho e formulário em vidro.
+- [x] Fundo atmosférico com grid, ruído, vinheta, orbes de luz e deslocamento suave.
+- [x] Cards com perspectiva curta, reflexo contextual e material translúcido.
+- [x] Números dos indicadores com contagem animada.
+- [x] Micrográficos e estados visuais animados.
+- [x] Transições cinematográficas entre módulos com Motion for React.
+- [x] Entrada e saída com opacidade, deslocamento, escala e blur.
+- [x] Sidebar com textura, profundidade e iluminação laranja no item ativo.
+- [x] Fluxo Protheus espacial com quatro nós, pulso e conexão animada.
+- [x] Tabelas preservadas como superfícies sólidas com microinterações discretas.
+- [x] Cabeçalhos translúcidos, menus com blur e realce suave das linhas.
+- [x] Botões principais com magnetismo de baixa intensidade no desktop.
+- [x] Drawer, notificações, busca e painéis estratégicos com glassmorphism controlado.
+- [x] Integração da atmosfera espacial nas Pendências Fiscais.
+- [x] Tema escuro adaptado à nova camada de profundidade.
+- [x] Responsividade com simplificação automática dos efeitos.
+- [x] Respeito a `prefers-reduced-motion`.
+- [x] Limitação de DPR e distribuição seletiva de WebGL para controlar desempenho.
+- [x] Ausência de dependência externa de Spline ou iframe.
+
 ## Premix Executive UI 3.0
 
 - [x] Sidebar azul-marinho institucional com logotipo branco e assinatura laranja.

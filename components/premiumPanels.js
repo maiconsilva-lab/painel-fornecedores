@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import SpatialScene from './spatial/SpatialScene';
+import { CountUp, ProtheusFlowSpatial, TiltSurface } from './spatial/SpatialUI';
 import {
   buildRecentActivity,
   buildUnifiedQueue,
@@ -64,16 +66,26 @@ export function Completeness({ record, type = 'fornecedor', compact = false }) {
 }
 
 function MetricCard({ label, value, helper, tone = 'brand', icon, onClick }) {
+  const paths = {
+    warning: 'M1 20 C12 17,15 8,25 12 S42 17,53 7 S62 4,66 2',
+    danger: 'M1 19 C10 18,15 13,22 15 S34 21,42 10 S57 5,66 4',
+    success: 'M1 20 C11 19,16 15,23 16 S34 11,42 12 S56 7,66 3',
+    neutral: 'M1 16 C12 14,18 16,26 12 S42 14,50 9 S60 11,66 8',
+    brand: 'M1 20 C10 17,16 19,23 13 S36 15,44 8 S58 9,66 2',
+  };
   return (
-    <button type="button" className={`pmx-metric pmx-metric--${tone}`} onClick={onClick} disabled={!onClick}>
-      <span className="pmx-metric__accent" aria-hidden="true" />
-      <span className="pmx-metric__body">
-        <small>{label}</small>
-        <strong>{value}</strong>
-        <em>{helper}</em>
-      </span>
-      <span className="pmx-metric__meta" aria-hidden="true"><Icon name={icon} size={17} />{onClick && <Icon name="arrow" size={14} />}</span>
-    </button>
+    <TiltSurface className="pmx-metric-shell" intensity={3.6}>
+      <button type="button" className={`pmx-metric pmx-metric--${tone}`} onClick={onClick} disabled={!onClick}>
+        <span className="pmx-metric__accent" aria-hidden="true" />
+        <span className="pmx-metric__body">
+          <small>{label}</small>
+          <strong><CountUp value={value} /></strong>
+          <em>{helper}</em>
+        </span>
+        <span className="pmx-metric__meta" aria-hidden="true"><Icon name={icon} size={17} />{onClick && <Icon name="arrow" size={14} />}</span>
+        <span className="pmx-metric__spark" aria-hidden="true"><svg viewBox="0 0 68 24"><path d={paths[tone] || paths.brand}/><circle cx="66" cy={tone === 'warning' ? '2' : tone === 'danger' ? '4' : tone === 'neutral' ? '8' : tone === 'success' ? '3' : '2'} r="1.8"/></svg></span>
+      </button>
+    </TiltSurface>
   );
 }
 
@@ -87,6 +99,7 @@ export function OverviewDashboard({ fornecedores, produtos, desbloqueios, kanban
   const activity = useMemo(() => buildRecentActivity(fornecedores, produtos, desbloqueios, kanban), [fornecedores, produtos, desbloqueios, kanban]);
   const reasons = useMemo(() => getReturnReasons([...fornecedores, ...produtos, ...desbloqueios]).slice(0, 5), [fornecedores, produtos, desbloqueios]);
   const completedToday = [...fornecedores, ...produtos, ...desbloqueios].filter((item) => item.data_finalizacao && new Date(item.data_finalizacao).toDateString() === new Date().toDateString()).length;
+  const completedTotal = fornecedores.filter((item) => item.status === 'aprovado').length + produtos.filter((item) => item.status === 'aprovado').length + desbloqueios.filter((item) => item.status === 'desbloqueado').length;
   const overdueTasks = kanban.filter((task) => task.status !== 'concluido' && task.prazo && new Date(`${task.prazo}T23:59:59`) < new Date()).length;
   const critical = queue.filter((item) => item._priority === 'critica').length;
   const unassigned = queue.filter((item) => !item.atribuido_para).length;
@@ -95,16 +108,20 @@ export function OverviewDashboard({ fornecedores, produtos, desbloqueios, kanban
 
   return (
     <div className="pmx-page pmx-page--dashboard">
-      <section className="pmx-executive-intro">
-        <div className="pmx-executive-intro__content">
-          <span className="pmx-eyebrow">Central de Cadastros Premix</span>
-          <h1>Olá, {user?.nome?.split(' ')[0] || 'equipe'}.</h1>
-          <p>Controle operacional dos dados recebidos para cadastro no Protheus, com prioridades, responsáveis e histórico em uma única visão.</p>
-          <div className="pmx-operational-pulse"><i aria-hidden="true" /><span>{queue.length ? `${queue.length} solicitações aguardam tratamento` : 'Operação em dia'}</span><b>{critical ? `${critical} críticas` : 'sem itens críticos'}</b></div>
+      <section className="pmx-spatial-hero">
+        <div className="pmx-spatial-hero__content">
+          <span className="pmx-eyebrow">Premix Spatial Operations</span>
+          <h1>Olá, {user?.nome?.split(' ')[0] || 'equipe'}.<span>A operação está em movimento.</span></h1>
+          <p>Receba, valide e prepare todos os dados destinados ao Protheus em uma central com leitura imediata de prioridades e andamento.</p>
+          <div className="pmx-spatial-hero__pulse"><i aria-hidden="true"/><span>{queue.length ? `${queue.length} solicitações aguardam tratamento` : 'Operação em dia'}</span><b>{critical ? `${critical} críticas` : 'sem itens críticos'}</b></div>
+          <div className="pmx-spatial-hero__actions">
+            <button className="pmx-button pmx-button--primary" onClick={() => onNavigate('fila')}>Abrir fila Protheus <Icon name="arrow" size={15}/></button>
+            <button className="pmx-button pmx-button--secondary" onClick={() => onNavigate('cadastros')}>Consultar cadastros</button>
+          </div>
         </div>
-        <div className="pmx-executive-intro__actions">
-          <button className="pmx-button pmx-button--secondary" onClick={() => onNavigate('fila')}>Abrir fila Protheus</button>
-          <button className="pmx-button pmx-button--primary" onClick={() => onNavigate('cadastros')}>Consultar cadastros</button>
+        <div className="pmx-spatial-hero__visual">
+          <SpatialScene mode="hero" counts={{ received: queue.length, validation: queue.filter((item) => item.status === 'em_analise').length, ready, done: completedTotal }} />
+          <div className="pmx-spatial-hero__caption"><i/> Fluxo Solicitação → Protheus</div>
         </div>
       </section>
 
@@ -316,6 +333,12 @@ export function ProtheusQueue({ fornecedores, produtos, desbloqueios, usuarios =
   return (
     <div className="pmx-page">
       <PageHeading eyebrow="Operação" title="Fila Protheus" description="Solicitações organizadas por prioridade, tempo de espera, responsável e situação operacional." actions={<button className="pmx-button pmx-button--secondary" onClick={() => exportQueueCsv(filtered)}><Icon name="download" size={15} /> Exportar CSV</button>} />
+      <ProtheusFlowSpatial
+        received={all.length}
+        validation={all.filter((item) => item.status === 'em_analise').length}
+        ready={all.filter((item) => item.status === 'pendente').length}
+        done={fornecedores.filter((item) => item.status === 'aprovado').length + produtos.filter((item) => item.status === 'aprovado').length + desbloqueios.filter((item) => item.status === 'desbloqueado').length}
+      />
       <div className="pmx-card pmx-card--flush">
         <div className="pmx-queue-summary">
           <div><span>Total na fila</span><strong>{all.length}</strong></div>

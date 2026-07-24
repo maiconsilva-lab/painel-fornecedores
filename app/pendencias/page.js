@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { SpatialBackground } from '../../components/spatial/SpatialUI';
 
 /* ═══════════════════════════════════════════════════════
    DESIGN TOKENS
@@ -458,7 +459,9 @@ export default function PendenciasPage() {
      RENDER
   ═══════════════════════════════════════════════════════ */
   return (
-    <div className="fiscal-shell" style={{ minHeight: '100vh', background: C.bg, fontFamily: "'Geist', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif", color: C.text }}>
+    <div className="fiscal-shell pmx-spatial-enabled" style={{ minHeight: '100vh', background: 'transparent', fontFamily: "'Geist', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif", color: C.text }}>
+      <SpatialBackground />
+      <div className="fiscal-spatial-content" style={{position:'relative',zIndex:1}}>
 
       {/* TOPBAR */}
       <header className="fiscal-topbar" style={{
@@ -719,6 +722,7 @@ export default function PendenciasPage() {
         }
         select option { background: white; color: ${C.text}; }
       `}</style>
+      </div>{/* fiscal spatial content */}
     </div>
   );
 }
