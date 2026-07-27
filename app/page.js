@@ -326,7 +326,7 @@ export default function Home() {
   const ua = useUsersAdmin({ user, fetchAll, showToast, askConfirm });
   const {
     showNewUser, setShowNewUser, newUser, setNewUser, editUser, setEditUser,
-    addUser, updateUser, deleteUser, toggleUserActive, resetUserPw,
+    addUser, updateUser, deleteUser, toggleUserActive, resetUserPw, forcarLogout,
   } = ua;
 
   /* ── Helpers ─────────────────────────────────── */
@@ -790,6 +790,30 @@ export default function Home() {
             </div>
 
             <div style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:6}}>
+              {usuarios.filter(isOnline).length > 0 && (
+                <div style={{display:'flex',alignItems:'center',marginRight:8}}>
+                  {usuarios.filter(isOnline).slice(0,4).map((u,i) => (
+                    <div key={u.id} title={`${u.nome} · online agora`} style={{
+                      width:30,height:30,borderRadius:'50%',
+                      background:'linear-gradient(135deg,#20558A,#173F69)',color:'#fff',
+                      display:'flex',alignItems:'center',justifyContent:'center',
+                      fontFamily:'Geist,-apple-system,sans-serif',fontWeight:700,fontSize:11,
+                      border:'2.5px solid #fff',boxShadow:'0 1px 3px rgba(16,24,40,.15)',
+                      marginLeft: i===0?0:-10, position:'relative', zIndex: 10-i, cursor:'default',
+                    }}>
+                      {u.nome.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}
+                      <span style={{position:'absolute',bottom:-1,right:-1,width:9,height:9,borderRadius:'50%',background:'#22C55E',border:'2px solid #fff'}} />
+                    </div>
+                  ))}
+                  {usuarios.filter(isOnline).length > 4 && (
+                    <div title={`+${usuarios.filter(isOnline).length - 4} online`} style={{
+                      width:30,height:30,borderRadius:'50%',background:'#EEF1F5',color:'#4F5868',
+                      display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:10,
+                      border:'2.5px solid #fff',marginLeft:-10,position:'relative',zIndex:5,
+                    }}>+{usuarios.filter(isOnline).length - 4}</div>
+                  )}
+                </div>
+              )}
               {notifPermission === 'default' && (
                 <button onClick={pedirPermissaoNotificacao} className="pmx-icon-btn" title="Ativar notificações do Windows" aria-label="Ativar notificações do Windows" style={{padding:'0 12px',height:36,borderRadius:8,background:T.primaryLight,border:`1px solid ${T.primary}33`,display:'flex',alignItems:'center',gap:6,color:T.primary,cursor:'pointer',fontSize:12,fontWeight:700,whiteSpace:'nowrap'}}>
                   <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
@@ -1995,6 +2019,7 @@ export default function Home() {
                           <div style={{display:'flex',gap:4}}>
                             <SmBtn onClick={()=>setEditUser(u)} title="Editar">✏️</SmBtn>
                             <SmBtn onClick={()=>resetUserPw(u.id,u.nome)} title="Resetar senha">🔑</SmBtn>
+                            {isOnline(u) && <SmBtn onClick={()=>forcarLogout(u.id,u.nome)} title="Forçar logout (sessão ativa)">🚪</SmBtn>}
                             <SmBtn onClick={()=>toggleUserActive(u)} title={u.ativo?'Desativar':'Ativar'}>{u.ativo?'🚫':'✅'}</SmBtn>
                             {u.id!==user.id && <SmBtn onClick={()=>deleteUser(u.id,u.nome)} title="Excluir" danger>🗑</SmBtn>}
                           </div>
