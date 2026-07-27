@@ -198,6 +198,20 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [user, fetchAll]);
 
+  /* Heartbeat de presença: avisa o servidor "ainda estou aqui" a cada 20s
+     enquanto a aba está em foco — é isso que alimenta o indicador de
+     online/offline na tela de Equipe. Sem isso, last_seen_at nunca seria
+     atualizado depois do login. */
+  useEffect(() => {
+    if (!user) return;
+    const beat = () => { fetch('/api/auth/heartbeat', { method: 'POST', credentials: 'same-origin' }).catch(() => {}); };
+    beat();
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') beat();
+    }, 20000);
+    return () => clearInterval(interval);
+  }, [user]);
+
   /* ── Tema institucional Premix ativo ── */
   const T = TEMAS[tema] || TEMAS.premix_claro;
 
@@ -318,6 +332,20 @@ export default function Home() {
   /* ── Helpers ─────────────────────────────────── */
   const fmtDate = d => { if (!d) return '-'; return new Date(d).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }); };
   const fmtDateShort = d => { if (!d) return ''; return new Date(d).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' }); };
+  /* Considera "online" quem enviou heartbeat nos últimos 45s (2x o
+     intervalo de 20s + folga pra latência de rede). Sem WebSocket —
+     é presença por "última confirmação", igual boa parte dos painéis
+     internos que não têm infra de realtime dedicada. */
+  const isOnline = (u) => u.last_seen_at && (Date.now() - new Date(u.last_seen_at).getTime()) < 45000;
+  const fmtLastSeen = (d) => {
+    if (!d) return 'Nunca acessou';
+    const diffMin = Math.round((Date.now() - new Date(d).getTime()) / 60000);
+    if (diffMin < 1) return 'Agora mesmo';
+    if (diffMin < 60) return `Há ${diffMin} min`;
+    const diffH = Math.round(diffMin / 60);
+    if (diffH < 24) return `Há ${diffH}h`;
+    return `Em ${fmtDateShort(d)}`;
+  };
   const cp = t => { navigator.clipboard.writeText(t || ''); showToast('Copiado!'); };
 
   const openDetail = (f) => { setSel(f); setShowModal(true); };
@@ -1883,7 +1911,13 @@ export default function Home() {
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
             <div>
               <h2 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:16,fontWeight:700,color:'#1A2332',margin:0}}>Gestão da Equipe</h2>
-              <p style={{fontSize:13,color:'#8B94A3',marginTop:2}}>Gerencie acessos, perfis e permissões</p>
+              <p style={{fontSize:13,color:'#8B94A3',marginTop:2,display:'flex',alignItems:'center',gap:6}}>
+                Gerencie acessos, perfis e permissões
+                <span style={{display:'inline-flex',alignItems:'center',gap:5,marginLeft:6,padding:'2px 9px',borderRadius:20,fontSize:11,fontWeight:600,background:'#E6F7EE',color:'#008C44'}}>
+                  <span style={{width:6,height:6,borderRadius:'50%',background:'#22C55E'}} />
+                  {usuarios.filter(isOnline).length} online agora
+                </span>
+              </p>
             </div>
             <button className="pmx-cta" onClick={()=>setShowNewUser(true)} style={{padding:'10px 18px',borderRadius:9,border:'none',background:'#20558A',color:'#fff',fontFamily:'inherit',fontSize:13,fontWeight:600,cursor:'pointer',boxShadow:'0 1px 2px rgba(32,85,138,.3),inset 0 1px 0 rgba(255,255,255,.15)',display:'inline-flex',alignItems:'center',gap:7}}>
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
@@ -1929,8 +1963,14 @@ export default function Home() {
                       <td style={tdSnew()}>
                         {editing ? <input defaultValue={u.nome} id={`u-nome-${u.id}`} style={fieldStyle()} /> :
                         <div style={{display:'flex',alignItems:'center',gap:10}}>
-                          <div style={{width:32,height:32,borderRadius:'50%',background:'linear-gradient(135deg,#20558A,#173F69)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Geist,-apple-system,sans-serif',fontWeight:700,fontSize:11,flexShrink:0}}>{u.nome.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
-                          <div><div style={{fontWeight:600,fontSize:13,color:'#1A2332'}}>{u.nome}</div>{u.telefone && <div style={{fontSize:11,color:'#8B94A3'}}>{u.telefone}</div>}</div>
+                          <div style={{position:'relative',flexShrink:0}}>
+                            <div style={{width:32,height:32,borderRadius:'50%',background:'linear-gradient(135deg,#20558A,#173F69)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Geist,-apple-system,sans-serif',fontWeight:700,fontSize:11}}>{u.nome.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
+                            <span title={isOnline(u) ? 'Online agora' : fmtLastSeen(u.last_seen_at)} style={{position:'absolute',bottom:-1,right:-1,width:10,height:10,borderRadius:'50%',background:isOnline(u)?'#22C55E':'#B5BCC6',border:'2px solid #fff'}} />
+                          </div>
+                          <div>
+                            <div style={{fontWeight:600,fontSize:13,color:'#1A2332'}}>{u.nome}</div>
+                            <div style={{fontSize:11,color:isOnline(u)?'#008C44':'#8B94A3',fontWeight:isOnline(u)?600:400}}>{isOnline(u) ? '● Online agora' : fmtLastSeen(u.last_seen_at)}</div>
+                          </div>
                         </div>}
                       </td>
                       <td style={tdSnew()}>{editing ? <input defaultValue={u.email} id={`u-email-${u.id}`} style={fieldStyle()} /> : <span style={{fontSize:12,color:'#4F5868'}}>{u.email}</span>}</td>

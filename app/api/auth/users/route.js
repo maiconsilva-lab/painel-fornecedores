@@ -8,7 +8,7 @@ export async function GET(req) {
   const supa = getServiceClient();
   const { data, error } = await supa
     .from('usuarios_painel')
-    .select('id, nome, email, cargo, telefone, role, ativo, primeiro_login, created_at')
+    .select('id, nome, email, cargo, telefone, role, ativo, primeiro_login, created_at, last_seen_at')
     .order('nome');
 
   if (error) return NextResponse.json({ error: 'Falha ao listar usuários.' }, { status: 500 });
