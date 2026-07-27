@@ -530,3 +530,4 @@
 @media (max-width:980px){
   .pmx-spatial-hero{grid-template-columns:1fr!important}
 }
+.pmx-indicator-modal__preview{display:block;margin-top:4px;font-size:11.5px;font-weight:600;color:#008C44}

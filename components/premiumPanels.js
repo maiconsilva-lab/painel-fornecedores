@@ -228,11 +228,13 @@ export function OverviewDashboard({ fornecedores, produtos, desbloqueios, kanban
             <label>Mês de referência (ex: Jul/26)<input value={metaForm.mes_referencia} onChange={(e) => setMetaForm({ ...metaForm, mes_referencia: e.target.value })} placeholder="Jul/26" /></label>
             <label>
               Meta (toneladas)
-              <input inputMode="numeric" value={fmtThousand(metaForm.meta_valor)} onChange={(e) => setMetaForm({ ...metaForm, meta_valor: onlyDigits(e.target.value) })} placeholder="15.630" />
+              <input inputMode="numeric" value={metaForm.meta_valor} onChange={(e) => setMetaForm({ ...metaForm, meta_valor: e.target.value })} placeholder="15630" />
+              {onlyDigits(metaForm.meta_valor) && <small className="pmx-indicator-modal__preview">= {fmtThousand(metaForm.meta_valor)} toneladas</small>}
             </label>
             <label>
               Carregado até agora (toneladas)
-              <input inputMode="numeric" value={fmtThousand(metaForm.carregado_valor)} onChange={(e) => setMetaForm({ ...metaForm, carregado_valor: onlyDigits(e.target.value) })} placeholder="8.152" />
+              <input inputMode="numeric" value={metaForm.carregado_valor} onChange={(e) => setMetaForm({ ...metaForm, carregado_valor: e.target.value })} placeholder="8152" />
+              {onlyDigits(metaForm.carregado_valor) && <small className="pmx-indicator-modal__preview">= {fmtThousand(metaForm.carregado_valor)} toneladas</small>}
             </label>
             {indicatorError && <p className="pmx-indicator-modal__error">{indicatorError}</p>}
             <div className="pmx-indicator-modal__actions">
