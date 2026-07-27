@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { CountUp, ProtheusFlowSpatial, TiltSurface } from './spatial/SpatialUI';
-import FlowStrip from './spatial/FlowStrip';
 import IndicatorsCarousel from './spatial/IndicatorsCarousel';
 import {
   buildRecentActivity,
@@ -156,16 +155,15 @@ export function OverviewDashboard({ fornecedores, produtos, desbloqueios, kanban
           </div>
         </div>
         <div className="pmx-spatial-hero__visual">
-          <FlowStrip counts={{ received: queue.length, validation: queue.filter((item) => item.status === 'em_analise').length, ready, done: completedTotal }} />
-          <div className="pmx-spatial-hero__caption"><i/> Fluxo Solicitação → Protheus</div>
+          <IndicatorsCarousel
+            dark
+            flowCounts={{ received: queue.length, validation: queue.filter((item) => item.status === 'em_analise').length, ready, done: completedTotal }}
+            isAdmin={isAdmin}
+            onEditMeta={isAdmin ? () => setEditMetaOpen(true) : null}
+            onEditCommodities={isAdmin ? () => setEditCommOpen(true) : null}
+          />
         </div>
       </section>
-
-      <IndicatorsCarousel
-        isAdmin={isAdmin}
-        onEditMeta={isAdmin ? () => setEditMetaOpen(true) : null}
-        onEditCommodities={isAdmin ? () => setEditCommOpen(true) : null}
-      />
 
       {editMetaOpen && (
         <div className="pmx-indicator-modal-overlay" onClick={() => !savingIndicator && setEditMetaOpen(false)}>

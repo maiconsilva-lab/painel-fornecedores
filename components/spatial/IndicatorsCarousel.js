@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import FlowStrip from './FlowStrip';
 
 const SLIDE_SECONDS = 8;
 
@@ -22,6 +23,15 @@ function TrendBadge({ value, invert = false }) {
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: good ? 'rgba(34,197,94,.15)' : 'rgba(239,68,68,.15)', color: good ? '#4ADE80' : '#F87171' }}>
       {up ? '↗' : '↘'} {up ? 'Alta' : 'Queda'}
     </span>
+  );
+}
+
+function FluxoSlide({ counts }) {
+  return (
+    <div className="pmx-indicator-slide pmx-indicator-slide--flow">
+      <div className="pmx-indicator-slide__head"><span><i className="pmx-indicator-dot" /> FLUXO SOLICITAÇÃO → PROTHEUS</span></div>
+      <FlowStrip compact counts={counts} />
+    </div>
   );
 }
 
@@ -156,7 +166,7 @@ function SlideEmpty({ label, onEdit, isAdmin }) {
   );
 }
 
-export default function IndicatorsCarousel({ isAdmin, onEditMeta, onEditCommodities }) {
+export default function IndicatorsCarousel({ isAdmin, onEditMeta, onEditCommodities, flowCounts, dark = false }) {
   const [data, setData] = useState(null);
   const [news, setNews] = useState(null);
   const [slide, setSlide] = useState(0);
@@ -186,14 +196,16 @@ export default function IndicatorsCarousel({ isAdmin, onEditMeta, onEditCommodit
 
   const slides = useMemo(() => {
     if (!data) return [];
-    const list = [
+    const list = [];
+    if (flowCounts) list.push({ key: 'fluxo', render: () => <FluxoSlide counts={flowCounts} /> });
+    list.push(
       { key: 'meta', render: () => <MetaSlide meta={data.meta} onEdit={onEditMeta} isAdmin={isAdmin} /> },
       { key: 'economicos', render: () => <EconomicosSlide ipca={data.ipca} cambio={data.cambio} selic={data.selic} /> },
       { key: 'commodities', render: () => <CommoditiesSlide commodities={data.commodities} onEdit={onEditCommodities} isAdmin={isAdmin} /> },
-    ];
+    );
     if (news) list.push({ key: 'noticias', render: () => <NewsSlide news={news} /> });
     return list;
-  }, [data, news, isAdmin, onEditMeta, onEditCommodities]);
+  }, [data, news, flowCounts, isAdmin, onEditMeta, onEditCommodities]);
 
   useEffect(() => {
     if (paused || slides.length < 2) return;
@@ -202,11 +214,11 @@ export default function IndicatorsCarousel({ isAdmin, onEditMeta, onEditCommodit
   }, [paused, slides.length]);
 
   if (!data || slides.length === 0) {
-    return <div className="pmx-indicator-carousel pmx-indicator-carousel--loading">Carregando indicadores…</div>;
+    return <div className={`pmx-indicator-carousel pmx-indicator-carousel--loading ${dark ? 'pmx-indicator-carousel--dark' : ''}`}>Carregando indicadores…</div>;
   }
 
   return (
-    <div className="pmx-indicator-carousel" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
+    <div className={`pmx-indicator-carousel ${dark ? 'pmx-indicator-carousel--dark' : ''}`} onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
       {slides[slide % slides.length].render()}
       <div className="pmx-indicator-dots">
         {slides.map((s, i) => (
