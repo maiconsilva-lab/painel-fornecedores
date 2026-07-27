@@ -9,6 +9,10 @@ function fmtBRL(v) {
   if (v == null || Number.isNaN(Number(v))) return '—';
   return Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
+function fmtInt(v) {
+  if (v == null || Number.isNaN(Number(v))) return '—';
+  return Math.round(Number(v)).toLocaleString('pt-BR');
+}
 function fmtPct(v, withSign = true) {
   if (v == null || Number.isNaN(Number(v))) return '—';
   const n = Number(v);
@@ -45,14 +49,17 @@ function MetaSlide({ meta, onEdit, isAdmin }) {
   return (
     <div className="pmx-indicator-slide">
       <div className="pmx-indicator-slide__head">
-        <span><i className="pmx-indicator-dot" /> PROGRESSO DA META</span>
+        <span>
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#22C55E' }}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+          PROGRESSO DA META
+        </span>
         <b>{meta.mes_referencia}</b>
         {onEdit && <button className="pmx-indicator-edit" onClick={onEdit} title="Editar meta">✎</button>}
       </div>
       <div className="pmx-indicator-grid pmx-indicator-grid--3">
-        <div><small>META {meta.mes_referencia}</small><strong>{fmtBRL(meta.meta_valor)}</strong><span>unidades</span></div>
-        <div><small>CARREGADO</small><strong>{fmtBRL(meta.carregado_valor)}</strong><span>{pct.toFixed(1)}%</span></div>
-        <div><small>SALDO</small><strong>{fmtBRL(saldo)}</strong><span>a carregar</span></div>
+        <div><small>META {meta.mes_referencia}</small><strong>{fmtInt(meta.meta_valor)}</strong><span>toneladas</span></div>
+        <div><small>CARREGADO</small><strong>{fmtInt(meta.carregado_valor)}</strong><span>{pct.toFixed(1)}% da meta</span></div>
+        <div><small>SALDO</small><strong>{fmtInt(saldo)}</strong><span>a carregar</span></div>
       </div>
       <div className="pmx-indicator-progress"><div style={{ width: `${pct}%` }} /></div>
       <div className="pmx-indicator-foot">

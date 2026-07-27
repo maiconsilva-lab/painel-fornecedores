@@ -101,33 +101,90 @@ export function OverviewDashboard({ fornecedores, produtos, desbloqueios, kanban
   const [metaForm, setMetaForm] = useState({ mes_referencia: '', meta_valor: '', carregado_valor: '' });
   const [commForm, setCommForm] = useState({ boi_gordo: '', boi_gordo_var: '', soja: '', soja_var: '', milho: '', milho_var: '', referencia_data: '' });
   const [savingIndicator, setSavingIndicator] = useState(false);
+  const [indicatorError, setIndicatorError] = useState('');
+
+  // Só dígitos guardados no state (evita ambiguidade "." decimal vs. milhar);
+  // a formatação com separador de milhar é só visual, aplicada no input.
+  const onlyDigits = (s) => (s || '').replace(/\D/g, '');
+  const fmtThousand = (s) => {
+    const digits = onlyDigits(s);
+    return digits ? Number(digits).toLocaleString('pt-BR') : '';
+  };
+
+  const openEditMeta = async () => {
+    setIndicatorError('');
+    setEditMetaOpen(true);
+    try {
+      const res = await fetch('/api/dashboard/indicadores', { credentials: 'same-origin', cache: 'no-store' });
+      const json = res.ok ? await res.json() : null;
+      if (json?.meta) {
+        setMetaForm({
+          mes_referencia: json.meta.mes_referencia || '',
+          meta_valor: String(Math.round(Number(json.meta.meta_valor) || 0)),
+          carregado_valor: String(Math.round(Number(json.meta.carregado_valor) || 0)),
+        });
+      }
+    } catch { /* mantém o form em branco se falhar ao carregar */ }
+  };
+  const openEditCommodities = async () => {
+    setIndicatorError('');
+    setEditCommOpen(true);
+    try {
+      const res = await fetch('/api/dashboard/indicadores', { credentials: 'same-origin', cache: 'no-store' });
+      const json = res.ok ? await res.json() : null;
+      if (json?.commodities) {
+        const c = json.commodities;
+        setCommForm({
+          boi_gordo: c.boi_gordo != null ? String(c.boi_gordo) : '',
+          boi_gordo_var: c.boi_gordo_var != null ? String(c.boi_gordo_var) : '',
+          soja: c.soja != null ? String(c.soja) : '',
+          soja_var: c.soja_var != null ? String(c.soja_var) : '',
+          milho: c.milho != null ? String(c.milho) : '',
+          milho_var: c.milho_var != null ? String(c.milho_var) : '',
+          referencia_data: c.referencia_data || '',
+        });
+      }
+    } catch { /* mantém o form em branco se falhar ao carregar */ }
+  };
 
   const saveMeta = async () => {
+    if (!onlyDigits(metaForm.meta_valor)) { setIndicatorError('Informe a meta.'); return; }
     setSavingIndicator(true);
+    setIndicatorError('');
     try {
-      await fetch('/api/dashboard/meta', {
+      const res = await fetch('/api/dashboard/meta', {
         method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           mes_referencia: metaForm.mes_referencia,
-          meta_valor: Number(metaForm.meta_valor) || 0,
-          carregado_valor: Number(metaForm.carregado_valor) || 0,
+          meta_valor: Number(onlyDigits(metaForm.meta_valor)) || 0,
+          carregado_valor: Number(onlyDigits(metaForm.carregado_valor)) || 0,
         }),
       });
-    } finally { setSavingIndicator(false); setEditMetaOpen(false); }
+      if (!res.ok) { const j = await res.json().catch(() => ({})); setIndicatorError(j.error || 'Falha ao salvar.'); return; }
+      setEditMetaOpen(false);
+    } catch { setIndicatorError('Falha ao salvar. Verifique sua conexão.'); }
+    finally { setSavingIndicator(false); }
   };
   const saveCommodities = async () => {
     setSavingIndicator(true);
+    setIndicatorError('');
     try {
-      await fetch('/api/dashboard/commodities', {
+      const res = await fetch('/api/dashboard/commodities', {
         method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          boi_gordo: Number(commForm.boi_gordo) || null, boi_gordo_var: Number(commForm.boi_gordo_var) || null,
-          soja: Number(commForm.soja) || null, soja_var: Number(commForm.soja_var) || null,
-          milho: Number(commForm.milho) || null, milho_var: Number(commForm.milho_var) || null,
+          boi_gordo: Number(String(commForm.boi_gordo).replace(',', '.')) || null,
+          boi_gordo_var: Number(String(commForm.boi_gordo_var).replace(',', '.')) || null,
+          soja: Number(String(commForm.soja).replace(',', '.')) || null,
+          soja_var: Number(String(commForm.soja_var).replace(',', '.')) || null,
+          milho: Number(String(commForm.milho).replace(',', '.')) || null,
+          milho_var: Number(String(commForm.milho_var).replace(',', '.')) || null,
           referencia_data: commForm.referencia_data,
         }),
       });
-    } finally { setSavingIndicator(false); setEditCommOpen(false); }
+      if (!res.ok) { const j = await res.json().catch(() => ({})); setIndicatorError(j.error || 'Falha ao salvar.'); return; }
+      setEditCommOpen(false);
+    } catch { setIndicatorError('Falha ao salvar. Verifique sua conexão.'); }
+    finally { setSavingIndicator(false); }
   };
 
   const queue = useMemo(() => buildUnifiedQueue(fornecedores, produtos, desbloqueios), [fornecedores, produtos, desbloqueios]);
@@ -159,8 +216,8 @@ export function OverviewDashboard({ fornecedores, produtos, desbloqueios, kanban
             dark
             flowCounts={{ received: queue.length, validation: queue.filter((item) => item.status === 'em_analise').length, ready, done: completedTotal }}
             isAdmin={isAdmin}
-            onEditMeta={isAdmin ? () => setEditMetaOpen(true) : null}
-            onEditCommodities={isAdmin ? () => setEditCommOpen(true) : null}
+            onEditMeta={isAdmin ? openEditMeta : null}
+            onEditCommodities={isAdmin ? openEditCommodities : null}
           />
         </div>
       </section>
@@ -169,9 +226,16 @@ export function OverviewDashboard({ fornecedores, produtos, desbloqueios, kanban
         <div className="pmx-indicator-modal-overlay" onClick={() => !savingIndicator && setEditMetaOpen(false)}>
           <div className="pmx-indicator-modal" onClick={(e) => e.stopPropagation()}>
             <h3>Atualizar meta do mês</h3>
-            <label>Mês de referência (ex: Jun/26)<input value={metaForm.mes_referencia} onChange={(e) => setMetaForm({ ...metaForm, mes_referencia: e.target.value })} placeholder="Jun/26" /></label>
-            <label>Meta (unidades)<input type="number" value={metaForm.meta_valor} onChange={(e) => setMetaForm({ ...metaForm, meta_valor: e.target.value })} /></label>
-            <label>Carregado até agora<input type="number" value={metaForm.carregado_valor} onChange={(e) => setMetaForm({ ...metaForm, carregado_valor: e.target.value })} /></label>
+            <label>Mês de referência (ex: Jul/26)<input value={metaForm.mes_referencia} onChange={(e) => setMetaForm({ ...metaForm, mes_referencia: e.target.value })} placeholder="Jul/26" /></label>
+            <label>
+              Meta (toneladas)
+              <input inputMode="numeric" value={fmtThousand(metaForm.meta_valor)} onChange={(e) => setMetaForm({ ...metaForm, meta_valor: onlyDigits(e.target.value) })} placeholder="15.630" />
+            </label>
+            <label>
+              Carregado até agora (toneladas)
+              <input inputMode="numeric" value={fmtThousand(metaForm.carregado_valor)} onChange={(e) => setMetaForm({ ...metaForm, carregado_valor: onlyDigits(e.target.value) })} placeholder="8.152" />
+            </label>
+            {indicatorError && <p className="pmx-indicator-modal__error">{indicatorError}</p>}
             <div className="pmx-indicator-modal__actions">
               <button onClick={() => setEditMetaOpen(false)} disabled={savingIndicator}>Cancelar</button>
               <button className="is-primary" onClick={saveMeta} disabled={savingIndicator}>{savingIndicator ? 'Salvando…' : 'Salvar'}</button>
@@ -198,6 +262,7 @@ export function OverviewDashboard({ fornecedores, produtos, desbloqueios, kanban
               <label>Var. no ano (%)<input type="number" step="0.1" value={commForm.milho_var} onChange={(e) => setCommForm({ ...commForm, milho_var: e.target.value })} /></label>
             </div>
             <label>Data de referência (ex: 22/06/2026)<input value={commForm.referencia_data} onChange={(e) => setCommForm({ ...commForm, referencia_data: e.target.value })} /></label>
+            {indicatorError && <p className="pmx-indicator-modal__error">{indicatorError}</p>}
             <div className="pmx-indicator-modal__actions">
               <button onClick={() => setEditCommOpen(false)} disabled={savingIndicator}>Cancelar</button>
               <button className="is-primary" onClick={saveCommodities} disabled={savingIndicator}>{savingIndicator ? 'Salvando…' : 'Salvar'}</button>
