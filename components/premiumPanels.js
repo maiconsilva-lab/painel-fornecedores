@@ -101,6 +101,7 @@ export function OverviewDashboard({ fornecedores, produtos, desbloqueios, kanban
   const [metaForm, setMetaForm] = useState({ mes_referencia: '', meta_valor: '', carregado_valor: '' });
   const [commForm, setCommForm] = useState({ boi_gordo: '', boi_gordo_var: '', soja: '', soja_var: '', milho: '', milho_var: '', referencia_data: '' });
   const [savingIndicator, setSavingIndicator] = useState(false);
+  const [indicatorRefreshToken, setIndicatorRefreshToken] = useState(0);
   const [indicatorError, setIndicatorError] = useState('');
 
   // Só dígitos guardados no state (evita ambiguidade "." decimal vs. milhar);
@@ -162,6 +163,7 @@ export function OverviewDashboard({ fornecedores, produtos, desbloqueios, kanban
       });
       if (!res.ok) { const j = await res.json().catch(() => ({})); setIndicatorError(j.error || 'Falha ao salvar.'); return; }
       setEditMetaOpen(false);
+      setIndicatorRefreshToken((t) => t + 1);
     } catch { setIndicatorError('Falha ao salvar. Verifique sua conexão.'); }
     finally { setSavingIndicator(false); }
   };
@@ -183,6 +185,7 @@ export function OverviewDashboard({ fornecedores, produtos, desbloqueios, kanban
       });
       if (!res.ok) { const j = await res.json().catch(() => ({})); setIndicatorError(j.error || 'Falha ao salvar.'); return; }
       setEditCommOpen(false);
+      setIndicatorRefreshToken((t) => t + 1);
     } catch { setIndicatorError('Falha ao salvar. Verifique sua conexão.'); }
     finally { setSavingIndicator(false); }
   };
@@ -214,6 +217,7 @@ export function OverviewDashboard({ fornecedores, produtos, desbloqueios, kanban
         <div className="pmx-spatial-hero__visual">
           <IndicatorsCarousel
             dark
+            refreshToken={indicatorRefreshToken}
             isAdmin={isAdmin}
             onEditMeta={isAdmin ? openEditMeta : null}
             onEditCommodities={isAdmin ? openEditCommodities : null}

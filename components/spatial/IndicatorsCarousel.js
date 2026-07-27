@@ -163,7 +163,7 @@ function SlideEmpty({ label, onEdit, isAdmin }) {
   );
 }
 
-export default function IndicatorsCarousel({ isAdmin, onEditMeta, onEditCommodities, dark = false }) {
+export default function IndicatorsCarousel({ isAdmin, onEditMeta, onEditCommodities, dark = false, refreshToken = 0 }) {
   const [data, setData] = useState(null);
   const [news, setNews] = useState(null);
   const [slide, setSlide] = useState(0);
@@ -178,7 +178,7 @@ export default function IndicatorsCarousel({ isAdmin, onEditMeta, onEditCommodit
     load();
     const interval = setInterval(load, 5 * 60 * 1000); // BCB/commodities não mudam a cada minuto
     return () => { active = false; clearInterval(interval); };
-  }, []);
+  }, [refreshToken]);
 
   useEffect(() => {
     let active = true;
