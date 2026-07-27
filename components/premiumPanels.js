@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { CountUp, ProtheusFlowSpatial, TiltSurface } from './spatial/SpatialUI';
 import FlowStrip from './spatial/FlowStrip';
+import IndicatorsCarousel from './spatial/IndicatorsCarousel';
 import {
   buildRecentActivity,
   buildUnifiedQueue,
@@ -95,6 +96,41 @@ function PriorityBadge({ priority }) {
 }
 
 export function OverviewDashboard({ fornecedores, produtos, desbloqueios, kanban, user, onNavigate, onOpen }) {
+  const isAdmin = user?.role === 'admin';
+  const [editMetaOpen, setEditMetaOpen] = useState(false);
+  const [editCommOpen, setEditCommOpen] = useState(false);
+  const [metaForm, setMetaForm] = useState({ mes_referencia: '', meta_valor: '', carregado_valor: '' });
+  const [commForm, setCommForm] = useState({ boi_gordo: '', boi_gordo_var: '', soja: '', soja_var: '', milho: '', milho_var: '', referencia_data: '' });
+  const [savingIndicator, setSavingIndicator] = useState(false);
+
+  const saveMeta = async () => {
+    setSavingIndicator(true);
+    try {
+      await fetch('/api/dashboard/meta', {
+        method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mes_referencia: metaForm.mes_referencia,
+          meta_valor: Number(metaForm.meta_valor) || 0,
+          carregado_valor: Number(metaForm.carregado_valor) || 0,
+        }),
+      });
+    } finally { setSavingIndicator(false); setEditMetaOpen(false); }
+  };
+  const saveCommodities = async () => {
+    setSavingIndicator(true);
+    try {
+      await fetch('/api/dashboard/commodities', {
+        method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          boi_gordo: Number(commForm.boi_gordo) || null, boi_gordo_var: Number(commForm.boi_gordo_var) || null,
+          soja: Number(commForm.soja) || null, soja_var: Number(commForm.soja_var) || null,
+          milho: Number(commForm.milho) || null, milho_var: Number(commForm.milho_var) || null,
+          referencia_data: commForm.referencia_data,
+        }),
+      });
+    } finally { setSavingIndicator(false); setEditCommOpen(false); }
+  };
+
   const queue = useMemo(() => buildUnifiedQueue(fornecedores, produtos, desbloqueios), [fornecedores, produtos, desbloqueios]);
   const activity = useMemo(() => buildRecentActivity(fornecedores, produtos, desbloqueios, kanban), [fornecedores, produtos, desbloqueios, kanban]);
   const reasons = useMemo(() => getReturnReasons([...fornecedores, ...produtos, ...desbloqueios]).slice(0, 5), [fornecedores, produtos, desbloqueios]);
@@ -124,6 +160,53 @@ export function OverviewDashboard({ fornecedores, produtos, desbloqueios, kanban
           <div className="pmx-spatial-hero__caption"><i/> Fluxo Solicitação → Protheus</div>
         </div>
       </section>
+
+      <IndicatorsCarousel
+        isAdmin={isAdmin}
+        onEditMeta={isAdmin ? () => setEditMetaOpen(true) : null}
+        onEditCommodities={isAdmin ? () => setEditCommOpen(true) : null}
+      />
+
+      {editMetaOpen && (
+        <div className="pmx-indicator-modal-overlay" onClick={() => !savingIndicator && setEditMetaOpen(false)}>
+          <div className="pmx-indicator-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Atualizar meta do mês</h3>
+            <label>Mês de referência (ex: Jun/26)<input value={metaForm.mes_referencia} onChange={(e) => setMetaForm({ ...metaForm, mes_referencia: e.target.value })} placeholder="Jun/26" /></label>
+            <label>Meta (unidades)<input type="number" value={metaForm.meta_valor} onChange={(e) => setMetaForm({ ...metaForm, meta_valor: e.target.value })} /></label>
+            <label>Carregado até agora<input type="number" value={metaForm.carregado_valor} onChange={(e) => setMetaForm({ ...metaForm, carregado_valor: e.target.value })} /></label>
+            <div className="pmx-indicator-modal__actions">
+              <button onClick={() => setEditMetaOpen(false)} disabled={savingIndicator}>Cancelar</button>
+              <button className="is-primary" onClick={saveMeta} disabled={savingIndicator}>{savingIndicator ? 'Salvando…' : 'Salvar'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editCommOpen && (
+        <div className="pmx-indicator-modal-overlay" onClick={() => !savingIndicator && setEditCommOpen(false)}>
+          <div className="pmx-indicator-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Atualizar cotações de commodities</h3>
+            <p className="pmx-indicator-modal__hint">Consulte em cepea.org.br/br e preencha manualmente (não há API pública gratuita para esses dados).</p>
+            <div className="pmx-indicator-modal__row">
+              <label>Boi Gordo (R$/@)<input type="number" step="0.01" value={commForm.boi_gordo} onChange={(e) => setCommForm({ ...commForm, boi_gordo: e.target.value })} /></label>
+              <label>Var. no ano (%)<input type="number" step="0.1" value={commForm.boi_gordo_var} onChange={(e) => setCommForm({ ...commForm, boi_gordo_var: e.target.value })} /></label>
+            </div>
+            <div className="pmx-indicator-modal__row">
+              <label>Soja (R$/sc 60kg)<input type="number" step="0.01" value={commForm.soja} onChange={(e) => setCommForm({ ...commForm, soja: e.target.value })} /></label>
+              <label>Var. no ano (%)<input type="number" step="0.1" value={commForm.soja_var} onChange={(e) => setCommForm({ ...commForm, soja_var: e.target.value })} /></label>
+            </div>
+            <div className="pmx-indicator-modal__row">
+              <label>Milho (R$/sc 60kg)<input type="number" step="0.01" value={commForm.milho} onChange={(e) => setCommForm({ ...commForm, milho: e.target.value })} /></label>
+              <label>Var. no ano (%)<input type="number" step="0.1" value={commForm.milho_var} onChange={(e) => setCommForm({ ...commForm, milho_var: e.target.value })} /></label>
+            </div>
+            <label>Data de referência (ex: 22/06/2026)<input value={commForm.referencia_data} onChange={(e) => setCommForm({ ...commForm, referencia_data: e.target.value })} /></label>
+            <div className="pmx-indicator-modal__actions">
+              <button onClick={() => setEditCommOpen(false)} disabled={savingIndicator}>Cancelar</button>
+              <button className="is-primary" onClick={saveCommodities} disabled={savingIndicator}>{savingIndicator ? 'Salvando…' : 'Salvar'}</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <section className="pmx-metrics-grid">
         <MetricCard label="Aguardando ação" value={queue.length} helper={`${unassigned} sem responsável`} tone="warning" icon="clock" onClick={() => onNavigate('fila')} />

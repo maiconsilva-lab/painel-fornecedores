@@ -402,3 +402,47 @@
 @media (max-width:520px){
   .pmx-flowstrip__item{flex:1 1 100%}
 }
+
+/* ── IndicatorsCarousel: meta / indicadores econômicos / commodities ── */
+.pmx-indicator-carousel{position:relative;background:#fff;border:1px solid var(--pmx-border);border-radius:14px;padding:22px 26px 34px;margin-top:18px;min-height:150px}
+.pmx-indicator-carousel--loading{display:flex;align-items:center;justify-content:center;color:#8B94A3;font-size:13px}
+.pmx-indicator-slide__head{display:flex;align-items:center;gap:10px;font-size:11px;font-weight:700;letter-spacing:.06em;color:#20558A;text-transform:uppercase;margin-bottom:16px}
+.pmx-indicator-slide__head b{margin-left:auto;font-size:11px;padding:2px 10px;border-radius:20px;background:#EAF2FA;color:#20558A;text-transform:none;font-weight:600;letter-spacing:0}
+.pmx-indicator-dot{width:6px;height:6px;border-radius:50%;background:#22C55E;display:inline-block;box-shadow:0 0 0 3px rgba(34,197,94,.15)}
+.pmx-indicator-edit{margin-left:8px;border:1px solid var(--pmx-border);background:#fff;border-radius:7px;width:26px;height:26px;cursor:pointer;font-size:12px;color:#4F5868}
+.pmx-indicator-edit:hover{background:#F8F9FB}
+.pmx-indicator-grid{display:grid;gap:16px}
+.pmx-indicator-grid--3{grid-template-columns:repeat(3,1fr)}
+.pmx-indicator-grid--3>div{display:flex;flex-direction:column;gap:2px}
+.pmx-indicator-grid--3>div>small{font-size:10.5px;font-weight:700;letter-spacing:.05em;color:#8B94A3;text-transform:uppercase}
+.pmx-indicator-grid--3>div>strong{font-size:24px;font-weight:700;color:#1A2332;letter-spacing:-.02em}
+.pmx-indicator-grid--3>div>span{font-size:12px;color:#8B94A3}
+.pmx-indicator-progress{margin-top:18px;height:8px;border-radius:20px;background:#EEF1F5;overflow:hidden}
+.pmx-indicator-progress div{height:100%;background:linear-gradient(90deg,#20558A,#22C55E);border-radius:20px;transition:width .4s ease}
+.pmx-indicator-foot{display:flex;justify-content:space-between;margin-top:10px;font-size:12px;color:#8B94A3}
+.pmx-indicator-card{background:#F8F9FB;border:1px solid var(--pmx-border);border-radius:12px;padding:16px}
+.pmx-indicator-card__title{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:#4F5868;margin-bottom:8px}
+.pmx-indicator-card strong{font-size:22px;font-weight:700;color:#1A2332;display:block}
+.pmx-indicator-card>span{font-size:11.5px;color:#8B94A3}
+.pmx-indicator-card hr{border:none;border-top:1px solid var(--pmx-border);margin:10px 0}
+.pmx-indicator-mini{display:flex;justify-content:space-between;font-size:12px;color:#8B94A3;margin-top:4px}
+.pmx-indicator-mini b{color:#1A2332;font-weight:600}
+.pmx-indicator-note{margin:14px 0 0;font-size:11px;color:#B5BCC6;text-align:center}
+.pmx-indicator-slide--empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:26px;color:#8B94A3;font-size:13px}
+.pmx-indicator-edit-cta{border:none;background:#20558A;color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer}
+.pmx-indicator-dots{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:6px}
+.pmx-indicator-dots button{width:7px;height:7px;border-radius:50%;border:none;background:#DCE3E9;cursor:pointer;padding:0}
+.pmx-indicator-dots button.active{background:#20558A;width:18px;border-radius:6px;transition:all .2s}
+.pmx-indicator-modal-overlay{position:fixed;inset:0;background:rgba(26,35,50,.5);backdrop-filter:blur(4px);z-index:9200;display:flex;align-items:center;justify-content:center;padding:20px}
+.pmx-indicator-modal{background:#fff;border-radius:14px;padding:24px;width:100%;max-width:420px;box-shadow:0 24px 64px rgba(16,24,40,.18)}
+.pmx-indicator-modal h3{margin:0 0 6px;font-size:16px;font-weight:700;color:#1A2332}
+.pmx-indicator-modal__hint{font-size:12px;color:#8B94A3;margin:0 0 14px}
+.pmx-indicator-modal label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600;color:#4F5868;margin-bottom:12px}
+.pmx-indicator-modal input{padding:9px 11px;border:1px solid var(--pmx-border);border-radius:8px;font-size:13px;font-family:inherit}
+.pmx-indicator-modal__row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pmx-indicator-modal__actions{display:flex;justify-content:flex-end;gap:10px;margin-top:6px}
+.pmx-indicator-modal__actions button{padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--pmx-border);background:#fff;color:#4F5868}
+.pmx-indicator-modal__actions button.is-primary{background:#20558A;border-color:#20558A;color:#fff}
+@media (max-width:760px){
+  .pmx-indicator-grid--3{grid-template-columns:1fr}
+}
