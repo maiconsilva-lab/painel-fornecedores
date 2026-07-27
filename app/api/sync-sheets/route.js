@@ -229,6 +229,12 @@ export async function GET(req) {
       }
     }
 
+    await supa.from('system_health').upsert({
+      job: 'sync-sheets', last_run_at: new Date().toISOString(), status: 'ok',
+      detalhes: { monitor_xml: monitorData.length, pre_notas: preNotasData.length },
+      updated_at: new Date().toISOString(),
+    });
+
     return NextResponse.json({
       success: true,
       timestamp: new Date().toISOString(),
@@ -238,6 +244,14 @@ export async function GET(req) {
 
   } catch (err) {
     console.error('Sync error:', err);
+    try {
+      const supaHealth = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+      await supaHealth.from('system_health').upsert({
+        job: 'sync-sheets', last_run_at: new Date().toISOString(), status: 'erro',
+        detalhes: { mensagem: err.message?.slice(0, 300) },
+        updated_at: new Date().toISOString(),
+      });
+    } catch (healthErr) { console.warn('[system_health]', healthErr.message); }
     return NextResponse.json(
       { error: process.env.NODE_ENV === 'production' ? 'Falha na sincronização.' : err.message },
       { status: 500 }

@@ -97,6 +97,14 @@ export default function Home() {
   useMagneticButtons(spatialRootRef);
   const isAdmin = user && user.role === 'admin';
   const isSubAdmin = user && (user.role === 'admin' || user.role === 'subadmin');
+  const [systemHealth, setSystemHealth] = useState([]);
+  useEffect(() => {
+    if (!isSubAdmin) return;
+    fetch('/api/system-health', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => r.ok ? r.json() : { jobs: [] })
+      .then(j => setSystemHealth(j.jobs || []))
+      .catch(() => {});
+  }, [isSubAdmin, page]);
 
   /* Permite links diretos entre módulos, inclusive a página de Pendências Fiscais. */
   useEffect(() => {
@@ -1932,6 +1940,31 @@ export default function Home() {
             <h1 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:22,fontWeight:700,color:'#1A2332',letterSpacing:'-.4px',margin:0}}>Equipe</h1>
           </div>
           <div style={{padding:'22px 28px 32px'}}>
+
+          {systemHealth.length > 0 && (
+            <div style={{display:'flex',gap:12,marginBottom:20,flexWrap:'wrap'}}>
+              {systemHealth.map(job => {
+                const ok = job.status === 'ok';
+                const hoursAgo = job.last_run_at ? (Date.now() - new Date(job.last_run_at).getTime()) / 3600000 : null;
+                const stale = hoursAgo !== null && hoursAgo > 26; // cron roda 1x/dia — mais de 26h sem rodar é sinal de alerta
+                const label = job.job === 'sync-sheets' ? 'Sincronização Google Sheets' : job.job;
+                return (
+                  <div key={job.job} style={{flex:'1 1 260px',background:'#fff',border:`1px solid ${stale||!ok?'#FECACA':'#E5E9EF'}`,borderRadius:12,padding:'14px 16px',display:'flex',alignItems:'flex-start',gap:12}}>
+                    <div style={{width:34,height:34,borderRadius:9,background:!ok?'#FEE2E2':stale?'#FEF3C7':'#E6F7EE',color:!ok?'#E63946':stale?'#B45309':'#008C44',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{!ok ? <><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></> : <path d="M20 6 9 17l-5-5"/>}</svg>
+                    </div>
+                    <div style={{minWidth:0}}>
+                      <div style={{fontSize:13,fontWeight:600,color:'#1A2332'}}>{label}</div>
+                      <div style={{fontSize:12,color: !ok ? '#E63946' : stale ? '#B45309' : '#8B94A3',marginTop:2}}>
+                        {!ok ? `Falhou — ${job.detalhes?.mensagem || 'ver logs da Vercel'}` : stale ? `Sem rodar há ${Math.round(hoursAgo)}h — verifique o cron` : `OK · ${job.detalhes?.monitor_xml ?? 0} notas, ${job.detalhes?.pre_notas ?? 0} pré-notas`}
+                      </div>
+                      <div style={{fontSize:11,color:'#B5BCC6',marginTop:2}}>Última execução: {job.last_run_at ? new Date(job.last_run_at).toLocaleString('pt-BR') : 'nunca rodou'}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
             <div>
               <h2 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:16,fontWeight:700,color:'#1A2332',margin:0}}>Gestão da Equipe</h2>

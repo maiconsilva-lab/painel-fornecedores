@@ -566,9 +566,26 @@ export function HistoryTimeline({ fornecedores, produtos, desbloqueios, kanban, 
   const visible = filtered.slice((page - 1) * pageSize, page * pageSize);
   useEffect(() => setPage(1), [search, type]);
 
+  const exportCsv = () => {
+    const header = ['Data', 'Tipo', 'Registro', 'Ação', 'Responsável'];
+    const rows = filtered.map((item) => [
+      fmtDate(item.date, true), typeLabel[item.type] || 'Sistema', item.name, item.status, item.user,
+    ]);
+    const csv = [header, ...rows]
+      .map((row) => row.map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(';'))
+      .join('\r\n');
+    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `historico-auditoria-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="pmx-page">
-      <PageHeading eyebrow="Governança" title="Histórico e auditoria" description="Linha do tempo consolidada com ações registradas, responsáveis, datas e alterações operacionais." />
+      <PageHeading eyebrow="Governança" title="Histórico e auditoria" description="Linha do tempo consolidada com ações registradas, responsáveis, datas e alterações operacionais." actions={<button className="pmx-button pmx-button--secondary" onClick={exportCsv}><Icon name="download" size={15} /> Exportar CSV</button>} />
       <div className="pmx-card pmx-card--flush">
         <div className="pmx-toolbar pmx-toolbar--history"><label className="pmx-search-field"><Icon name="search" size={16} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar ação, cadastro ou responsável..." /></label><select value={type} onChange={(e) => setType(e.target.value)}><option value="todos">Todos os tipos</option><option value="fornecedor">Fornecedores</option><option value="produto">Produtos</option><option value="desbloqueio">Desbloqueios</option><option value="tarefa">Tarefas</option><option value="sistema">Sistema</option></select></div>
         <div className="pmx-history-card">
