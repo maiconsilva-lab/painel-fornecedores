@@ -109,6 +109,44 @@ function CommoditiesSlide({ commodities, onEdit, isAdmin }) {
   );
 }
 
+function NewsSlide({ news }) {
+  if (!news) return null;
+  const fmtWhen = (pubDate) => {
+    if (!pubDate) return '';
+    const d = new Date(pubDate);
+    if (Number.isNaN(d.getTime())) return '';
+    const diffH = Math.round((Date.now() - d.getTime()) / 3600000);
+    if (diffH < 1) return 'agora';
+    if (diffH < 24) return `há ${diffH}h`;
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  };
+  return (
+    <div className="pmx-indicator-slide">
+      <div className="pmx-indicator-slide__head"><span><i className="pmx-indicator-dot" /> PRINCIPAIS NOTÍCIAS</span></div>
+      <div className="pmx-indicator-news-grid">
+        <div>
+          <b className="pmx-indicator-news-col-title">Brasil · Economia (G1)</b>
+          <ul>
+            {(news.brasil || []).slice(0, 5).map((n, i) => (
+              <li key={i}><a href={n.link} target="_blank" rel="noopener noreferrer">{n.title}</a><small>{fmtWhen(n.pubDate)}</small></li>
+            ))}
+            {(!news.brasil || news.brasil.length === 0) && <li className="pmx-indicator-news-empty">Sem notícias disponíveis no momento</li>}
+          </ul>
+        </div>
+        <div>
+          <b className="pmx-indicator-news-col-title">Mundo (BBC)</b>
+          <ul>
+            {(news.mundo || []).slice(0, 5).map((n, i) => (
+              <li key={i}><a href={n.link} target="_blank" rel="noopener noreferrer">{n.title}</a><small>{fmtWhen(n.pubDate)}</small></li>
+            ))}
+            {(!news.mundo || news.mundo.length === 0) && <li className="pmx-indicator-news-empty">Sem notícias disponíveis no momento</li>}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SlideEmpty({ label, onEdit, isAdmin }) {
   return (
     <div className="pmx-indicator-slide pmx-indicator-slide--empty">
@@ -120,6 +158,7 @@ function SlideEmpty({ label, onEdit, isAdmin }) {
 
 export default function IndicatorsCarousel({ isAdmin, onEditMeta, onEditCommodities }) {
   const [data, setData] = useState(null);
+  const [news, setNews] = useState(null);
   const [slide, setSlide] = useState(0);
   const [paused, setPaused] = useState(false);
 
@@ -134,14 +173,27 @@ export default function IndicatorsCarousel({ isAdmin, onEditMeta, onEditCommodit
     return () => { active = false; clearInterval(interval); };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    const load = () => fetch('/api/dashboard/news', { credentials: 'same-origin', cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => { if (active && json) setNews(json); })
+      .catch(() => {});
+    load();
+    const interval = setInterval(load, 15 * 60 * 1000); // notícias renovam a cada 15 min
+    return () => { active = false; clearInterval(interval); };
+  }, []);
+
   const slides = useMemo(() => {
     if (!data) return [];
-    return [
+    const list = [
       { key: 'meta', render: () => <MetaSlide meta={data.meta} onEdit={onEditMeta} isAdmin={isAdmin} /> },
       { key: 'economicos', render: () => <EconomicosSlide ipca={data.ipca} cambio={data.cambio} selic={data.selic} /> },
       { key: 'commodities', render: () => <CommoditiesSlide commodities={data.commodities} onEdit={onEditCommodities} isAdmin={isAdmin} /> },
     ];
-  }, [data, isAdmin, onEditMeta, onEditCommodities]);
+    if (news) list.push({ key: 'noticias', render: () => <NewsSlide news={news} /> });
+    return list;
+  }, [data, news, isAdmin, onEditMeta, onEditCommodities]);
 
   useEffect(() => {
     if (paused || slides.length < 2) return;
