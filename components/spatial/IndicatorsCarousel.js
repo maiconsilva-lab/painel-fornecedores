@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import FlowStrip from './FlowStrip';
 
 const SLIDE_SECONDS = 8;
 
@@ -27,15 +26,6 @@ function TrendBadge({ value, invert = false }) {
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: good ? 'rgba(34,197,94,.15)' : 'rgba(239,68,68,.15)', color: good ? '#4ADE80' : '#F87171' }}>
       {up ? '↗' : '↘'} {up ? 'Alta' : 'Queda'}
     </span>
-  );
-}
-
-function FluxoSlide({ counts }) {
-  return (
-    <div className="pmx-indicator-slide pmx-indicator-slide--flow">
-      <div className="pmx-indicator-slide__head"><span><i className="pmx-indicator-dot" /> FLUXO SOLICITAÇÃO → PROTHEUS</span></div>
-      <FlowStrip compact counts={counts} />
-    </div>
   );
 }
 
@@ -173,7 +163,7 @@ function SlideEmpty({ label, onEdit, isAdmin }) {
   );
 }
 
-export default function IndicatorsCarousel({ isAdmin, onEditMeta, onEditCommodities, flowCounts, dark = false }) {
+export default function IndicatorsCarousel({ isAdmin, onEditMeta, onEditCommodities, dark = false }) {
   const [data, setData] = useState(null);
   const [news, setNews] = useState(null);
   const [slide, setSlide] = useState(0);
@@ -204,7 +194,9 @@ export default function IndicatorsCarousel({ isAdmin, onEditMeta, onEditCommodit
   const slides = useMemo(() => {
     if (!data) return [];
     const list = [];
-    if (flowCounts) list.push({ key: 'fluxo', render: () => <FluxoSlide counts={flowCounts} /> });
+    // Slide de "Fluxo" removido — é redundante com os cards de estatística
+    // (Aguardando ação / Prontos para cadastrar / etc.) que já ficam logo
+    // abaixo do hero na Visão Geral.
     list.push(
       { key: 'meta', render: () => <MetaSlide meta={data.meta} onEdit={onEditMeta} isAdmin={isAdmin} /> },
       { key: 'economicos', render: () => <EconomicosSlide ipca={data.ipca} cambio={data.cambio} selic={data.selic} /> },
@@ -212,7 +204,7 @@ export default function IndicatorsCarousel({ isAdmin, onEditMeta, onEditCommodit
     );
     if (news) list.push({ key: 'noticias', render: () => <NewsSlide news={news} /> });
     return list;
-  }, [data, news, flowCounts, isAdmin, onEditMeta, onEditCommodities]);
+  }, [data, news, isAdmin, onEditMeta, onEditCommodities]);
 
   useEffect(() => {
     if (paused || slides.length < 2) return;

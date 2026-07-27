@@ -214,7 +214,6 @@ export function OverviewDashboard({ fornecedores, produtos, desbloqueios, kanban
         <div className="pmx-spatial-hero__visual">
           <IndicatorsCarousel
             dark
-            flowCounts={{ received: queue.length, validation: queue.filter((item) => item.status === 'em_analise').length, ready, done: completedTotal }}
             isAdmin={isAdmin}
             onEditMeta={isAdmin ? openEditMeta : null}
             onEditCommodities={isAdmin ? openEditCommodities : null}
