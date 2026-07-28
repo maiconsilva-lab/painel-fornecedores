@@ -1,7 +1,6 @@
 import './globals.css';
 import './executive.css';
 import './spatial.css';
-import CustomCursor from '../components/spatial/CustomCursor';
 
 export const metadata = {
   title: 'Premix Spatial — Central de Cadastros Protheus',
@@ -18,7 +17,6 @@ export default function RootLayout({ children }) {
         <meta name="referrer" content="strict-origin-when-cross-origin" />
       </head>
       <body>
-        <CustomCursor />
         {children}
       </body>
     </html>

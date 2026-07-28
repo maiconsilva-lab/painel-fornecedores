@@ -19,6 +19,7 @@ import RecordDrawer from '../components/recordDrawer';
 import { SpatialBackground, PageMotion, useMagneticButtons } from '../components/spatial/SpatialUI';
 import EphemeralChat from '../components/spatial/EphemeralChat';
 import ChatAdminPanel from '../components/spatial/ChatAdminPanel';
+import CustomCursor, { CURSOR_PRESETS } from '../components/spatial/CustomCursor';
 import { buildRecentActivity, buildUnifiedQueue, getCompleteness, getDuplicateCandidates, recordToClipboardText, fieldsForType, supplierBankFields } from '../lib/panelMetrics';
 
 export default function Home() {
@@ -60,7 +61,7 @@ export default function Home() {
     doLogin, doChangePw, doLogout,
   } = useAuth({ setPage });
   const {
-    tema, setTema, densidade, setDensidade, prefsLoaded, sidebarCol, setSidebarCol,
+    tema, setTema, densidade, setDensidade, cursorPreset, setCursorPreset, prefsLoaded, sidebarCol, setSidebarCol,
     mobileNavOpen, setMobileNavOpen, searchGlobal, setSearchGlobal, searchGlobalDeb,
     savePrefs,
   } = useAppearance({ user, showToast });
@@ -555,6 +556,7 @@ export default function Home() {
   return (
     <div ref={spatialRootRef} className={`pmx-theme-root pmx-spatial-enabled ${tema === 'premix_escuro' ? 'pmx-theme-dark' : ''} density-${densidade}`} style={{minHeight:'100vh',background:'transparent',fontFamily:"'Geist',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif",color:T.text1,fontSize:14,lineHeight:1.5,WebkitFontSmoothing:'antialiased',position:'relative'}}>
       <SpatialBackground />
+      <CustomCursor preset={cursorPreset} />
       <EphemeralChat user={user} />
       <div style={{position:'relative',zIndex:1}}>
       <style>{`
@@ -2179,10 +2181,23 @@ export default function Home() {
               </div>
             </article>
 
+            <article className="pmx-card pmx-settings-card pmx-settings-card--wide">
+              <div className="pmx-settings-card__heading"><div><span className="pmx-eyebrow">Conforto</span><h2>Cursor do mouse</h2></div></div>
+              <p>Escolha opcional, só pra você — os outros usuários continuam vendo o cursor deles normalmente.</p>
+              <div className="pmx-cursor-grid">
+                {CURSOR_PRESETS.map((c) => (
+                  <button key={c.id} className={`pmx-cursor-option ${cursorPreset === c.id ? 'is-active' : ''}`} onClick={() => { setCursorPreset(c.id); savePrefs({ cursor_preset: c.id }); }}>
+                    <span className={`pmx-cursor-preview pmx-cursor-preview--${c.id}`}><i/>{c.id !== 'minimalista' && c.id !== 'padrao' && <b/>}</span>
+                    <strong>{c.label}</strong><small>{c.desc}</small>
+                  </button>
+                ))}
+              </div>
+            </article>
+
             <article className="pmx-card pmx-brand-guideline pmx-settings-card--wide">
               <div className="pmx-brand-guideline__mark">P</div>
               <div><span className="pmx-eyebrow">Padrão visual</span><h2>Premix, sem distrações</h2><p>Wallpapers e cores livres foram removidos da área operacional. O painel mantém azul e laranja da organização, com fundo neutro, tipografia consistente e contraste adequado.</p></div>
-              <button className="pmx-button pmx-button--secondary" onClick={() => { setTema('premix_claro'); setDensidade('normal'); setSidebarCol(false); savePrefs({ tema:'premix_claro', densidade:'normal', cor_primaria:'#20558A', wallpaper:null, wallpaper_opacidade:0 }); showToast('Padrão Premix restaurado'); }}>Restaurar padrão</button>
+              <button className="pmx-button pmx-button--secondary" onClick={() => { setTema('premix_claro'); setDensidade('normal'); setSidebarCol(false); setCursorPreset('padrao'); savePrefs({ tema:'premix_claro', densidade:'normal', cor_primaria:'#20558A', wallpaper:null, wallpaper_opacidade:0, cursor_preset:'padrao' }); showToast('Padrão Premix restaurado'); }}>Restaurar padrão</button>
             </article>
           </section>
         </div>

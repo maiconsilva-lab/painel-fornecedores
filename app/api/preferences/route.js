@@ -3,6 +3,7 @@ import { getServiceClient, verifySession } from '../../../lib/authServer';
 
 const ALLOWED_THEMES = new Set(['premix_claro', 'premix_escuro']);
 const ALLOWED_DENSITIES = new Set(['compacto', 'normal', 'confortavel']);
+const ALLOWED_CURSORS = new Set(['padrao', 'minimalista', 'elegante', 'destaque']);
 
 export async function GET(req) {
   const user = await verifySession(req);
@@ -11,7 +12,7 @@ export async function GET(req) {
   const supa = getServiceClient();
   const { data, error } = await supa
     .from('preferencias_usuario')
-    .select('tema,densidade')
+    .select('tema,densidade,cursor_preset')
     .eq('user_email', user.email)
     .maybeSingle();
 
@@ -37,6 +38,7 @@ export async function POST(req) {
     wallpaper: null,
     wallpaper_opacidade: 0,
   };
+  if (ALLOWED_CURSORS.has(body.cursor_preset)) payload.cursor_preset = body.cursor_preset;
 
   const supa = getServiceClient();
   const { error } = await supa.from('preferencias_usuario').upsert(payload, { onConflict: 'user_email' });
