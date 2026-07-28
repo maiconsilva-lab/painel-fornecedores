@@ -7,6 +7,7 @@ import { getServiceClient, verifySession } from '../../../../../../lib/authServe
    se esqueceu aberto num computador da empresa, por exemplo). */
 export async function POST(req, { params }) {
   try {
+    const { id } = await params;
     const acting = await verifySession(req, ['admin']);
     if (!acting) return NextResponse.json({ error: 'Apenas administradores podem forçar logout.' }, { status: 403 });
 
@@ -14,19 +15,19 @@ export async function POST(req, { params }) {
     const { data: target, error: fetchErr } = await supa
       .from('usuarios_painel')
       .select('session_epoch, nome')
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
     if (fetchErr || !target) return NextResponse.json({ error: 'Usuário não encontrado.' }, { status: 404 });
 
     const { error } = await supa
       .from('usuarios_painel')
       .update({ session_epoch: (target.session_epoch ?? 0) + 1 })
-      .eq('id', params.id);
+      .eq('id', id);
     if (error) return NextResponse.json({ error: 'Falha ao forçar logout.' }, { status: 500 });
 
     await supa.from('auditoria').insert({
       ator_nome: acting.nome, ator_email: acting.email,
-      acao: 'forcou_logout', tipo_cadastro: 'auth', cadastro_id: params.id,
+      acao: 'forcou_logout', tipo_cadastro: 'auth', cadastro_id: id,
       detalhes: { usuario: target.nome },
     });
 

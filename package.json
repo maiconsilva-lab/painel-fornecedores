@@ -1,6 +1,6 @@
 {
   "name": "premix-painel-fornecedores",
-  "version": "4.1.0",
+  "version": "5.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -8,15 +8,12 @@
     "start": "next start"
   },
   "dependencies": {
-    "@react-three/drei": "9.114.3",
-    "@react-three/fiber": "8.17.10",
     "@supabase/supabase-js": "2.45.0",
     "bcryptjs": "^3.0.3",
     "googleapis": "^172.0.0",
-    "motion": "11.11.17",
-    "next": "14.2.5",
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
-    "three": "0.168.0"
+    "motion": "^12.43.0",
+    "next": "15.5.21",
+    "react": "19.2.0",
+    "react-dom": "19.2.0"
   }
 }

@@ -5,6 +5,7 @@ const ALLOWED_UPDATES = new Set(['nome', 'email', 'cargo', 'telefone', 'role']);
 
 export async function PATCH(req, { params }) {
   try {
+    const { id } = await params;
     const acting = await verifySession(req, ['admin']);
     if (!acting) return NextResponse.json({ error: 'Apenas administradores podem editar usuários.' }, { status: 403 });
 
@@ -16,7 +17,7 @@ export async function PATCH(req, { params }) {
     if (updates.email) updates.email = updates.email.toLowerCase().trim();
 
     const supa = getServiceClient();
-    const { error } = await supa.from('usuarios_painel').update(updates).eq('id', params.id);
+    const { error } = await supa.from('usuarios_painel').update(updates).eq('id', id);
     if (error) return NextResponse.json({ error: 'Falha ao atualizar usuário.' }, { status: 500 });
     return NextResponse.json({ ok: true });
   } catch (err) {
@@ -27,12 +28,13 @@ export async function PATCH(req, { params }) {
 
 export async function DELETE(req, { params }) {
   try {
+    const { id } = await params;
     const acting = await verifySession(req, ['admin']);
     if (!acting) return NextResponse.json({ error: 'Apenas administradores podem excluir usuários.' }, { status: 403 });
-    if (acting.id === params.id) return NextResponse.json({ error: 'Você não pode excluir o próprio usuário.' }, { status: 400 });
+    if (acting.id === id) return NextResponse.json({ error: 'Você não pode excluir o próprio usuário.' }, { status: 400 });
 
     const supa = getServiceClient();
-    const { error } = await supa.from('usuarios_painel').delete().eq('id', params.id);
+    const { error } = await supa.from('usuarios_painel').delete().eq('id', id);
     if (error) return NextResponse.json({ error: 'Falha ao excluir usuário.' }, { status: 500 });
     return NextResponse.json({ ok: true });
   } catch (err) {
