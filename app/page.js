@@ -17,6 +17,8 @@ import { DataSection, ActionBtn, PillBtn, SmBtn, StatNum } from '../components/s
 import { OverviewDashboard, ProtheusQueue, ReportsDashboard, HistoryTimeline } from '../components/premiumPanels';
 import RecordDrawer from '../components/recordDrawer';
 import { SpatialBackground, PageMotion, useMagneticButtons } from '../components/spatial/SpatialUI';
+import EphemeralChat from '../components/spatial/EphemeralChat';
+import ChatAdminPanel from '../components/spatial/ChatAdminPanel';
 import { buildRecentActivity, buildUnifiedQueue, getCompleteness, getDuplicateCandidates, recordToClipboardText, fieldsForType, supplierBankFields } from '../lib/panelMetrics';
 
 export default function Home() {
@@ -536,6 +538,7 @@ export default function Home() {
   return (
     <div ref={spatialRootRef} className={`pmx-theme-root pmx-spatial-enabled ${tema === 'premix_escuro' ? 'pmx-theme-dark' : ''} density-${densidade}`} style={{minHeight:'100vh',background:'transparent',fontFamily:"'Geist',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif",color:T.text1,fontSize:14,lineHeight:1.5,WebkitFontSmoothing:'antialiased',position:'relative'}}>
       <SpatialBackground />
+      <EphemeralChat user={user} />
       <div style={{position:'relative',zIndex:1}}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap');
@@ -1940,6 +1943,8 @@ export default function Home() {
             <h1 style={{fontFamily:'Geist,-apple-system,sans-serif',fontSize:22,fontWeight:700,color:'#1A2332',letterSpacing:'-.4px',margin:0}}>Equipe</h1>
           </div>
           <div style={{padding:'22px 28px 32px'}}>
+
+          <ChatAdminPanel usuarios={usuarios} currentUserId={user.id} />
 
           {systemHealth.length > 0 && (
             <div style={{display:'flex',gap:12,marginBottom:20,flexWrap:'wrap'}}>
