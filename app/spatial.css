@@ -573,3 +573,11 @@
 @media (max-width:480px){
   .pmx-echat__panel{width:calc(100vw - 32px)}
 }
+
+/* ── Dissuasão contra print no chat (marca d'água + blur ao perder foco) ── */
+.pmx-echat__body{position:relative;flex:1;display:flex;flex-direction:column;overflow:hidden}
+.pmx-echat__body .pmx-echat__list{flex:1}
+.pmx-echat__watermark{position:absolute;inset:0;pointer-events:none;z-index:5;display:flex;flex-wrap:wrap;align-content:space-around;justify-content:space-around;opacity:.06;transform:rotate(-20deg) scale(1.3);overflow:hidden}
+.pmx-echat__watermark span{font-size:10px;font-weight:700;color:#000;white-space:nowrap;margin:14px}
+.pmx-echat__body.is-blurred .pmx-echat__list{filter:blur(14px);user-select:none;transition:filter .15s}
+.pmx-echat__blurnotice{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#4F5868;background:rgba(255,255,255,.4);z-index:6}

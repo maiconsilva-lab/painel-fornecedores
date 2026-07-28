@@ -358,6 +358,23 @@ export default function Home() {
   };
   const cp = t => { navigator.clipboard.writeText(t || ''); showToast('Copiado!'); };
 
+  /* Inicia um chat individual (1 clique na foto de quem está online),
+     sem precisar passar pelo formulário de seleção. Dispara um evento
+     pra avisar o widget EphemeralChat de checar na hora, em vez de
+     esperar o próximo ciclo de polling (até 15s). */
+  const iniciarChatRapido = async (userId, nome) => {
+    try {
+      const res = await fetch('/api/chat/session', {
+        method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ participantes: [userId], duracaoMinutos: 60 }),
+      });
+      const json = await res.json();
+      if (!res.ok) { showToast(json.error || 'Falha ao iniciar chat.'); return; }
+      showToast(`Chat iniciado com ${nome}`);
+      window.dispatchEvent(new CustomEvent('pmx-chat-refresh'));
+    } catch { showToast('Falha ao iniciar chat. Verifique sua conexão.'); }
+  };
+
   const openDetail = (f) => { setSel(f); setShowModal(true); };
   const closeDetail = () => { setShowModal(false); setTimeout(() => setSel(null), 200); };
 
@@ -2025,13 +2042,17 @@ export default function Home() {
                       <td style={tdSnew()}>
                         {editing ? <input defaultValue={u.nome} id={`u-nome-${u.id}`} style={fieldStyle()} /> :
                         <div style={{display:'flex',alignItems:'center',gap:10}}>
-                          <div style={{position:'relative',flexShrink:0}}>
+                          <div
+                            style={{position:'relative',flexShrink:0,cursor:isOnline(u)?'pointer':'default'}}
+                            title={isOnline(u) ? `Clique para iniciar chat com ${u.nome}` : fmtLastSeen(u.last_seen_at)}
+                            onClick={() => isOnline(u) && iniciarChatRapido(u.id, u.nome)}
+                          >
                             <div style={{width:32,height:32,borderRadius:'50%',background:'linear-gradient(135deg,#20558A,#173F69)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Geist,-apple-system,sans-serif',fontWeight:700,fontSize:11}}>{u.nome.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
-                            <span title={isOnline(u) ? 'Online agora' : fmtLastSeen(u.last_seen_at)} style={{position:'absolute',bottom:-1,right:-1,width:10,height:10,borderRadius:'50%',background:isOnline(u)?'#22C55E':'#B5BCC6',border:'2px solid #fff'}} />
+                            <span style={{position:'absolute',bottom:-1,right:-1,width:10,height:10,borderRadius:'50%',background:isOnline(u)?'#22C55E':'#B5BCC6',border:'2px solid #fff'}} />
                           </div>
                           <div>
                             <div style={{fontWeight:600,fontSize:13,color:'#1A2332'}}>{u.nome}</div>
-                            <div style={{fontSize:11,color:isOnline(u)?'#008C44':'#8B94A3',fontWeight:isOnline(u)?600:400}}>{isOnline(u) ? '● Online agora' : fmtLastSeen(u.last_seen_at)}</div>
+                            <div style={{fontSize:11,color:isOnline(u)?'#008C44':'#8B94A3',fontWeight:isOnline(u)?600:400}}>{isOnline(u) ? '● Online agora — clique na foto p/ chat' : fmtLastSeen(u.last_seen_at)}</div>
                           </div>
                         </div>}
                       </td>

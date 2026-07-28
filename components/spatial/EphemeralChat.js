@@ -9,7 +9,14 @@ const SESSION_POLL_MS = 15000;
 /* Chat com mensagens temporárias: cada mensagem é gravada no banco mas
    se autodestrói 10 minutos depois de enviada (apagada pelo servidor a
    cada consulta — ver /api/chat/messages). Só quem está na lista de
-   participantes da sessão ativa consegue ler ou enviar. */
+   participantes da sessão ativa consegue ler ou enviar.
+
+   "Antiscreenshot": não existe API de navegador pra bloquear captura de
+   tela de verdade (nem impede foto tirada com outro aparelho) — o que dá
+   pra fazer é dissuasão: (1) marca d'água com nome de quem está vendo e
+   hora, deixando qualquer print rastreável a quem vazou; (2) borra o
+   conteúdo quando a janela perde o foco, dificultando captura casual
+   enquanto troca de janela pra abrir uma ferramenta de print. */
 export default function EphemeralChat({ user }) {
   const [session, setSession] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -17,8 +24,10 @@ export default function EphemeralChat({ user }) {
   const [input, setInput] = useState('');
   const [unread, setUnread] = useState(0);
   const [sending, setSending] = useState(false);
+  const [windowBlurred, setWindowBlurred] = useState(false);
   const listRef = useRef(null);
   const lastCountRef = useRef(0);
+  const checkSessionRef = useRef(() => {});
 
   useEffect(() => {
     if (!user) return;
@@ -34,10 +43,18 @@ export default function EphemeralChat({ user }) {
         });
       })
       .catch(() => {});
+    checkSessionRef.current = check;
     check();
     const interval = setInterval(check, SESSION_POLL_MS);
     return () => { active = false; clearInterval(interval); };
   }, [user]);
+
+  // Reage na hora quando alguém dispara "iniciar chat" em vez de esperar o polling
+  useEffect(() => {
+    const onRefresh = () => checkSessionRef.current();
+    window.addEventListener('pmx-chat-refresh', onRefresh);
+    return () => window.removeEventListener('pmx-chat-refresh', onRefresh);
+  }, []);
 
   useEffect(() => {
     if (!session?.id) return;
@@ -59,6 +76,21 @@ export default function EphemeralChat({ user }) {
 
   useEffect(() => { if (open) setUnread(0); }, [open]);
   useEffect(() => { if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight; }, [messages, open]);
+
+  // Borra o conteúdo quando a janela perde o foco (troca de app/aba) — só
+  // dissuasão, não é uma proteção real.
+  useEffect(() => {
+    if (!open) return;
+    const onBlur = () => setWindowBlurred(true);
+    const onFocus = () => setWindowBlurred(false);
+    window.addEventListener('blur', onBlur);
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', () => setWindowBlurred(document.hidden));
+    return () => {
+      window.removeEventListener('blur', onBlur);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [open]);
 
   const send = async () => {
     if (!input.trim() || !session?.id || sending) return;
@@ -82,6 +114,7 @@ export default function EphemeralChat({ user }) {
 
   const expiraEm = new Date(session.expiraEm);
   const minutosRestantes = Math.max(0, Math.round((expiraEm.getTime() - Date.now()) / 60000));
+  const watermark = `${user.nome} · ${new Date().toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}`;
 
   return (
     <div className="pmx-echat">
@@ -96,15 +129,21 @@ export default function EphemeralChat({ user }) {
             <span>💬 Chat temporário <small>· mensagens somem em 10 min · sessão expira em {minutosRestantes} min</small></span>
             <button onClick={() => setOpen(false)}>✕</button>
           </div>
-          <div className="pmx-echat__list" ref={listRef}>
-            {messages.length === 0 && <p className="pmx-echat__empty">Nenhuma mensagem ainda. Cada mensagem some sozinha 10 minutos depois de enviada.</p>}
-            {messages.map((m) => (
-              <div key={m.id} className={`pmx-echat__msg ${m.remetente_id === user.id ? 'is-me' : ''}`}>
-                <b>{m.remetente_nome}</b>
-                <p>{m.texto}</p>
-                <small>{new Date(m.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</small>
-              </div>
-            ))}
+          <div className={`pmx-echat__body ${windowBlurred ? 'is-blurred' : ''}`}>
+            <div className="pmx-echat__watermark" aria-hidden="true">
+              {Array.from({ length: 8 }).map((_, i) => <span key={i}>{watermark}</span>)}
+            </div>
+            <div className="pmx-echat__list" ref={listRef}>
+              {messages.length === 0 && <p className="pmx-echat__empty">Nenhuma mensagem ainda. Cada mensagem some sozinha 10 minutos depois de enviada.</p>}
+              {messages.map((m) => (
+                <div key={m.id} className={`pmx-echat__msg ${m.remetente_id === user.id ? 'is-me' : ''}`}>
+                  <b>{m.remetente_nome}</b>
+                  <p>{m.texto}</p>
+                  <small>{new Date(m.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</small>
+                </div>
+              ))}
+            </div>
+            {windowBlurred && <div className="pmx-echat__blurnotice">Conteúdo oculto — janela sem foco</div>}
           </div>
           <div className="pmx-echat__input">
             <input
