@@ -581,3 +581,12 @@
 .pmx-echat__watermark span{font-size:10px;font-weight:700;color:#000;white-space:nowrap;margin:14px}
 .pmx-echat__body.is-blurred .pmx-echat__list{filter:blur(14px);user-select:none;transition:filter .15s}
 .pmx-echat__blurnotice{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#4F5868;background:rgba(255,255,255,.4);z-index:6}
+
+/* ── Cursor customizado ── */
+html.pmx-custom-cursor-active, html.pmx-custom-cursor-active *{cursor:none!important}
+.pmx-cursor-dot,.pmx-cursor-ring{position:fixed;top:0;left:0;pointer-events:none;z-index:99999;border-radius:50%;will-change:transform;transition:opacity .2s ease;mix-blend-mode:difference}
+.pmx-cursor-dot{width:6px;height:6px;margin:-3px 0 0 -3px;background:#fff;transition:opacity .2s ease, width .18s ease, height .18s ease, margin .18s ease}
+.pmx-cursor-ring{width:32px;height:32px;margin:-16px 0 0 -16px;border:1.5px solid #fff;transition:opacity .2s ease, width .22s cubic-bezier(.2,.8,.2,1), height .22s cubic-bezier(.2,.8,.2,1), margin .22s cubic-bezier(.2,.8,.2,1)}
+html.pmx-cursor-hover .pmx-cursor-ring{width:48px;height:48px;margin:-24px 0 0 -24px;background:rgba(255,255,255,.12)}
+html.pmx-cursor-hover .pmx-cursor-dot{width:4px;height:4px;margin:-2px 0 0 -2px}
+html.pmx-cursor-down .pmx-cursor-ring{width:26px;height:26px;margin:-13px 0 0 -13px}

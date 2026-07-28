@@ -1,6 +1,7 @@
 import './globals.css';
 import './executive.css';
 import './spatial.css';
+import CustomCursor from '../components/spatial/CustomCursor';
 
 export const metadata = {
   title: 'Premix Spatial — Central de Cadastros Protheus',
@@ -16,7 +17,10 @@ export default function RootLayout({ children }) {
         <link rel="icon" href="https://premix.com.br/wp-content/uploads/2023/05/icon_premix-300x300-1.png" />
         <meta name="referrer" content="strict-origin-when-cross-origin" />
       </head>
-      <body>{children}</body>
+      <body>
+        <CustomCursor />
+        {children}
+      </body>
     </html>
   );
 }
