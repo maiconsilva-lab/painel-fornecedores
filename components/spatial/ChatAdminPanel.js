@@ -57,7 +57,7 @@ export default function ChatAdminPanel({ usuarios = [], currentUserId }) {
     <div className="pmx-chat-admin">
       <div className="pmx-chat-admin__head">
         <h3>💬 Chat temporário</h3>
-        <p>Ative uma conversa efêmera entre pessoas específicas. Nada é gravado no banco — as mensagens somem quando a sessão acabar (máx. 2 horas).</p>
+        <p>Ative uma conversa com uma pessoa específica ou um grupo. Cada mensagem se autodestrói 10 minutos depois de enviada, e só quem está na lista de participantes consegue ver. A conversa fica disponível por até 2 horas.</p>
       </div>
 
       {ativa ? (

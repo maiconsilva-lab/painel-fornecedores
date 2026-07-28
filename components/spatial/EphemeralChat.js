@@ -1,24 +1,25 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { supabase } from '../../lib/supabase';
 
-/* Chat temporário: quando o admin ativa uma sessão (via /api/chat/session),
-   os participantes descobrem isso checando /api/chat/session/active
-   periodicamente. As MENSAGENS em si nunca passam pelo banco de dados —
-   trafegam só pelo canal de Broadcast do Supabase Realtime (pub/sub
-   efêmero). Ao fechar a aba ou a sessão expirar, tudo se perde — é
-   exatamente o comportamento pedido ("conversa temporária"). */
+const MSG_POLL_OPEN_MS = 4000;
+const MSG_POLL_CLOSED_MS = 15000;
+const SESSION_POLL_MS = 15000;
+
+/* Chat com mensagens temporárias: cada mensagem é gravada no banco mas
+   se autodestrói 10 minutos depois de enviada (apagada pelo servidor a
+   cada consulta — ver /api/chat/messages). Só quem está na lista de
+   participantes da sessão ativa consegue ler ou enviar. */
 export default function EphemeralChat({ user }) {
   const [session, setSession] = useState(null);
   const [messages, setMessages] = useState([]);
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [unread, setUnread] = useState(0);
-  const channelRef = useRef(null);
+  const [sending, setSending] = useState(false);
   const listRef = useRef(null);
+  const lastCountRef = useRef(0);
 
-  // Descobre se há uma sessão ativa pra esse usuário
   useEffect(() => {
     if (!user) return;
     let active = true;
@@ -28,44 +29,53 @@ export default function EphemeralChat({ user }) {
         if (!active) return;
         const next = json?.session || null;
         setSession((prev) => {
-          if (prev?.id !== next?.id) { setMessages([]); setUnread(0); }
+          if (prev?.id !== next?.id) { setMessages([]); setUnread(0); lastCountRef.current = 0; }
           return next;
         });
       })
       .catch(() => {});
     check();
-    const interval = setInterval(check, 15000);
+    const interval = setInterval(check, SESSION_POLL_MS);
     return () => { active = false; clearInterval(interval); };
   }, [user]);
 
-  // Conecta/desconecta do canal de broadcast conforme a sessão muda
   useEffect(() => {
-    if (channelRef.current) { supabase.removeChannel(channelRef.current); channelRef.current = null; }
-    if (!session || !supabase) return;
-
-    const ch = supabase.channel(`chat:${session.channelToken}`, { config: { broadcast: { self: true } } });
-    ch.on('broadcast', { event: 'msg' }, ({ payload }) => {
-      setMessages((cur) => [...cur, payload]);
-      setUnread((u) => (open ? 0 : u + 1));
-    });
-    ch.subscribe();
-    channelRef.current = ch;
-
-    return () => { supabase.removeChannel(ch); channelRef.current = null; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.channelToken]);
+    if (!session?.id) return;
+    let active = true;
+    const load = () => fetch(`/api/chat/messages?sessionId=${session.id}`, { credentials: 'same-origin', cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (!active || !json) return;
+        const msgs = json.messages || [];
+        if (msgs.length > lastCountRef.current && !open) setUnread((u) => u + (msgs.length - lastCountRef.current));
+        lastCountRef.current = msgs.length;
+        setMessages(msgs);
+      })
+      .catch(() => {});
+    load();
+    const interval = setInterval(load, open ? MSG_POLL_OPEN_MS : MSG_POLL_CLOSED_MS);
+    return () => { active = false; clearInterval(interval); };
+  }, [session?.id, open]);
 
   useEffect(() => { if (open) setUnread(0); }, [open]);
   useEffect(() => { if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight; }, [messages, open]);
 
-  const send = () => {
-    if (!input.trim() || !channelRef.current) return;
-    channelRef.current.send({
-      type: 'broadcast',
-      event: 'msg',
-      payload: { from: user.nome, text: input.trim(), ts: Date.now() },
-    });
+  const send = async () => {
+    if (!input.trim() || !session?.id || sending) return;
+    setSending(true);
+    const texto = input.trim();
     setInput('');
+    try {
+      const res = await fetch('/api/chat/messages', {
+        method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: session.id, texto }),
+      });
+      if (res.ok) {
+        const { message } = await res.json();
+        setMessages((cur) => [...cur, message]);
+        lastCountRef.current += 1;
+      }
+    } finally { setSending(false); }
   };
 
   if (!session) return null;
@@ -83,16 +93,16 @@ export default function EphemeralChat({ user }) {
       {open && (
         <div className="pmx-echat__panel">
           <div className="pmx-echat__head">
-            <span>💬 Chat temporário <small>· expira em {minutosRestantes} min</small></span>
+            <span>💬 Chat temporário <small>· mensagens somem em 10 min · sessão expira em {minutosRestantes} min</small></span>
             <button onClick={() => setOpen(false)}>✕</button>
           </div>
           <div className="pmx-echat__list" ref={listRef}>
-            {messages.length === 0 && <p className="pmx-echat__empty">Nenhuma mensagem ainda. Essa conversa não fica salva — some quando a sessão acabar.</p>}
-            {messages.map((m, i) => (
-              <div key={i} className={`pmx-echat__msg ${m.from === user.nome ? 'is-me' : ''}`}>
-                <b>{m.from}</b>
-                <p>{m.text}</p>
-                <small>{new Date(m.ts).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</small>
+            {messages.length === 0 && <p className="pmx-echat__empty">Nenhuma mensagem ainda. Cada mensagem some sozinha 10 minutos depois de enviada.</p>}
+            {messages.map((m) => (
+              <div key={m.id} className={`pmx-echat__msg ${m.remetente_id === user.id ? 'is-me' : ''}`}>
+                <b>{m.remetente_nome}</b>
+                <p>{m.texto}</p>
+                <small>{new Date(m.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</small>
               </div>
             ))}
           </div>
@@ -102,8 +112,9 @@ export default function EphemeralChat({ user }) {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') send(); }}
               placeholder="Digite uma mensagem…"
+              disabled={sending}
             />
-            <button onClick={send} disabled={!input.trim()}>Enviar</button>
+            <button onClick={send} disabled={!input.trim() || sending}>Enviar</button>
           </div>
         </div>
       )}

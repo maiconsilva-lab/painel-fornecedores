@@ -6,8 +6,16 @@ export async function GET(req) {
   if (!acting) return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
 
   const supa = getServiceClient();
-  await supa.from('chat_sessions').update({ ativo: false, desativado_em: new Date().toISOString() })
-    .eq('ativo', true).lt('expira_em', new Date().toISOString());
+  const { data: expiradas } = await supa
+    .from('chat_sessions')
+    .select('id')
+    .eq('ativo', true)
+    .lt('expira_em', new Date().toISOString());
+  if (expiradas?.length) {
+    const ids = expiradas.map((s) => s.id);
+    await supa.from('chat_sessions').update({ ativo: false, desativado_em: new Date().toISOString() }).in('id', ids);
+    await supa.from('chat_messages').delete().in('session_id', ids);
+  }
 
   const { data, error } = await supa
     .from('chat_sessions')

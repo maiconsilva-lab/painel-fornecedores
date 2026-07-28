@@ -12,5 +12,10 @@ export async function POST(req, { params }) {
     .eq('id', params.id);
 
   if (error) return NextResponse.json({ error: 'Falha ao desativar.' }, { status: 500 });
+
+  // Ao desativar manualmente, some com qualquer mensagem pendente na hora
+  // (em vez de esperar os 10 min de autodestruição individual).
+  await supa.from('chat_messages').delete().eq('session_id', params.id);
+
   return NextResponse.json({ ok: true });
 }
