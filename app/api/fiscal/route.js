@@ -30,6 +30,21 @@ export async function GET(req) {
       }, { headers: { 'Cache-Control': 'private, no-store' } });
     }
 
+    if (mode === 'todas') {
+      const [nfeRes, preRes, updateRes] = await Promise.all([
+        supa.from('monitor_xml').select('*').not('tipo_nota', 'ilike', '%CT%'),
+        supa.from('pre_notas').select('*'),
+        supa.from('monitor_xml').select('atualizado_em').order('atualizado_em', { ascending: false }).limit(1),
+      ]);
+      const error = nfeRes.error || preRes.error || updateRes.error;
+      if (error) return NextResponse.json({ error: 'Falha ao carregar dados de todas as filiais.' }, { status: 500 });
+      return NextResponse.json({
+        nfe: nfeRes.data || [],
+        preNotas: preRes.data || [],
+        atualizadoEm: updateRes.data?.[0]?.atualizado_em || null,
+      }, { headers: { 'Cache-Control': 'private, no-store' } });
+    }
+
     if (mode === 'filial') {
       const codigo = url.searchParams.get('codigo')?.trim();
       const descricao = url.searchParams.get('descricao')?.trim();

@@ -197,10 +197,15 @@ export default function PendenciasPage() {
     if (!filialSel) { setNfeData([]); setPreNotas([]); return; }
     setLoading(true);
     setLoadError('');
-    const filialDesc = filiais.find((filial) => filial.codigo === filialSel)?.descricao;
-    if (!filialDesc) { setLoading(false); return; }
     try {
-      const payload = await fetchFiscal({ mode:'filial', codigo:filialSel, descricao:filialDesc });
+      let payload;
+      if (filialSel === 'TODAS') {
+        payload = await fetchFiscal({ mode:'todas' });
+      } else {
+        const filialDesc = filiais.find((filial) => filial.codigo === filialSel)?.descricao;
+        if (!filialDesc) { setLoading(false); return; }
+        payload = await fetchFiscal({ mode:'filial', codigo:filialSel, descricao:filialDesc });
+      }
       setNfeData(payload.nfe || []);
       setPreNotas(payload.preNotas || []);
       if (payload.atualizadoEm) setUltimaAtt(payload.atualizadoEm);
@@ -344,7 +349,7 @@ export default function PendenciasPage() {
     }
 
     // Ordenação
-    if (tab === 'cte') {
+    if (tab === 'cte' || (tab === 'nfe' && filialSel === 'TODAS')) {
       base = [...base].sort((a, b) => {
         const af = a.descricao_filial || '';
         const bf = b.descricao_filial || '';
@@ -371,7 +376,7 @@ export default function PendenciasPage() {
       });
     }
     return base;
-  }, [tab, nfeAgrupado, cteAgrupado, filtroSLA, filtroPeriodo, filtroFilialCte, busca, sortBy, sortDir]);
+  }, [tab, nfeAgrupado, cteAgrupado, filtroSLA, filtroPeriodo, filtroFilialCte, busca, sortBy, sortDir, filialSel]);
 
   const preNotasFiltradas = useMemo(() => {
     let data = preNotas;
@@ -414,6 +419,7 @@ export default function PendenciasPage() {
     let rows;
     if (tab === 'prenotas') {
       rows = dados.map(r => ({
+        filial: r.filial || filialSel || '',
         numero: r.numero, serie: r.serie,
         emissao: fmtData(r.data_emissao), digitacao: fmtData(r.data_digitacao),
         fornecedor: r.nome_fornecedor, valor_bruto: r.valor_bruto,
@@ -443,7 +449,7 @@ export default function PendenciasPage() {
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `pendencias_${filialSel || 'geral'}_${tab}_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `pendencias_${filialSel === 'TODAS' ? 'todas-filiais' : (filialSel || 'geral')}_${tab}_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
   }
 
@@ -451,7 +457,9 @@ export default function PendenciasPage() {
     setBusca(''); setFiltroSLA('TODOS'); setFiltroPeriodo('TODOS'); setFiltroFilialCte('TODAS');
   }
 
-  const filialSelObj = filiais.find((f) => f.codigo === filialSel);
+  const filialSelObj = filialSel === 'TODAS'
+    ? { codigo: 'TODAS', nomeLimpo: 'Todas as filiais', descricao: 'Todas as filiais' }
+    : filiais.find((f) => f.codigo === filialSel);
   const temFiltros = busca || filtroSLA !== 'TODOS' || filtroPeriodo !== 'TODOS' || filtroFilialCte !== 'TODAS';
   const podeMostrarConteudo = filialSel || tab === 'cte';
 
@@ -549,6 +557,7 @@ export default function PendenciasPage() {
               }}
             >
               <option value="">Selecione uma filial...</option>
+              <option value="TODAS">📊 Todas as filiais</option>
               {filiais.map((f) => (
                 <option key={f.codigo} value={f.codigo}>
                   {f.codigo} — {f.nomeLimpo} {f.count > 0 ? `(${f.count} pendências)` : ''}
@@ -616,7 +625,7 @@ export default function PendenciasPage() {
                   total={dadosTab.length}
                 >
                   <TabelaMonitor
-                    dados={dadosTab} mostrarFilial={false}
+                    dados={dadosTab} mostrarFilial={filialSel === 'TODAS'}
                     expanded={expanded} toggleExpand={toggleExpand}
                     sortBy={sortBy} sortDir={sortDir} toggleSort={toggleSort}
                     copyKey={copyKey} copiedKey={copiedKey}
