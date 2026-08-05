@@ -241,7 +241,7 @@ export default function PendenciasPage() {
     return Array.from(map.values());
   }
 
-  const nfeAgrupado = useMemo(() => agruparPorNota(nfeData), [nfeData]);
+  const nfeAgrupado = useMemo(() => agruparPorNota(nfeData, true), [nfeData]);
   const cteAgrupado = useMemo(() => agruparPorNota(cteGlobal, true), [cteGlobal]);
 
   const filiaisComCte = useMemo(() => {
@@ -419,7 +419,7 @@ export default function PendenciasPage() {
     let rows;
     if (tab === 'prenotas') {
       rows = dados.map(r => ({
-        filial: r.filial || filialSel || '',
+        filial: r.filial || '',
         numero: r.numero, serie: r.serie,
         emissao: fmtData(r.data_emissao), digitacao: fmtData(r.data_digitacao),
         fornecedor: r.nome_fornecedor, valor_bruto: r.valor_bruto,
@@ -429,7 +429,7 @@ export default function PendenciasPage() {
       dados.forEach(nota => {
         (nota.itens || []).forEach(item => {
           rows.push({
-            filial: nota.descricao_filial || filialSel || '',
+            filial: nota.descricao_filial || '',
             sla: nota.sla, sla_categoria: nota.sla_categoria,
             tipo: nota.tipo_nota, documento: nota.documento, serie: nota.serie,
             emissao: fmtData(nota.data_emissao), fornecedor: nota.nome_fornecedor,
