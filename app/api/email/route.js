@@ -76,7 +76,7 @@ export async function POST(req) {
     if (!response.ok) {
       const detail = (await response.text()).slice(0, 300);
       console.error('[email]', response.status, detail);
-      return NextResponse.json({ error: `O provedor de e-mail recusou o envio: [${response.status}] ${detail}` }, { status: 502 });
+      return NextResponse.json({ error: 'O provedor de e-mail recusou o envio.' }, { status: 502 });
     }
     return NextResponse.json({ ok: true });
   } catch (error) {
