@@ -3,6 +3,13 @@ import { getServiceClient } from '../../../lib/authServer';
 
 export const dynamic = 'force-dynamic';
 
+/* Notas com mais de 40 dias de SLA não aparecem mais no painel de
+   pendências (pedido do Maicon) — vale só para NF-e. CT-e e pré-notas
+   ficam de fora desse corte por decisão explícita: CT-e continua
+   mostrando tudo (é global, não por filial) e pré-notas não tem essa
+   coluna de SLA no banco. */
+const SLA_MAX_DIAS = 40;
+
 /* Rota pública de propósito: a página /pendencias é consultada por
    qualquer colaborador @premix.com.br sem precisar de login no painel
    (só consulta visual, dados fiscais não sensíveis — não é fornecedor/
@@ -16,7 +23,7 @@ export async function GET(req) {
     if (mode === 'bootstrap') {
       const [filiaisRes, countsRes, cteRes, updateRes] = await Promise.all([
         supa.from('filiais').select('codigo, descricao').order('codigo'),
-        supa.from('monitor_xml').select('descricao_filial, tipo_nota, chave, documento, fornecedor'),
+        supa.from('monitor_xml').select('descricao_filial, tipo_nota, chave, documento, fornecedor').lte('sla', SLA_MAX_DIAS),
         supa.from('monitor_xml').select('*').ilike('tipo_nota', '%CT%'),
         supa.from('monitor_xml').select('atualizado_em').order('atualizado_em', { ascending: false }).limit(1),
       ]);
@@ -32,7 +39,7 @@ export async function GET(req) {
 
     if (mode === 'todas') {
       const [nfeRes, preRes, updateRes] = await Promise.all([
-        supa.from('monitor_xml').select('*').not('tipo_nota', 'ilike', '%CT%'),
+        supa.from('monitor_xml').select('*').not('tipo_nota', 'ilike', '%CT%').lte('sla', SLA_MAX_DIAS),
         supa.from('pre_notas').select('*'),
         supa.from('monitor_xml').select('atualizado_em').order('atualizado_em', { ascending: false }).limit(1),
       ]);
@@ -50,7 +57,7 @@ export async function GET(req) {
       const descricao = url.searchParams.get('descricao')?.trim();
       if (!codigo || !descricao) return NextResponse.json({ error: 'Filial inválida.' }, { status: 400 });
       const [nfeRes, preRes, updateRes] = await Promise.all([
-        supa.from('monitor_xml').select('*').eq('descricao_filial', descricao).not('tipo_nota', 'ilike', '%CT%'),
+        supa.from('monitor_xml').select('*').eq('descricao_filial', descricao).not('tipo_nota', 'ilike', '%CT%').lte('sla', SLA_MAX_DIAS),
         supa.from('pre_notas').select('*').eq('filial', codigo),
         supa.from('monitor_xml').select('atualizado_em').order('atualizado_em', { ascending: false }).limit(1),
       ]);
