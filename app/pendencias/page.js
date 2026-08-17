@@ -162,10 +162,20 @@ export default function PendenciasPage() {
         const payload = await fetchFiscal({ mode:'bootstrap' });
         if (!active) return;
         const contagem = {};
+        /* Uma nota fiscal pode gerar várias linhas em monitor_xml (uma por
+           item). Contar linha por linha infla o número — dedupe pela mesma
+           chave usada em agruparPorNota() antes de contar, senão o total
+           no seletor de filial não bate com o total mostrado na aba NF-e. */
+        const vistos = {};
         payload.monitorResumo.forEach((row) => {
           const tipo = (row.tipo_nota || '').toUpperCase();
           if (tipo.includes('CT')) return;
-          if (row.descricao_filial) contagem[row.descricao_filial] = (contagem[row.descricao_filial] || 0) + 1;
+          if (!row.descricao_filial) return;
+          const chaveNota = row.chave || row.documento || `${row.fornecedor}-${row.documento}`;
+          const setFilial = (vistos[row.descricao_filial] ||= new Set());
+          if (setFilial.has(chaveNota)) return;
+          setFilial.add(chaveNota);
+          contagem[row.descricao_filial] = (contagem[row.descricao_filial] || 0) + 1;
         });
         const enriched = payload.filiais.map((filial) => ({
           ...filial,

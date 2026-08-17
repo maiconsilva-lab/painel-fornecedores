@@ -16,7 +16,7 @@ export async function GET(req) {
     if (mode === 'bootstrap') {
       const [filiaisRes, countsRes, cteRes, updateRes] = await Promise.all([
         supa.from('filiais').select('codigo, descricao').order('codigo'),
-        supa.from('monitor_xml').select('descricao_filial, tipo_nota'),
+        supa.from('monitor_xml').select('descricao_filial, tipo_nota, chave, documento, fornecedor'),
         supa.from('monitor_xml').select('*').ilike('tipo_nota', '%CT%'),
         supa.from('monitor_xml').select('atualizado_em').order('atualizado_em', { ascending: false }).limit(1),
       ]);
